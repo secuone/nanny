@@ -114,7 +114,6 @@ var esGit = map[string]string{
 	"upstream gone":  "upstream borrado",
 	"week / month":   "semana / mes",
 	"… and %d more":  "… y %d más",
-	"Git & PRs":      "Git y PRs",
 	"Overview":       "Resumen",
 	"Branch, PR and worktrees of each space, from git; no GitHub needed.": "Rama, PR y worktrees de cada espacio, desde git; sin GitHub.",
 	"No git repository in %s.":             "No hay repositorio git en %s.",
@@ -135,6 +134,12 @@ var esGit = map[string]string{
 	"new claude in it · new worktree":                                           "nuevo claude en él · nuevo worktree",
 	"No spaces yet.":                                                            "Aún no hay espacios.",
 	"new space":                                                                 "nuevo espacio",
+	"%s is not a git repository.":                                               "%s no es un repositorio git.",
+	"%s has no GitHub remote.":                                                  "%s no tiene remoto de GitHub.",
+	"Nothing is waiting for your review in %s.":                                 "Nada espera tu revisión en %s.",
+	"No open PRs in %s.":                                                        "No hay PRs abiertas en %s.",
+	"see all spaces":                                                            "ver todos los espacios",
+	"All your repos, not only %s: your week is the same in every space.": "Todos tus repos, no solo %s: tu semana es la misma en cada espacio.",
 }
 
 func init() { merge(es, esGit) }

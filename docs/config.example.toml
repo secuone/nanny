@@ -82,6 +82,11 @@ off = ["view.prompts", "view.skills", "monitor.machine", "monitor.ports", "monit
                          # the old density, basic and [screen] off are read once into a profile "mine"
 
 # [git] — the Git view
+# [git]
+# merge_method  = "squash"   # what X uses to merge a PR: squash, merge or rebase (it asks first, never forces)
+# reviews       = "all"      # all: asked of you and your teams; direct: asked of you only
+# review_mins   = 5          # minutes between looks for reviews while Git isn't on screen
+# review_prompt = ""         # what the review agent is told; {url} {number} {repo} are filled in (empty = built in)
 
 # [jira] — the Jira view
 

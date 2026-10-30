@@ -3,6 +3,7 @@
 ## Unreleased
 
 <!-- Git view -->
+- **Git view**: sections My PRs, Reviews, Worktrees, Branches and Profile, with `gh` (needs `gh auth login`). Merge asks first and never uses `--admin`; a PR that isn't ready gets auto-merge. `c` in Reviews starts a Claude on the PR in a worktree; the top bar counts the reviews waiting (`header.reviews`); Branches finds the ones merged, squashes included, and deletes them after asking. `[git]` in the config and Settings → Git: `merge_method`, `reviews`, `review_mins`, `review_prompt`.
 
 <!-- Jira view and setup wizard -->
 

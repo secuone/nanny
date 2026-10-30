@@ -200,6 +200,7 @@ type viewState struct {
 	frameOn    bool        // a frame is on its way (none while nothing moves)
 	drawnMin   int64       // the minute the last frame was drawn in (clock, "3m ago")
 	monWas     bool        // the Monitor was on screen after the last update
+	widths     widths      // how wide the lines of the last frames were
 }
 
 type modal struct {
@@ -1402,6 +1403,7 @@ func (m Model) render() string {
 	}
 	m.vs.reuse, m.vs.noop, m.vs.pending, m.vs.anim = false, false, false, false
 	m.vs.paneCursor = nil
+	m.vs.widths.roll()
 	m.vs.drawnMin = time.Now().Unix() / 60
 	header := m.viewHeader() + "\n\n" + fit(m.viewTabBar(), m.w) + "\n" // blank rows around the views bar
 	footer := m.viewFooter()
@@ -1430,11 +1432,11 @@ func (m Model) render() string {
 	default:
 		left, right = m.dashboard(lw, rw, bh)
 	}
-	body := lipgloss.JoinHorizontal(lipgloss.Top, left, right)
+	body := m.joinTop(left, right)
 	if m.sidebarOn() {
-		body = lipgloss.JoinHorizontal(lipgloss.Top, m.viewSidebar(bh), body)
+		body = m.joinTop(m.viewSidebar(bh), body)
 	}
-	out := lipgloss.JoinVertical(lipgloss.Left, header, body, footer)
+	out := m.joinLeft(header, body, footer)
 	m.vs.modalN = 0
 	var box string
 	tipShown := false
@@ -1485,7 +1487,7 @@ func (m Model) render() string {
 			tipShown = true
 		}
 	}
-	out, m.vs.keyHits = harvestKeys(m.st.App.Width(m.w).Height(m.h).MaxHeight(m.h).Render(out))
+	out, m.vs.keyHits = harvestKeys(m.finish(out))
 	if m.help || m.menu != nil {
 		m.vs.keyHits = nil
 	}

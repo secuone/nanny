@@ -248,3 +248,50 @@ func TestPlainHTTPRefused(t *testing.T) {
 		t.Fatalf("plain http should be refused without the token: %v", err)
 	}
 }
+
+func TestDetailReadsDescriptionCommentsAndLinks(t *testing.T) {
+	c := serve(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/rest/api/3/issue/PAY-1" || !strings.Contains(r.URL.Query().Get("fields"), "comment") {
+			t.Errorf("%s ?%s", r.URL.Path, r.URL.RawQuery)
+		}
+		fmt.Fprint(w, `{"fields":{"description":{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Refunds fail"}]}]},
+		 "comment":{"total":2,"comments":[
+		  {"author":{"displayName":"Ada"},"created":"2026-10-29T09:00:00.000+0000","body":{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"looking"}]}]}},
+		  {"author":{"displayName":"Bob"},"created":"2026-10-30T09:00:00.000+0000","body":{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"fixed"}]}]}}]},
+		 "subtasks":[{"key":"PAY-9","fields":{"summary":"Sub","status":{"name":"To Do"}}}],
+		 "issuelinks":[{"type":{"inward":"is blocked by","outward":"blocks"},"outwardIssue":{"key":"PAY-7","fields":{"summary":"Later","status":{"name":"Done"}}}},
+		  {"type":{"inward":"is blocked by","outward":"blocks"},"inwardIssue":{"key":"PAY-8","fields":{"summary":"First","status":{"name":"To Do"}}}}]}}`)
+	})
+	d, err := c.Detail(context.Background(), "PAY-1")
+	if err != nil || d.Description != "Refunds fail" || d.CommentTotal != 2 || len(d.Comments) != 2 {
+		t.Fatalf("%+v %v", d, err)
+	}
+	if d.Comments[1].Author != "Bob" || d.Comments[1].Body != "fixed" || d.Comments[1].Created.IsZero() {
+		t.Errorf("comment: %+v", d.Comments[1])
+	}
+	if len(d.Subtasks) != 1 || d.Subtasks[0].Key != "PAY-9" || len(d.Links) != 2 || d.Links[0].Rel != "blocks" || d.Links[1].Rel != "is blocked by" {
+		t.Errorf("links: %+v %+v", d.Subtasks, d.Links)
+	}
+}
+
+func TestDetailErrorsNeverCarryTheToken(t *testing.T) {
+	c := serve(t, func(w http.ResponseWriter, r *http.Request) { http.Error(w, `{"errorMessages":["nope"]}`, 404) })
+	_, err := c.Detail(context.Background(), "PAY-1")
+	if err == nil || strings.Contains(err.Error(), "s3cret") {
+		t.Errorf("err: %v", err)
+	}
+}
+
+func TestSearchBringsAssigneeAndCreated(t *testing.T) {
+	c := serve(t, func(w http.ResponseWriter, r *http.Request) {
+		b := body(t, r)
+		if f, _ := json.Marshal(b["fields"]); !strings.Contains(string(f), "assignee") {
+			t.Errorf("fields: %s", f)
+		}
+		fmt.Fprint(w, `{"issues":[{"id":"1","key":"PAY-1","fields":{"summary":"x","assignee":{"displayName":"Ada"},"reporter":{"displayName":"Bob"},"created":"2026-10-01T10:00:00.000+0000"}}],"isLast":true}`)
+	})
+	is, err := c.Search(context.Background(), "x", "")
+	if err != nil || len(is) != 1 || is[0].Assignee != "Ada" || is[0].Reporter != "Bob" || is[0].Created.IsZero() || !is[0].Matches("ada") {
+		t.Fatalf("%+v %v", is, err)
+	}
+}

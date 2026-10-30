@@ -231,8 +231,7 @@ func renderBlocks(blocks [][]string, sel int, off *int, h int) string {
 	return strings.Join(out[*off:end], "\n")
 }
 
-func truncANSI(s string, w int) string        { return ansi.Truncate(s, w, "") }
-func truncLeftANSI(s string, from int) string { return ansi.TruncateLeft(s, from, "") }
+func truncANSI(s string, w int) string { return ansi.Truncate(s, w, "") }
 
 // hints renders key/description pairs in the one format every footer and hint line uses.
 func (s Styles) hints(keys [][2]string) string {

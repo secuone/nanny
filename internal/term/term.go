@@ -43,9 +43,13 @@ type Pane struct {
 	exitCode  int
 	lastOut   atomic.Int64 // unix nano of last output
 	bell      atomic.Bool
-	quiet     atomic.Bool  // drop emulator replies while replaying old output
-	quietTill atomic.Int64 // …and until then (unix ns): the replay's answers drain late
-	scroll    int          // lines scrolled back (0 = live)
+	quiet     atomic.Bool   // drop emulator replies while replaying old output
+	quietTill atomic.Int64  // …and until then (unix ns): the replay's answers drain late
+	scroll    int           // lines scrolled back (0 = live)
+	seq       atomic.Uint64 // bumped whenever the emulator's screen may have changed
+	memoMu    sync.Mutex
+	memoAt    time.Time // when memoVal was computed
+	memoVal   string
 	notify    func()
 	closeOnce sync.Once
 }
@@ -181,6 +185,7 @@ func (p *Pane) Note(s string) { p.feed([]byte(s)) }
 
 func (p *Pane) feed(b []byte) {
 	_, _ = p.emu.Write(b)
+	p.seq.Add(1)
 	p.lastOut.Store(time.Now().UnixNano())
 	p.ping()
 }
@@ -231,9 +236,29 @@ func (p *Pane) Resize(w, h int) {
 	p.w, p.h = w, h
 	p.mu.Unlock()
 	p.emu.Resize(w, h)
+	p.seq.Add(1)
 	if p.be != nil {
 		p.be.resize(w, h)
 	}
+}
+
+// Seq changes whenever the screen may have: a cache of what View drew is good while it holds.
+func (p *Pane) Seq() uint64 { return p.seq.Load() }
+
+// Memo is what compute returned within the last ttl, so a frame doesn't redo
+// it for every pane. compute runs outside the lock.
+func (p *Pane) Memo(ttl time.Duration, compute func() string) string {
+	p.memoMu.Lock()
+	v, at := p.memoVal, p.memoAt
+	p.memoMu.Unlock()
+	if !at.IsZero() && time.Since(at) < ttl {
+		return v
+	}
+	v = compute()
+	p.memoMu.Lock()
+	p.memoVal, p.memoAt = v, time.Now()
+	p.memoMu.Unlock()
+	return v
 }
 
 func (p *Pane) Size() (int, int) { p.mu.Lock(); defer p.mu.Unlock(); return p.w, p.h }

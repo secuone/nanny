@@ -10,6 +10,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/muesli/termenv"
 	"github.com/secuone/nanny/internal/claude"
 	"github.com/secuone/nanny/internal/config"
 	"github.com/secuone/nanny/internal/demo"
@@ -39,13 +40,13 @@ func drain(m tea.Model, c tea.Cmd, depth int) tea.Model {
 	return drain(m, next, depth+1)
 }
 
-func boot(t *testing.T, w, h int) tea.Model {
+func boot(t testing.TB, w, h int) tea.Model {
 	t.Helper()
 	return bootIn(t, "en", w, h)
 }
 
 // bootIn is boot with the UI in lang.
-func bootIn(t *testing.T, lang string, w, h int) tea.Model {
+func bootIn(t testing.TB, lang string, w, h int) tea.Model {
 	t.Helper()
 	t.Cleanup(func() { i18n.Set("en") })
 	dir := t.TempDir()
@@ -308,6 +309,93 @@ func TestSpacesWithRealPanes(t *testing.T) {
 	mm = key(mm, "alt+1")
 	for _, p := range mm.(Model).space().Tab().Panes {
 		p.Close()
+	}
+}
+
+// Ten side-by-side panes must not balloon the rows with escapes of cut-away text.
+func TestViewPanesManyPanesStaysLean(t *testing.T) {
+	prev := lipgloss.ColorProfile()
+	lipgloss.SetColorProfile(termenv.ANSI256)
+	t.Cleanup(func() { lipgloss.SetColorProfile(prev) })
+	m := manyPanes(t, 10)
+	tab := m.space().Tab()
+	if len(tab.Panes) != 10 {
+		t.Fatalf("got %d panes", len(tab.Panes))
+	}
+	w, h := m.vs.area.w, m.vs.area.h
+	rows := strings.Split(m.viewPanes(w, h), "\n")
+	if len(rows) != h {
+		t.Fatalf("got %d rows, want %d", len(rows), h)
+	}
+	for y, row := range rows {
+		if len(row) > 8*w {
+			t.Errorf("row %d is %d bytes", y, len(row))
+		}
+		if strings.Contains(row, "\x1b[38;5;59m\x1b[0m") {
+			t.Errorf("row %d has an empty SGR span", y)
+		}
+		plain := []rune(ansi.Strip(row))
+		if len(plain) != w {
+			t.Fatalf("row %d is %d cols, want %d", y, len(plain), w)
+		}
+		if y == 0 || y == h-1 {
+			continue
+		}
+		for i, r := range m.vs.rects {
+			if plain[r.x-m.vs.area.x] != '│' || plain[r.x-m.vs.area.x+r.w-1] != '│' {
+				t.Errorf("row %d: pane %d border misplaced", y, i)
+			}
+		}
+	}
+}
+
+func manyPanes(t testing.TB, n int) Model {
+	m := boot(t, 200, 40).(Model)
+	m.spaces = append(m.spaces, ws.NewSpace("proj", t.TempDir()))
+	m.cur = 0
+	m.openTabIn(m.spaces[0], "shell", []string{"/bin/sh"})
+	for i := 1; i < n; i++ {
+		m.split(true, []string{"/bin/sh"})
+	}
+	t.Cleanup(func() {
+		for _, p := range m.space().Tab().Panes {
+			p.Close()
+		}
+	})
+	return m
+}
+
+func BenchmarkViewPanes10(b *testing.B) {
+	m := manyPanes(b, 10)
+	w, h := m.vs.area.w, m.vs.area.h
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = m.viewPanes(w, h)
+	}
+}
+
+// The cached lines of a pane give way as soon as it prints, scrolls or loses focus.
+func TestViewPanesCacheFollowsThePane(t *testing.T) {
+	m := manyPanes(t, 2)
+	w, h := m.vs.area.w, m.vs.area.h
+	tab := m.space().Tab()
+	tab.Panes[0].Note("fresh-output\r\n")
+	if out := ansi.Strip(m.viewPanes(w, h)); !strings.Contains(out, "fresh-output") {
+		t.Error("new output is not drawn")
+	}
+	first := m.viewPanes(w, h)
+	tab.Focus = 0
+	if m.viewPanes(w, h) == first {
+		t.Error("focus change is not drawn")
+	}
+	for i := 0; i < 60; i++ {
+		tab.Panes[0].Note("line\r\n")
+	}
+	before := m.viewPanes(w, h)
+	tab.Panes[0].Scroll(10)
+	if m.viewPanes(w, h) == before {
+		t.Error("scrolling is not drawn")
 	}
 }
 

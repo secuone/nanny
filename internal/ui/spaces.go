@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -346,10 +347,18 @@ func (v *viewState) paneArea() (rect, bool) { return v.area, v.area.w > 0 }
 
 // ---------------------------------------------------------------- views
 
+// paneStateTTL is how long a pane's state is reused: it costs a /proc read or a
+// screen scan, and every frame asks for it again, per pane and per rollup.
+const paneStateTTL = 250 * time.Millisecond
+
 func (m Model) paneState(p *term.Pane) string {
 	if p.Exited() {
 		return "exited"
 	}
+	return p.Memo(paneStateTTL, func() string { return m.livePaneState(p) })
+}
+
+func (m Model) livePaneState(p *term.Pane) string {
 	if p.Agent != "claude" {
 		if fg := p.ForegroundPid(); fg != 0 && fg != p.Pid() {
 			return "running"
@@ -656,6 +665,35 @@ func branchOf(dir string) string {
 	return br
 }
 
+// paneLines is a pane's body and bottom border as last drawn, good while key holds.
+type paneLines struct {
+	key  string
+	rest []string
+}
+
+// paneRest draws what sits under a pane's title line: the body between its side
+// borders, then the bottom border. It redraws only when the pane's output, size,
+// cursor, scroll, border colour or look changed; the cache lives in keep.
+func (m Model) paneRest(p *term.Pane, r rect, bc lipgloss.Style, col string, cursor bool, keep map[*term.Pane]paneLines) []string {
+	key := fmt.Sprintf("%d|%d|%d|%t|%d|%t|%s|%s", p.Seq(), r.w, r.h, cursor, p.Scrolled(), p.Exited(), col, m.look.fenceOn())
+	if c, ok := m.vs.paneLines[p]; ok && c.key == key {
+		keep[p] = c
+		return c.rest
+	}
+	var rest []string
+	body := p.View(cursor)
+	for j := 0; j < r.h-2; j++ {
+		l := ""
+		if j < len(body) {
+			l = body[j]
+		}
+		rest = append(rest, bc.Render("│")+m.look.fenceOn()+fit(l+"\x1b[0m", r.w-2)+m.look.fenceOff()+bc.Render("│"))
+	}
+	rest = append(rest, bc.Render("╰"+strings.Repeat("─", r.w-2)+"╯"))
+	keep[p] = paneLines{key, rest}
+	return rest
+}
+
 // viewPanes draws the active tab's panes with titled borders.
 func (m Model) viewPanes(w, h int) string {
 	s := m.st
@@ -664,10 +702,13 @@ func (m Model) viewPanes(w, h int) string {
 	if t == nil || len(t.Panes) == 0 {
 		return m.viewEmptySpace(sp, w, h)
 	}
-	canvas := make([]string, h)
-	for i := range canvas {
-		canvas[i] = strings.Repeat(" ", w)
+	type seg struct {
+		x, w int
+		s    string
 	}
+	rows := make([][]seg, h)
+	keep := make(map[*term.Pane]paneLines, len(t.Panes)) // the cache only holds this tab's panes
+	defer func() { m.vs.paneLines = keep }()
 	rects := paneRects(t, rect{0, 0, w, h})
 	for i, p := range t.Panes {
 		r := rects[i]
@@ -676,15 +717,13 @@ func (m Model) viewPanes(w, h int) string {
 		}
 		focused := i == t.Focus
 		st := m.paneState(p)
-		col := s.P.Overlay
+		bc, col := s.BorderOverlay, s.P.Overlay
 		if focused {
-			col = s.P.Accent
+			bc, col = s.BorderAccent, s.P.Accent
 		}
-		switch st {
-		case "blocked":
-			col = s.P.Red
+		if st == "blocked" {
+			bc, col = s.BorderRed, s.P.Red
 		}
-		bc := lipgloss.NewStyle().Foreground(lipgloss.Color(col))
 		title := " " + m.paneGlyph(st) + " " + paneTitle(p) + " "
 		if sc := p.Scrolled(); sc > 0 {
 			title += s.Yellow.Render(fmt.Sprintf("↑%d ", sc))
@@ -702,30 +741,34 @@ func (m Model) viewPanes(w, h int) string {
 		if tw > r.w-3 {
 			top = bc.Render("╭" + strings.Repeat("─", r.w-2) + "╮")
 		}
-		lines := []string{top}
-		body := p.View(focused && !m.prefix)
-		for j := 0; j < r.h-2; j++ {
-			l := ""
-			if j < len(body) {
-				l = body[j]
-			}
-			lines = append(lines, bc.Render("│")+m.look.fenceOn()+fit(l+"\x1b[0m", r.w-2)+m.look.fenceOff()+bc.Render("│"))
-		}
-		lines = append(lines, bc.Render("╰"+strings.Repeat("─", r.w-2)+"╯"))
+		lines := append([]string{top}, m.paneRest(p, r, bc, col, focused && !m.prefix, keep)...)
 		for j, l := range lines {
 			y := r.y + j
 			if y >= h {
 				break
 			}
-			left := ""
-			if r.x > 0 {
-				left = cutLeft(canvas[y], r.x)
-			}
-			right := cutRight(canvas[y], r.x+r.w)
-			canvas[y] = left + l + right
+			rows[y] = append(rows[y], seg{r.x, r.w, l})
 		}
 	}
-	return strings.Join(canvas, "\n")
+	// stitch segments left to right; cutting a string would drag its escapes along
+	out := make([]string, h)
+	for y, segs := range rows {
+		sort.Slice(segs, func(a, b int) bool { return segs[a].x < segs[b].x })
+		var b strings.Builder
+		x := 0
+		for _, sg := range segs {
+			if sg.x > x {
+				b.WriteString(strings.Repeat(" ", sg.x-x))
+			}
+			b.WriteString(sg.s)
+			x = sg.x + sg.w
+		}
+		if x < w {
+			b.WriteString(strings.Repeat(" ", w-x))
+		}
+		out[y] = b.String()
+	}
+	return strings.Join(out, "\n")
 }
 
 func paneTitle(p *term.Pane) string {
@@ -759,16 +802,6 @@ func (m Model) viewEmptySpace(sp *ws.Space, w, h int) string {
 	}
 	return s.panel(spaceLabel(sp), strings.Join(lines[:h-2], "\n"), w, h, true)
 }
-
-func cutLeft(s string, w int) string {
-	out := truncANSI(s, w)
-	if lw := lipgloss.Width(out); lw < w {
-		out += strings.Repeat(" ", w-lw)
-	}
-	return out
-}
-
-func cutRight(s string, from int) string { return truncLeftANSI(s, from) }
 
 // ---------------------------------------------------------------- input
 

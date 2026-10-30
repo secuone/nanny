@@ -18,6 +18,7 @@ type Styles struct {
 	Green, Yellow, Red, Blue, Peach, Teal, Pink                 lipgloss.Style
 	Badge, Key, KeyDesc, Footer, Status, StatusErr, Label       lipgloss.Style
 	Modal, Input                                                lipgloss.Style
+	BorderOverlay, BorderAccent, BorderRed                      lipgloss.Style // pane borders, built once
 }
 
 func NewStyles(p config.Palette) Styles {
@@ -36,6 +37,7 @@ func NewStyles(p config.Palette) Styles {
 	s.BtnHover = lipgloss.NewStyle().Foreground(c(onColor(p, p.Accent))).Background(c(p.Accent)).Bold(true).Padding(0, 1)
 	border := lipgloss.RoundedBorder()
 	s.Panel = lipgloss.NewStyle().Border(border).BorderForeground(c(p.Overlay)).Padding(0, 1)
+	s.BorderOverlay, s.BorderAccent, s.BorderRed = fg(p.Overlay), fg(p.Accent), fg(p.Red)
 	s.PanelFocus = s.Panel.BorderForeground(c(p.Accent))
 	s.PanelTitle = fg(p.Subtle).Bold(true)
 	s.PanelTitleFocus = fg(p.Accent).Bold(true)

@@ -1,6 +1,8 @@
 package term
 
 import (
+	"encoding/base64"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -51,5 +53,35 @@ func TestBlockedDetection(t *testing.T) {
 	waitFor(t, p, "2. No")
 	if s := p.AgentState(); s != "blocked" {
 		t.Errorf("state = %s, want blocked", s)
+	}
+}
+
+func TestHugeOSCDoesNotBreakThePane(t *testing.T) {
+	p := newPane(t.TempDir(), []string{"/bin/sh"}, 40, 5, nil)
+	payload := base64.StdEncoding.EncodeToString(make([]byte, 150*1024))
+	p.feed([]byte("\x1b]52;c;" + payload + "\x07"))
+	p.feed([]byte("still-alive\r\n"))
+	if !strings.Contains(p.Text(5), "still-alive") {
+		t.Errorf("output after a 200 KB OSC 52 is lost:\n%s", p.Text(5))
+	}
+}
+
+func TestEmulatorHeapIsSmall(t *testing.T) {
+	const n = 20
+	heap := func() uint64 {
+		var ms runtime.MemStats
+		runtime.GC()
+		runtime.ReadMemStats(&ms)
+		return ms.HeapAlloc
+	}
+	before := heap()
+	panes := make([]*Pane, n)
+	for i := range panes {
+		panes[i] = newPane("", []string{"/bin/sh"}, 80, 24, nil)
+	}
+	after := heap()
+	runtime.KeepAlive(panes)
+	if per := (after - before) / n; per > 1536*1024 {
+		t.Errorf("a new emulator costs %d KiB of heap", per/1024)
 	}
 }

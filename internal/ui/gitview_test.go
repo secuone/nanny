@@ -119,7 +119,8 @@ func TestGitMyPRs(t *testing.T) {
 	if !f.saw("is:open author:me archived:false") {
 		t.Errorf("my PRs were not asked: %v", f.calls)
 	}
-	for k, want := range map[string]string{"j": "o/red", "G": "o/new"} {
+	for _, step := range [][2]string{{"j", "o/red"}, {"G", "o/new"}} {
+		k, want := step[0], step[1]
 		m = key(m, k)
 		if !strings.Contains(screen(m), "PR        "+want+" #") {
 			t.Errorf("the detail should show %s after %s", want, k)

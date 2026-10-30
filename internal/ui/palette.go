@@ -295,6 +295,9 @@ func (m *Model) nextAttention() tea.Cmd {
 				return m.refreshDetail()
 			}
 		}
+		if want == "blocked" && m.waitingElsewhere() > 0 { // it never stays hidden in another space
+			return m.jumpToBlocked()
+		}
 	}
 	m.setStatus(T("nobody needs you right now ☕"), false)
 	return nil

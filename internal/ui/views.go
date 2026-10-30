@@ -320,6 +320,10 @@ func (m Model) keyClick(x, y int) (tea.Model, tea.Cmd, bool) {
 			cmd := m.openGitHere(i)
 			return m, cmd, true
 		}
+		if h.key == allSpacesKey {
+			m.showAllSpaces()
+			return m, m.refreshDetail(), true
+		}
 		if st, ok := strings.CutPrefix(h.key, "@only:"); ok {
 			mm, cmd := m.showOnly(st)
 			return mm, cmd, true

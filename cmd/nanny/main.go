@@ -38,6 +38,7 @@ Usage:
   nanny kill-server          stop every background pane
   nanny new [-w branch] [-C dir] <prompt>  start claude with a first prompt (-w: in a new worktree)
   nanny shell-init [zsh|bash|fish]  print shell helpers (sp = cd to a session folder)
+  nanny insights [--week 2026-W44] [--json]  what Claude cost and did, from the transcripts
   nanny demo                 try it on a generated fake $HOME (no real data touched)
   nanny config               print the config file path
   nanny version
@@ -72,6 +73,8 @@ func main() {
 		cmdNew(args)
 	case "shell-init":
 		cmdShellInit(args)
+	case "insights":
+		cmdInsights(args)
 	case "demo":
 		cmdDemo()
 	case "config":

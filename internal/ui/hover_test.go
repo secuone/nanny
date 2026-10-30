@@ -166,6 +166,10 @@ func TestWelcomeGuide(t *testing.T) {
 	if firstRun() {
 		t.Error("closing the guide should remember it")
 	}
+	if m.(Model).setup == nil {
+		t.Fatal("closing the guide should open the setup wizard")
+	}
+	m = key(m, "esc")
 	m = key(m, "ctrl+k")
 	m = key(m, "welcome guide")
 	if m = key(m, "enter"); m.(Model).welcome == nil {

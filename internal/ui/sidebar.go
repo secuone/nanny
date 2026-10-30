@@ -268,6 +268,9 @@ func (m Model) viewSidebar(h int) string {
 			rows = append(rows, sbLine{"    " + m.prBadge(p) + " " + s.Muted.Render(trunc(p.Title, w-8-lipgloss.Width(m.prBadge(p)))),
 				&sideRow{space: i, url: p.URL}})
 		}
+		if tag, url := m.jiraSide(branchOf(where), w-6); tag != "" {
+			rows = append(rows, sbLine{"    " + tag, &sideRow{space: i, url: url}})
+		}
 		if len(wts) > 0 {
 			arrow := "▸ "
 			if shown > 0 {

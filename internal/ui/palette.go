@@ -96,6 +96,7 @@ func (m *Model) paletteEntries() []paletteEntry {
 		es = append(es, paletteEntry{M("live"), s.Title, project(s.Cwd) + " " + s.Worktree, func(m *Model) tea.Cmd { return m.resume(s, false) }})
 	}
 	act(T("Welcome guide: what each view is, first steps"), "", func(m *Model) tea.Cmd { m.welcome = &welcome{}; return nil })
+	act(T("Setup wizard…"), "", func(m *Model) tea.Cmd { m.openSetup(setupIntro); return nil })
 	act(T("Next agent that needs you"), "!", func(m *Model) tea.Cmd { return m.nextAttention() })
 	act(T("New task… (folder, prompt, worktree)"), "n", func(m *Model) tea.Cmd { return m.openNewTask("") })
 	act(T("Search inside all conversations…"), "F", func(m *Model) tea.Cmd {

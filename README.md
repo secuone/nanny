@@ -169,7 +169,8 @@ nanny is a terminal workspace (spaces → tabs → panes) built around those que
 
 <!-- Git view -->
 
-<!-- Jira view and setup wizard -->
+- **Jira** (`E`): your issues by status, by sprint and what you closed in the last 7 days, each one linked to its PR and its agent (`●` when alive). `←→` sections, `/` search, `f` filter (all, in progress, to do), `⏎` open in the browser, `t` move to another status, `c` comment, `a` assign (to me, nobody, search), `y`/`Y` copy the key/link, `O` its PR, `s` its agent, `v` its conversation. `n` starts work: a worktree named `{key}-{slug}` and a Claude task with the issue in its prompt; `b` makes only the branch. With `sidebar.jira` on, a space on a branch like `PAY-412-fix` shows `PAY-412 · In Progress` under it.
+  Set it up in the first-run wizard, in Settings → Connections or from the `≡` menu and the palette: your site URL, your email and an [API token](https://id.atlassian.com/manage-profile/security/api-tokens). The token never goes to `config.toml`: it is kept in the keyring (`secret-tool`) or in a file only you can read (`~/.config/nanny/secrets/`), and `NANNY_JIRA_TOKEN` beats both. Nothing is asked of Jira while `view.jira` is off or there is no URL and token; the view on screen refreshes every `refresh_mins`, and every 10 minutes off screen only for the sidebar line.
 
 <!-- Insights view -->
 

@@ -19,6 +19,9 @@ type Issue struct {
 	Sprint           string
 	SprintState      string // active | future | closed
 	Labels           []string
+	Assignee         string
+	Reporter         string
+	Created          time.Time
 	Updated          time.Time
 	Resolved         time.Time
 	URL              string
@@ -35,6 +38,15 @@ type rawIssue struct {
 
 func (r rawIssue) name(field string) string {
 	var v struct{ Name string }
+	_ = json.Unmarshal(r.Fields[field], &v)
+	return v.Name
+}
+
+// person is the display name of a user field (assignee, reporter).
+func (r rawIssue) person(field string) string {
+	var v struct {
+		Name string `json:"displayName"`
+	}
 	_ = json.Unmarshal(r.Fields[field], &v)
 	return v.Name
 }
@@ -66,6 +78,10 @@ func (c *Client) issue(r rawIssue, sprintField string) Issue {
 	_ = json.Unmarshal(r.Fields["updated"], &s)
 	is.Updated = stamp(s)
 	s = ""
+	_ = json.Unmarshal(r.Fields["created"], &s)
+	is.Created = stamp(s)
+	is.Assignee, is.Reporter = r.person("assignee"), r.person("reporter")
+	s = ""
 	_ = json.Unmarshal(r.Fields["resolutiondate"], &s)
 	is.Resolved = stamp(s)
 	if sprintField != "" {
@@ -93,7 +109,7 @@ func pickSprint(raw json.RawMessage) (name, state string) {
 // Search runs a JQL query on /search/jql (the old /search is retired), a page
 // at a time with nextPageToken, up to maxIssues.
 func (c *Client) Search(ctx context.Context, jql, sprintField string) ([]Issue, error) {
-	fields := []string{"summary", "status", "issuetype", "priority", "project", "labels", "updated", "resolutiondate"}
+	fields := []string{"summary", "status", "issuetype", "priority", "project", "labels", "updated", "resolutiondate", "assignee", "reporter", "created"}
 	if sprintField != "" {
 		fields = append(fields, sprintField)
 	}
@@ -126,9 +142,9 @@ func (c *Client) Search(ctx context.Context, jql, sprintField string) ([]Issue, 
 	return out, nil
 }
 
-// Matches reports whether every word of q is in the issue's key, summary, status, project, sprint or labels.
+// Matches reports whether every word of q is in the issue's key, summary, status, project, sprint, type, assignee or labels.
 func (is Issue) Matches(q string) bool {
-	hay := strings.ToLower(strings.Join(append([]string{is.Key, is.Summary, is.Status, is.Project, is.Sprint, is.Type}, is.Labels...), " "))
+	hay := strings.ToLower(strings.Join(append([]string{is.Key, is.Summary, is.Status, is.Project, is.Sprint, is.Type, is.Assignee}, is.Labels...), " "))
 	for _, w := range strings.Fields(strings.ToLower(q)) {
 		if !strings.Contains(hay, w) {
 			return false

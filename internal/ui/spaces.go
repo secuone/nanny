@@ -39,12 +39,40 @@ func (m Model) space() *ws.Space {
 	return m.spaces[m.cur]
 }
 
-// waitPane blocks until any pane writes, then coalesces bursts into one redraw.
+// Redraw delays after pane output: the focused pane feels live, the rest can wait.
+const (
+	focusedDelay    = 16 * time.Millisecond
+	backgroundDelay = 50 * time.Millisecond
+)
+
+// paneDelay picks how long to coalesce output, given whether the focused pane wrote.
+func paneDelay(focusedWrote bool) time.Duration {
+	if focusedWrote {
+		return focusedDelay
+	}
+	return backgroundDelay
+}
+
+// focusedPane is the pane that takes the keys, if a space is open.
+func (m Model) focusedPane() *term.Pane {
+	if !m.inSpace() {
+		return nil
+	}
+	return m.space().Tab().Pane()
+}
+
+// waitPane blocks until any pane writes, then coalesces bursts into one redraw:
+// 16 ms when the focused pane wrote since the last frame, 50 ms for the others.
 func (m Model) waitPane() tea.Cmd {
 	ch := m.paneCh
+	fp := m.focusedPane()
+	var seq uint64
+	if fp != nil {
+		seq = fp.Seq()
+	}
 	return func() tea.Msg {
 		<-ch
-		time.Sleep(16 * time.Millisecond)
+		time.Sleep(paneDelay(fp != nil && fp.Seq() != seq)) // seq moves before the signal
 		for {
 			select {
 			case <-ch:

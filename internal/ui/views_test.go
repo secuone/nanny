@@ -12,6 +12,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/secuone/nanny/internal/claude"
+	"github.com/secuone/nanny/internal/term"
 	"github.com/secuone/nanny/internal/ws"
 )
 
@@ -202,5 +203,54 @@ func TestTrackAgentsScansOnlyWithLiveSessions(t *testing.T) {
 	}
 	if got, ok := m.vs.bySession["new-session"]; !ok || got.pane != r.pane {
 		t.Fatalf("new session not linked: %v", m.vs.bySession)
+	}
+}
+
+func TestPaneDelayFavoursTheFocusedPane(t *testing.T) {
+	if got := paneDelay(true); got != 16*time.Millisecond {
+		t.Errorf("focused pane delay = %v", got)
+	}
+	if got := paneDelay(false); got != 50*time.Millisecond {
+		t.Errorf("background delay = %v", got)
+	}
+}
+
+// waitPane redraws fast for the focused pane's output and slowly for the rest.
+func TestWaitPaneCoalescesBackgroundOutput(t *testing.T) {
+	m := boot(t, 120, 36).(Model)
+	a, err := m.spawnTab(t.TempDir(), "a", []string{"/bin/sh"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := m.spawnTab(t.TempDir(), "b", []string{"/bin/sh"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { a.pane.Close(); b.pane.Close() })
+	m.cur = len(m.spaces) - 1
+	m.space().Active = len(m.space().Tabs) - 1
+	focus, other := m.focusedPane(), a.pane
+	if focus == nil || focus == other {
+		t.Fatalf("focus %v other %v", focus, other)
+	}
+	for len(m.paneCh) > 0 {
+		<-m.paneCh
+	}
+	time.Sleep(300 * time.Millisecond) // let the shells' prompts settle
+	for len(m.paneCh) > 0 {
+		<-m.paneCh
+	}
+	took := func(p *term.Pane) time.Duration {
+		cmd := m.waitPane()
+		start := time.Now()
+		go func() { p.Note("x"); m.paneCh <- struct{}{} }()
+		cmd()
+		return time.Since(start)
+	}
+	if d := took(focus); d >= 45*time.Millisecond {
+		t.Errorf("focused output took %v", d)
+	}
+	if d := took(other); d < 50*time.Millisecond {
+		t.Errorf("background output took %v", d)
 	}
 }

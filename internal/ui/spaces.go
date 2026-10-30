@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -664,10 +665,11 @@ func (m Model) viewPanes(w, h int) string {
 	if t == nil || len(t.Panes) == 0 {
 		return m.viewEmptySpace(sp, w, h)
 	}
-	canvas := make([]string, h)
-	for i := range canvas {
-		canvas[i] = strings.Repeat(" ", w)
+	type seg struct {
+		x, w int
+		s    string
 	}
+	rows := make([][]seg, h)
 	rects := paneRects(t, rect{0, 0, w, h})
 	for i, p := range t.Panes {
 		r := rects[i]
@@ -717,15 +719,28 @@ func (m Model) viewPanes(w, h int) string {
 			if y >= h {
 				break
 			}
-			left := ""
-			if r.x > 0 {
-				left = cutLeft(canvas[y], r.x)
-			}
-			right := cutRight(canvas[y], r.x+r.w)
-			canvas[y] = left + l + right
+			rows[y] = append(rows[y], seg{r.x, r.w, l})
 		}
 	}
-	return strings.Join(canvas, "\n")
+	// stitch segments left to right; cutting a string would drag its escapes along
+	out := make([]string, h)
+	for y, segs := range rows {
+		sort.Slice(segs, func(a, b int) bool { return segs[a].x < segs[b].x })
+		var b strings.Builder
+		x := 0
+		for _, sg := range segs {
+			if sg.x > x {
+				b.WriteString(strings.Repeat(" ", sg.x-x))
+			}
+			b.WriteString(sg.s)
+			x = sg.x + sg.w
+		}
+		if x < w {
+			b.WriteString(strings.Repeat(" ", w-x))
+		}
+		out[y] = b.String()
+	}
+	return strings.Join(out, "\n")
 }
 
 func paneTitle(p *term.Pane) string {
@@ -759,16 +774,6 @@ func (m Model) viewEmptySpace(sp *ws.Space, w, h int) string {
 	}
 	return s.panel(spaceLabel(sp), strings.Join(lines[:h-2], "\n"), w, h, true)
 }
-
-func cutLeft(s string, w int) string {
-	out := truncANSI(s, w)
-	if lw := lipgloss.Width(out); lw < w {
-		out += strings.Repeat(" ", w-lw)
-	}
-	return out
-}
-
-func cutRight(s string, from int) string { return truncLeftANSI(s, from) }
 
 // ---------------------------------------------------------------- input
 

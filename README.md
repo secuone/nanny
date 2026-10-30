@@ -6,8 +6,6 @@
   <img src="docs/assets/logo-wordmark-light.svg" alt="nanny" width="320">
 </picture>
 
-<h6>◆ nanny</h6>
-
 **A calm terminal console for Claude Code sessions, agents, subagents, panes and dev services.**
 
 [![CI](https://img.shields.io/github/actions/workflow/status/secuone/nanny/ci.yml?branch=main&label=ci)](https://github.com/secuone/nanny/actions/workflows/ci.yml)

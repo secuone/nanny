@@ -683,12 +683,14 @@ func (m Model) paneRest(p *term.Pane, r rect, bc lipgloss.Style, col string, kee
 	}
 	var rest []string
 	body := p.View()
+	side := bc.Render("│")
+	on, off := m.look.fenceOn(), m.look.fenceOff()
 	for j := 0; j < r.h-2; j++ {
 		l := ""
 		if j < len(body) {
 			l = body[j]
 		}
-		rest = append(rest, bc.Render("│")+m.look.fenceOn()+fit(l+"\x1b[0m", r.w-2)+m.look.fenceOff()+bc.Render("│"))
+		rest = append(rest, side+on+fit(l+"\x1b[0m", r.w-2)+off+side)
 	}
 	rest = append(rest, bc.Render("╰"+strings.Repeat("─", r.w-2)+"╯"))
 	keep[p] = paneLines{key, rest}

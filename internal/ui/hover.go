@@ -573,10 +573,7 @@ func (m *Model) listMenu(x, y int) {
 		add("y", T("Copy resume command"))
 		add("i", T("Copy session id"))
 	case tabGit:
-		add("⏎", T("Resume the newest session"))
-		add("n", T("New claude in it"))
-		add("C", T("Review changes"))
-		add("o", T("Shell in its folder"))
+		items = m.gitv.menu(m)
 	case tabRadar:
 		if m.itemMenu(x, y) {
 			return

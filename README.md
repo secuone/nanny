@@ -47,7 +47,7 @@ One line each; the details are in [docs/features.md](docs/features.md).
 | 🗂️ [Spaces & panes](docs/features.md#spaces-tabs-and-panes) | Projects as spaces, tabs and split panes with real terminals. Quit and every pane keeps running; reopen and they come back. |
 | 🤖 [Live agents & subagents](docs/features.md#live-agents-and-subagents) | Every running Claude, subagent trees, context and cost meter, answer permission prompts, broadcast a prompt. |
 | 🕘 [Sessions](docs/features.md#sessions) | All past sessions, full-text search, read, resume or fork. |
-| 🌿 [Git & worktrees](docs/features.md#git-and-worktrees) | Branch state, open PRs, worktrees and a changes view. |
+| 🌿 [Git & worktrees](docs/features.md#git-and-worktrees) | Your PRs and the reviews waiting for you, merge with a confirm, worktrees, branches to push or clean up, your week in numbers. |
 | 📡 [Monitor](docs/features.md#monitor) | Tilt, Docker, open ports, jobs, cron, Hermes, this machine, and your own watchers. |
 | 🧩 [Skills & prompts](docs/features.md#skills-and-prompts) | The skills catalog and a prompt library with your most used prompts. |
 | ☰ [Tasks](docs/features.md#tasks) | A queue of prompts that nanny hands to agents by itself. |

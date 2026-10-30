@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>nanny · classroom</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏫</text></svg>">
+<style>
+  :root { --ink:#1d2433; --paper:#fffaf0; --muted:#6b7385; --accent:#7c5cff; --red:#e5484d; --yellow:#f5a524; --blue:#3e8ef7; --green:#30a46c; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #9fd3f5; font: 14px/1.4 ui-rounded, "SF Pro Rounded", "Nunito", system-ui, sans-serif; color: var(--ink); }
+  #scene, #labels { position: fixed; inset: 0; }
+  #labels { pointer-events: none; }
+  .hud { position: fixed; z-index: 5; }
+  #top { top: 12px; left: 12px; right: 12px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; pointer-events: none; }
+  #top > * { pointer-events: auto; }
+  .logo { font-weight: 800; background: var(--paper); padding: 6px 12px; border-radius: 999px; box-shadow: 0 4px 14px #0002; }
+  .chip { border: 0; cursor: pointer; font: inherit; background: var(--paper); padding: 6px 12px; border-radius: 999px; box-shadow: 0 4px 14px #0002; display: inline-flex; gap: 6px; align-items: center; max-width: 280px; }
+  .chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip.on { outline: 3px solid var(--accent); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; background: var(--green); }
+  .dot.working { background: var(--yellow); } .dot.blocked { background: var(--red); animation: pulse 1s infinite; } .dot.done { background: var(--blue); }
+  @keyframes pulse { 50% { transform: scale(1.6); opacity: .6; } }
+  #card { right: 12px; bottom: 12px; width: min(380px, calc(100vw - 24px)); max-height: 55vh; overflow: auto; background: var(--paper); border-radius: 16px; padding: 14px 16px; box-shadow: 0 10px 30px #0003; display: none; }
+  #card h3 { margin: 0 0 4px; font-size: 16px; }
+  #card .kv { display: grid; grid-template-columns: max-content 1fr; gap: 2px 10px; margin-top: 8px; font-size: 13px; }
+  #card .kv b { color: var(--muted); font-weight: 600; }
+  #card .say { margin-top: 8px; padding: 8px 10px; background: #0000000a; border-radius: 10px; white-space: pre-wrap; font-size: 13px; }
+  #card .x { float: right; border: 0; background: none; font-size: 18px; cursor: pointer; color: var(--muted); }
+  #card .follow { margin-top: 10px; }
+  #help { left: 12px; bottom: 12px; background: #fffaf0d0; padding: 6px 12px; border-radius: 999px; font-size: 12px; color: var(--muted); }
+  #empty, #gone { position: fixed; inset: 0; display: none; place-items: center; z-index: 4; pointer-events: none; }
+  #empty div, #gone div { background: var(--paper); padding: 18px 26px; border-radius: 18px; box-shadow: 0 10px 30px #0003; text-align: center; font-size: 16px; }
+  #gone { background: #0006; pointer-events: auto; }
+  .label { font-size: 12px; background: #fffaf0ee; padding: 2px 8px; border-radius: 999px; white-space: nowrap; box-shadow: 0 2px 6px #0003; transform: translateY(-6px); }
+  .label.teacher { font-weight: 700; font-size: 13px; }
+  .label.hidden { display: none; }
+  .bubble { font-size: 13px; background: #fff; padding: 6px 10px; border-radius: 12px; max-width: 260px; white-space: normal; box-shadow: 0 4px 12px #0003; border: 2px solid var(--red); transform: translateY(-10px); }
+  .emoji { font-size: 22px; filter: drop-shadow(0 2px 2px #0004); }
+  .sign { font-size: 12px; font-weight: 700; background: #6b4a2b; color: #fff6dd; padding: 3px 10px; border-radius: 6px; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "./three/three.module.min.js", "three/addons/": "./three/addons/" } }
+</script>
+</head>
+<body>
+<canvas id="scene"></canvas>
+<div id="labels"></div>
+<div id="top" class="hud"><span class="logo">🏫 nanny</span></div>
+<div id="card" class="hud"></div>
+<div id="help" class="hud"></div>
+<div id="empty"><div></div></div>
+<div id="gone"><div>nanny closed · open the classroom again from nanny (9)</div></div>
+<script type="module" src="./app.js"></script>
+</body>
+</html>

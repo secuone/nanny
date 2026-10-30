@@ -1,0 +1,88 @@
+# ~/.config/nanny/config.toml — every key is optional.
+
+theme = "nanny"              # T opens a live-preview picker
+                             # dark: nanny, catppuccin-mocha, tokyo-night, dracula, nord, gruvbox, rose-pine, kanagawa, one-dark, solarized-dark, everforest, github-dark, monokai, ayu, high-contrast
+                             # light: nanny-light, catppuccin-latte, one-light, solarized-light, github-light
+language = "auto"            # en, es, fr, de · auto follows $LC_ALL / $LC_MESSAGES / $LANG, English if unsupported
+prefix = "ctrl+b"            # prefix for pane commands (try ctrl+a or ctrl+g if ctrl+b is taken)
+restore = true               # reopen spaces & tabs on start; Claude panes resume their session
+launch = "auto"              # auto: resume/new open as nanny tabs · inline: suspend nanny and run here
+claude_args = ""             # appended to every claude nanny starts, e.g. "--model opus --permission-mode auto"
+refresh_secs = 2             # the tick; with inotify (Linux) changes show at once and this only paces timers
+max_sessions = 2000          # cap for the explorer, newest first (0 = no cap)
+hide_bots = true             # hide headless/automated sessions (b toggles in Sessions)
+profile = "full"             # screen profile: basic (bare minimum) · full (everything) · one of yours
+                             # ([profiles.<name>] below; made in Customize =, walked with M)
+hide_paths = ["/tmp/"]       # hide sessions whose folder contains any of these
+extra_repos = []             # repos to list in Worktrees even without sessions
+discover_roots = []          # where Discover looks for git repos; default ~/dev ~/src ~/code ~/projects ~/work ~/repos ~/git ~/Desktop ~/Documents
+
+[alerts]
+sound = true                 # master switch (S toggles)
+on_done = true               # an agent finished its turn
+on_blocked = true            # an agent waits for a permission or an answer
+on_subagent = false          # every finished subagent (chatty with big fan-outs)
+toast = true                 # in-app popups
+desktop = false              # notify-send / osascript
+sound_done = ""              # custom sound file; empty = system "complete"
+sound_blocked = ""           # empty = system "dialog-warning"
+sound_subagent = ""          # empty = system "message"
+
+# Cost estimate, USD per million tokens. Defaults are the current list prices; older models
+# (Opus 4.x, Sonnet 4.x, Haiku 4.5) keep theirs. An override applies to every model of its
+# family; keys left out keep the default. 1-hour cache writes are priced at twice the input.
+# [prices.opus]              # families: opus, sonnet, haiku, fable
+# input = 4
+# output = 20
+# cache_write = 5            # 5-minute cache writes
+# cache_read = 0.20
+# [prices.sonnet]            # defaults: input 2 · output 10 · cache_write 2.5 · cache_read 0.20
+# [prices.haiku]             # defaults: input 0.10 · output 0.50 · cache_write 0.125 · cache_read 0.01
+# [prices.fable]             # defaults: input 10 · output 50 · cache_write 12.5 · cache_read 0.25
+[queue]                      # the task queue (u)
+max_parallel = 2             # queued tasks running at once
+
+[colors]                     # override any theme color
+# accent = "#ff9e64"
+# red = "#ff5555"
+# your own themes: ~/.config/nanny/themes/<name>.toml (T, then n/e/d/r/x/i/o)
+
+[look]                       # T then a, or "Appearance…" in the ≡ menu
+icons = "auto"               # auto · unicode · nerd · ascii (auto: ascii on the Linux console / non-UTF-8 locale)
+borders = "rounded"          # rounded · square · thick · double · ascii · none
+no_bold = false
+no_italic = false
+no_underline = false
+web_font = ""                # CSS font-family of the 3D page; "" keeps its own
+
+[[watch]]                    # custom Radar entries: exit code = status, first output line = summary
+name = "staging health"
+command = "curl -fsS -o /dev/null -w '%{http_code} in %{time_total}s' https://staging.example.com/health"
+open = "xdg-open https://grafana.example.com"   # run on ⏎
+
+[[watch]]
+name = "docker"
+group = "Infra"
+command = "docker ps -q | wc -l | xargs printf '%s containers running'"
+log = "~/app/logs/dev.log"   # tail shown in the detail pane, L follows it
+
+[screen]
+sidebar_agents = "auto"      # auto (a few in the one-line layout) · all
+
+[profiles.tilt]              # one of yours: what it turns off
+off = ["view.prompts", "view.skills", "monitor.machine", "monitor.ports", "monitor.containers",
+       "monitor.jobs", "monitor.cron", "monitor.hermes", "monitor.watchers"]
+                         # what the profile turns off, by id:
+                         #   layout:  layout.detail (off: one line per agent) layout.extras (model, gauge always, no-repeat off)
+                         #   views:   view.live view.sessions view.git view.tasks view.prompts view.skills view.monitor view.jira view.insights
+                         #   Monitor: monitor.machine monitor.ports monitor.containers monitor.tilt
+                         #            monitor.jobs monitor.cron monitor.hermes monitor.watchers (off = not collected)
+                         #   sidebar: sidebar.branch sidebar.pr sidebar.worktrees sidebar.agents sidebar.hermes sidebar.jira
+                         #   top bar: header.counts header.queue header.cost header.sound header.clock header.reviews
+                         # the old density, basic and [screen] off are read once into a profile "mine"
+
+# [git] — the Git view
+
+# [jira] — the Jira view
+
+# [insights] — the Insights view

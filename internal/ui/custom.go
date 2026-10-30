@@ -30,6 +30,7 @@ var custTree = []custNode{
 		{"view.live", M("Live"), "", nil},
 		{"view.sessions", M("Sessions"), "", nil},
 		{"view.git", M("Git"), M("Off, GitHub isn't asked and no branches are looked at."), []custNode{
+			{"git.here", M("Overview"), M("Branch, PR and worktrees of each space, from git; no GitHub needed."), nil},
 			{"git.prs", M("My PRs"), "", nil},
 			{"git.reviews", M("Reviews"), "", nil},
 			{"git.worktrees", M("Worktrees"), "", nil},

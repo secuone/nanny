@@ -115,7 +115,7 @@ func TestCustomizeFeatureIds(t *testing.T) {
 	for _, r := range m.cust.rows() {
 		have[r.n.id] = true
 	}
-	for _, id := range []string{"view.git", "git.prs", "git.reviews", "git.worktrees", "git.branches", "git.profile",
+	for _, id := range []string{"view.git", "git.here", "git.prs", "git.reviews", "git.worktrees", "git.branches", "git.profile",
 		"view.jira", "view.insights", "sidebar.jira", "header.reviews"} {
 		if !have[id] {
 			t.Errorf("Customize lacks %s", id)

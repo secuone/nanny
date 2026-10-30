@@ -2,6 +2,7 @@ package ui
 
 import (
 	"path/filepath"
+	"strconv"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -313,6 +314,11 @@ func (m Model) keyClick(x, y int) (tea.Model, tea.Cmd, bool) {
 		if spec, ok := strings.CutPrefix(h.key, "@sec:"); ok { // a view on one of its sections
 			mm, cmd := m.showSec(spec)
 			return mm, cmd, true
+		}
+		if v, ok := strings.CutPrefix(h.key, "@githere:"); ok {
+			i, _ := strconv.Atoi(v)
+			cmd := m.openGitHere(i)
+			return m, cmd, true
 		}
 		if st, ok := strings.CutPrefix(h.key, "@only:"); ok {
 			mm, cmd := m.showOnly(st)

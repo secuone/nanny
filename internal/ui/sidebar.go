@@ -259,7 +259,7 @@ func (m Model) viewSidebar(h int) string {
 				bits = " " + m.branchBits(c)
 			}
 			info := s.Blue.Render("⎇ " + trunc(br, w-6-lipgloss.Width(bits)))
-			rows = append(rows, sbLine{"    " + info + bits, nil})
+			rows = append(rows, sbLine{"    " + clickable("@githere:"+fmt.Sprint(i), info) + bits, nil})
 		}
 		if p, ok := m.prOf(where); ok && m.cfg.On("sidebar.pr") {
 			rows = append(rows, sbLine{"    " + m.prBadge(p) + " " + s.Muted.Render(trunc(p.Title, w-8-lipgloss.Width(m.prBadge(p)))),

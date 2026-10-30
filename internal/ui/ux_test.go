@@ -89,6 +89,9 @@ func TestEmptyStatesGuide(t *testing.T) {
 		"7": "customize what shows",
 	} {
 		m = key(m, tb)
+		if tb == "3" {
+			m = inWorktrees(m)
+		}
 		if out := ansi.Strip(viewOf(m)); !strings.Contains(out, want) {
 			t.Errorf("tab %s lacks %q:\n%s", tb, want, out)
 		}
@@ -150,7 +153,7 @@ func TestKeyVocabulary(t *testing.T) {
 		t.Error("v on Live should open the conversation viewer")
 	}
 	m = key(m, "esc")
-	m = key(m, "3")
+	m = inWorktrees(key(m, "3"))
 	m = key(m, "j")
 	m = key(m, "j")
 	if m = key(m, "v"); m.(Model).view == nil {

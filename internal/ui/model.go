@@ -36,7 +36,7 @@ const (
 	tabInsights
 )
 
-var tabNames = []string{M("Live"), M("Sessions"), M("Git"), M("Tasks"), M("Prompts"), M("Skills"), M("Monitor"), M("Settings"), M("Jira"), M("Insights")}
+var tabNames = []string{M("Live"), M("Sessions"), M("Git & PRs"), M("Tasks"), M("Prompts"), M("Skills"), M("Monitor"), M("Settings"), M("Jira"), M("Insights")}
 
 // ---------------------------------------------------------------- messages
 
@@ -1538,7 +1538,12 @@ func (m Model) featDashboard(lw, rw, bh int) (left, right string) {
 		}
 		return left, right
 	}
-	bar := " " + m.sectionBar(secs, f.sec(), m.sideW()+1, lw+rw-2)
+	bar := " " + m.st.Muted.Render("←→ ") + m.sectionBar(secs, f.sec(), m.sideW()+4, lw+rw-5)
+	if n := f.barNote(&m); n != "" {
+		if gap := lw + rw - lipgloss.Width(bar) - lipgloss.Width(n) - 2; gap >= 1 {
+			bar += strings.Repeat(" ", gap) + n
+		}
+	}
 	left = f.view(&m, lw, bh-1)
 	if rw > 0 {
 		left = lipgloss.JoinHorizontal(lipgloss.Top, left, f.detail(&m, rw, bh-1))

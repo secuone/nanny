@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Bubble Tea v2, Lip Gloss v2 and Bubbles v2** (building needs Go 1.26). The screen is drawn by the v2 cell-diff renderer: only the cells that changed are written. With 10 panes and one printing the terminal output went from 6 to 0.2 KiB/s (4 panes: 10.7 to 0.3 KiB/s) and idle stays at 0 KiB/s; CPU while a pane prints is about 0.7 to 1 point higher (the whole frame is still built each time) and the client takes 5 to 8 MiB more memory. The focused pane's cursor is now the terminal's own cursor, with the shape and blinking the program asks for, and hides under the prefix, popups and selections. Pastes into a pane are bracketed. Panes get the same bytes as before, except `alt+arrows`, `alt+home/end`, `alt+pgup/pgdn` and `alt+F1-4`, which now send the xterm form with a modifier (`ESC [1;3A`) instead of ESC plus the key; `shift+enter` sends a plain return and `ctrl+space` works as a prefix. `NANNY_OUTSTATS=<file>` logs what the screen writes every 5 s.
+
 <!-- Git view -->
 - **Git view**: sections My PRs, Reviews, Worktrees, Branches and Profile, with `gh` (needs `gh auth login`). Merge asks first and never uses `--admin`; a PR that isn't ready gets auto-merge. `c` in Reviews starts a Claude on the PR in a worktree; the top bar counts the reviews waiting (`header.reviews`); Branches finds the ones merged, squashes included, and deletes them after asking. `[git]` in the config and Settings → Git: `merge_method`, `reviews`, `review_mins`, `review_prompt`.
 

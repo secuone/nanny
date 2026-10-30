@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
@@ -10,6 +11,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/secuone/nanny/internal/claude"
+	"github.com/secuone/nanny/internal/ws"
 )
 
 // In a space the view bar stays, scoped to the space; prefix i opens it, 0
@@ -162,5 +165,42 @@ func TestHarvestKeysWidths(t *testing.T) {
 	want := []keyHit{{y: 1, x0: 2, x1: 6, key: "k1"}, {y: 1, x0: 7, x1: 10, key: "k2"}}
 	if !slices.Equal(hits, want) {
 		t.Errorf("hits = %v, want %v", hits, want)
+	}
+}
+
+// With no live Claude session nothing can match, so the /proc scan is skipped;
+// a session that appears makes the next tick scan and link it.
+func TestTrackAgentsScansOnlyWithLiveSessions(t *testing.T) {
+	m := boot(t, 120, 36).(Model)
+	r, err := m.spawnTab(t.TempDir(), "shell", []string{"/bin/sh"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { r.pane.Close() })
+	scans := 0
+	procChildren = func() map[int][]int { scans++; return ws.ProcChildren() }
+	t.Cleanup(func() { procChildren = ws.ProcChildren })
+	old, _ := filepath.Glob(claude.Dir("sessions", "*.json"))
+	for _, f := range old {
+		_ = os.Remove(f)
+	}
+
+	m.trackAgents()
+	if scans != 0 || len(m.vs.bySession) != 0 {
+		t.Fatalf("scanned %d times with no sessions", scans)
+	}
+
+	dir := claude.Dir("sessions")
+	_ = os.MkdirAll(dir, 0o755)
+	js := fmt.Sprintf(`{"pid":%d,"sessionId":"new-session","startedAt":1}`, r.pane.Pid())
+	if err := os.WriteFile(filepath.Join(dir, "new.json"), []byte(js), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	m.trackAgents()
+	if scans != 1 {
+		t.Fatalf("scans = %d, want 1 once a session is live", scans)
+	}
+	if got, ok := m.vs.bySession["new-session"]; !ok || got.pane != r.pane {
+		t.Fatalf("new session not linked: %v", m.vs.bySession)
 	}
 }

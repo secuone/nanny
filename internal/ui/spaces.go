@@ -193,6 +193,9 @@ func (m *Model) allPanes() []paneRef {
 	return out
 }
 
+// procChildren is swapped by tests to count /proc scans.
+var procChildren = ws.ProcChildren
+
 // trackAgents links pane processes to Claude sessions (by pid tree) and reaps exited panes.
 func (m *Model) trackAgents() {
 	refs := m.allPanes()
@@ -205,12 +208,16 @@ func (m *Model) trackAgents() {
 			m.shellAfterClaude(r)
 		}
 	}
-	kids := ws.ProcChildren()
+	live := claude.LiveProcs()
+	m.vs.bySession = map[string]paneRef{}
+	if len(live) == 0 {
+		return // nothing can match: skip the /proc scan
+	}
 	procs := map[int]claude.Proc{}
-	for _, p := range claude.LiveProcs() {
+	for _, p := range live {
 		procs[p.Pid] = p
 	}
-	m.vs.bySession = map[string]paneRef{}
+	kids := procChildren()
 	for _, r := range refs {
 		for _, pid := range ws.Tree(r.pane.Pid(), kids) {
 			if pr, ok := procs[pid]; ok {

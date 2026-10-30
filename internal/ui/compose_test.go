@@ -54,9 +54,11 @@ func TestJoinsMatchLipgloss(t *testing.T) {
 
 func bothFrames(m Model) (plain, fast string) {
 	plainCompose = true
+	m.vs.gen++
 	m.vs.pending = true
 	plain = m.render()
 	plainCompose = false
+	m.vs.gen++
 	m.vs.pending = true
 	fast = m.render()
 	return plain, fast

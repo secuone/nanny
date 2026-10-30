@@ -201,6 +201,8 @@ type viewState struct {
 	drawnMin   int64       // the minute the last frame was drawn in (clock, "3m ago")
 	monWas     bool        // the Monitor was on screen after the last update
 	widths     widths      // how wide the lines of the last frames were
+	gen        uint64      // counts the updates but pane output: the chrome is drawn again after each
+	chrome     chromeCache // the header, footer and sidebar of the last frame
 }
 
 type modal struct {
@@ -411,6 +413,9 @@ func background(msg tea.Msg) bool {
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.vs.noop, m.vs.wait = false, false
+	if _, ok := msg.(paneOutMsg); !ok {
+		m.vs.gen++
+	}
 	mm, cmd := m.update(msg)
 	if m, ok := mm.(Model); ok {
 		// frames only while something moves; anything that starts moving starts them
@@ -1405,9 +1410,15 @@ func (m Model) render() string {
 	m.vs.paneCursor = nil
 	m.vs.widths.roll()
 	m.vs.drawnMin = time.Now().Unix() / 60
-	header := m.viewHeader() + "\n\n" + fit(m.viewTabBar(), m.w) + "\n" // blank rows around the views bar
-	footer := m.viewFooter()
 	bh := m.bodyHeight()
+	cc := &m.vs.chrome
+	key := m.chromeKey(bh)
+	redraw := cc.key != key
+	if redraw {
+		*cc = chromeCache{key: key}
+		cc.header = m.viewHeader() + "\n\n" + fit(m.viewTabBar(), m.w) + "\n" // blank rows around the views bar
+		cc.footer = m.viewFooter()
+	}
 	lw := m.leftWidth()
 	rw := m.mainW() - lw
 	var left, right string
@@ -1434,9 +1445,12 @@ func (m Model) render() string {
 	}
 	body := m.joinTop(left, right)
 	if m.sidebarOn() {
-		body = m.joinTop(m.viewSidebar(bh), body)
+		if redraw {
+			cc.side = m.viewSidebar(bh)
+		}
+		body = m.joinTop(cc.side, body)
 	}
-	out := m.joinLeft(header, body, footer)
+	out := m.joinLeft(cc.header, body, cc.footer)
 	m.vs.modalN = 0
 	var box string
 	tipShown := false
@@ -1647,7 +1661,7 @@ func (m Model) viewHeader() string {
 	}
 	clock := ""
 	if m.cfg.On("header.clock") {
-		clock = s.Muted.Render(time.Now().Format("15:04"))
+		clock = s.Muted.Render(now().Format("15:04"))
 		tail = append(tail, clock)
 	}
 	right := strings.Join(append(parts, tail...), "  ") + " "

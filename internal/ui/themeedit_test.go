@@ -36,8 +36,8 @@ func TestThemeEditor(t *testing.T) {
 	base := m.(Model).cfg.Theme
 	m = key(m, "n")
 	ed := m.(Model).themes.ed
-	if ed == nil || !strings.Contains(ansi.Strip(m.View()), "New theme") {
-		t.Fatalf("n should open the editor:\n%s", ansi.Strip(m.View()))
+	if ed == nil || !strings.Contains(ansi.Strip(viewOf(m)), "New theme") {
+		t.Fatalf("n should open the editor:\n%s", ansi.Strip(viewOf(m)))
 	}
 	// accent is the 7th color: type one in
 	for i := 0; i < 6; i++ {
@@ -81,10 +81,10 @@ func TestThemeEditor(t *testing.T) {
 	m = backspaces(m, 6)
 	m = typeText(m, config.Themes[base].Surface[1:])
 	m = key(m, "enter")
-	if out := ansi.Strip(m.View()); !strings.Contains(out, "hard to read") || !strings.Contains(out, "text/surface") {
+	if out := ansi.Strip(viewOf(m)); !strings.Contains(out, "hard to read") || !strings.Contains(out, "text/surface") {
 		t.Errorf("low contrast should be pointed out:\n%s", out)
 	}
-	for i, l := range strings.Split(m.View(), "\n") {
+	for i, l := range strings.Split(viewOf(m), "\n") {
 		if w := lipgloss.Width(l); w > 120 {
 			t.Errorf("editor line %d is %d wide", i, w)
 		}
@@ -96,7 +96,7 @@ func TestThemeEditor(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(config.ThemesDir(), "sunset.toml")); err != nil {
 		t.Fatal("saved as a file:", err)
 	}
-	if !strings.Contains(ansi.Strip(m.View()), "yours") {
+	if !strings.Contains(ansi.Strip(viewOf(m)), "yours") {
 		t.Error("your themes are marked in the picker")
 	}
 	m = key(m, "enter")

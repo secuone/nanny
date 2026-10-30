@@ -38,7 +38,7 @@ func click(m tea.Model, x, y int) tea.Model {
 func TestHelpFitsAndScrolls(t *testing.T) {
 	for _, size := range [][2]int{{150, 42}, {100, 30}, {80, 24}} {
 		m := key(boot(t, size[0], size[1]), "?")
-		out := m.View()
+		out := viewOf(m)
 		if n := len(strings.Split(out, "\n")); n != size[1] {
 			t.Errorf("%dx%d help: %d lines", size[0], size[1], n)
 		}
@@ -53,7 +53,7 @@ func TestHelpFitsAndScrolls(t *testing.T) {
 		if !m.(Model).help {
 			t.Fatal("j should scroll help, not close it")
 		}
-		if !strings.Contains(ansi.Strip(m.View()), "Popups") {
+		if !strings.Contains(ansi.Strip(viewOf(m)), "Popups") {
 			t.Errorf("%dx%d: scrolling to the end should show the last section", size[0], size[1])
 		}
 		m = key(m, "k")
@@ -71,7 +71,7 @@ func TestFooterAlwaysShowsHelp(t *testing.T) {
 	m := boot(t, 80, 24)
 	for _, tb := range []string{"1", "2", "3", "4", "5", "6", "7", "8"} {
 		m = key(m, tb)
-		lines := strings.Split(ansi.Strip(m.View()), "\n")
+		lines := strings.Split(ansi.Strip(viewOf(m)), "\n")
 		if foot := lines[len(lines)-1]; !strings.Contains(foot, "? help") {
 			t.Errorf("tab %s footer lacks ? help: %q", tb, foot)
 		}
@@ -89,7 +89,7 @@ func TestEmptyStatesGuide(t *testing.T) {
 		"7": "customize what shows",
 	} {
 		m = key(m, tb)
-		if out := ansi.Strip(m.View()); !strings.Contains(out, want) {
+		if out := ansi.Strip(viewOf(m)); !strings.Contains(out, want) {
 			t.Errorf("tab %s lacks %q:\n%s", tb, want, out)
 		}
 	}
@@ -97,7 +97,7 @@ func TestEmptyStatesGuide(t *testing.T) {
 
 func TestClickSelectsAndDoubleClickOpens(t *testing.T) {
 	m := key(boot(t, 150, 42), "2")
-	_ = m.View()
+	_ = viewOf(m)
 	vs := m.(Model).vs
 	y := -1
 	for i, r := range vs.listRows {
@@ -115,7 +115,7 @@ func TestClickSelectsAndDoubleClickOpens(t *testing.T) {
 	}
 	// Live: double-clicking a subagent opens the viewer
 	m = key(m, "1")
-	_ = m.View()
+	_ = viewOf(m)
 	vs = m.(Model).vs
 	for i, r := range vs.listRows {
 		if m.(Model).live.rows[r].sub != nil {
@@ -128,14 +128,14 @@ func TestClickSelectsAndDoubleClickOpens(t *testing.T) {
 		t.Fatal("double-click on a subagent should open the viewer")
 	}
 	// the viewer takes the whole body: no dashboard border peeks around it
-	if out := ansi.Strip(m.View()); strings.Contains(out, "Live agents") {
+	if out := ansi.Strip(viewOf(m)); strings.Contains(out, "Live agents") {
 		t.Error("viewer should replace the dashboards, not float over them")
 	}
 }
 
 func TestClickInPalettePicksRow(t *testing.T) {
 	m := key(boot(t, 150, 42), "ctrl+k")
-	_ = m.View()
+	_ = viewOf(m)
 	y := m.(Model).vs.modalY + 3
 	m = click(m, 75, y)
 	if p := m.(Model).pal; p == nil || p.cur != 3 {

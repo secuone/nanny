@@ -53,7 +53,7 @@ func TestCustomizeMonitorOnlyTilt(t *testing.T) {
 	if m = key(m, "="); m.(Model).cust == nil {
 		t.Fatal("= should open Customize")
 	}
-	if out := ansi.Strip(m.View()); !strings.Contains(out, "Customize") || !strings.Contains(out, "Monitor") || !strings.Contains(out, "Top bar") {
+	if out := ansi.Strip(viewOf(m)); !strings.Contains(out, "Customize") || !strings.Contains(out, "Monitor") || !strings.Contains(out, "Top bar") {
 		t.Fatalf("the tree of what can be turned off:\n%s", out)
 	}
 	m = key(m, "t")
@@ -73,7 +73,7 @@ func TestCustomizeMonitorOnlyTilt(t *testing.T) {
 	}
 	m = key(m, "esc")
 	m, _ = m.Update(sourcesMsg{{Group: "Tilt", Name: "api", Status: sources.Running}, {Group: "Open ports", Name: ":8000", Status: sources.Running}})
-	out := ansi.Strip(m.View())
+	out := ansi.Strip(viewOf(m))
 	bar := strings.Split(out, "\n")[secY]
 	if !strings.Contains(bar, "Tilt 1") || strings.Contains(bar, "Ports") || strings.Contains(bar, "Hermes") {
 		t.Errorf("the sections bar should have All and Tilt only: %q", bar)
@@ -103,7 +103,7 @@ func TestCustomizeLiveOff(t *testing.T) {
 	m = key(m, "=")
 	m = custGo(t, m, "view.live")
 	m = key(key(m, " "), "esc")
-	bar := strings.Split(ansi.Strip(m.View()), "\n")[viewY]
+	bar := strings.Split(ansi.Strip(viewOf(m)), "\n")[viewY]
 	if strings.Contains(bar, "Live") || !strings.Contains(bar, "Sessions") {
 		t.Errorf("Live should be off the bar: %q", bar)
 	}
@@ -123,7 +123,7 @@ func TestCustomizeLiveOff(t *testing.T) {
 	// on again with a click on its row
 	m = key(m, "=")
 	mm := custGo(t, m, "view.live").(Model)
-	m.View()
+	viewOf(m)
 	m = click(mm, 10, mm.vs.modalY+mm.cust.cur-mm.vs.modalStart)
 	if !m.(Model).cfg.On("view.live") {
 		t.Error("a click on the row turns it back on")
@@ -150,7 +150,7 @@ func TestCustomizeTreeAndBars(t *testing.T) {
 	}
 	m = custGo(t, m, "header.clock")
 	m = key(key(m, " "), "esc")
-	top := strings.Split(ansi.Strip(m.View()), "\n")[0]
+	top := strings.Split(ansi.Strip(viewOf(m)), "\n")[0]
 	if strings.Contains(top[max(0, len(top)-8):], ":") {
 		t.Errorf("clock still shown: %q", top)
 	}
@@ -183,7 +183,7 @@ func TestCustomizeProfiles(t *testing.T) {
 	if len(mm.cfg.OffList(config.ProfileBasic)) == 0 || mm.cfg.OffList(config.ProfileBasic)[0] != config.LayoutDetail {
 		t.Error("Basic itself never changes")
 	}
-	if out := ansi.Strip(mm.View()); !strings.Contains(out, "built in") {
+	if out := ansi.Strip(viewOf(mm)); !strings.Contains(out, "built in") {
 		t.Errorf("the screen says where the change went:\n%s", out)
 	}
 	m = key(m, "N")
@@ -202,7 +202,7 @@ func TestCustomizeProfiles(t *testing.T) {
 	if m = key(m, "enter"); m.(Model).cfg.ActiveProfile() != "dev" {
 		t.Fatalf("R renames: %q", m.(Model).cfg.ActiveProfile())
 	}
-	if out := ansi.Strip(m.View()); !strings.Contains(out, "[dev]") || !strings.Contains(out, "Basic") {
+	if out := ansi.Strip(viewOf(m)); !strings.Contains(out, "[dev]") || !strings.Contains(out, "Basic") {
 		t.Errorf("the profile line lists them, the one in use marked:\n%s", out)
 	}
 	if got := config.Load(); got.ActiveProfile() != "dev" {
@@ -232,17 +232,17 @@ func TestProfileChip(t *testing.T) {
 	for _, size := range [][2]int{{150, 42}, {80, 24}} {
 		var m tea.Model = boot(t, size[0], size[1])
 		chip := func(m tea.Model) (int, int) {
-			m.View()
+			viewOf(m)
 			for _, h := range m.(Model).vs.keyHits {
 				if h.key == profileChipKey {
 					return h.x0, h.y
 				}
 			}
-			t.Fatalf("%dx%d: no profile word on the top bar:\n%s", size[0], size[1], ansi.Strip(m.View()))
+			t.Fatalf("%dx%d: no profile word on the top bar:\n%s", size[0], size[1], ansi.Strip(viewOf(m)))
 			return 0, 0
 		}
 		x, y := chip(m)
-		if top := ansi.Strip(strings.Split(m.View(), "\n")[0]); !strings.HasSuffix(strings.TrimRight(top, " "), "mine") {
+		if top := ansi.Strip(strings.Split(viewOf(m), "\n")[0]); !strings.HasSuffix(strings.TrimRight(top, " "), "mine") {
 			t.Errorf("the word ends the top bar: %q", top)
 		}
 		m = click(m, x, y)

@@ -18,7 +18,7 @@ func TestSpaceViews(t *testing.T) {
 	m.cur = len(m.spaces) - 1
 	m.layoutPanes()
 	sp := m.space()
-	out := ansi.Strip(m.View())
+	out := ansi.Strip(viewOf(m))
 	if lines := strings.Split(out, "\n"); !strings.Contains(lines[viewY], "0 ▣ terminal") || !strings.Contains(lines[viewY], "1 Live") {
 		t.Fatalf("the view bar should stay in a space:\n%s", lines[viewY])
 	}
@@ -54,7 +54,7 @@ func TestSpaceViews(t *testing.T) {
 // Key hints, the view bar and the terminal strip are clickable.
 func TestClickHints(t *testing.T) {
 	var m tea.Model = boot(t, 150, 42)
-	m.View()
+	viewOf(m)
 	at := func(m tea.Model, k string, y int) keyHit {
 		t.Helper()
 		for _, h := range m.(Model).vs.keyHits {
@@ -76,7 +76,7 @@ func TestClickHints(t *testing.T) {
 	mm.cur = len(mm.spaces) - 1
 	mm.layoutPanes()
 	m = mm
-	m.View()
+	viewOf(m)
 	h = at(m, "z", 41)
 	if m = click(m, h.x0, h.y); !m.(Model).space().Tab().Zoom {
 		t.Error("clicking z zoom should zoom the pane")
@@ -135,7 +135,7 @@ func TestSidebarNewSpaceStays(t *testing.T) {
 	for _, cur := range []int{-1, len(m.spaces) - 1} {
 		m.cur = cur
 		m.layoutPanes()
-		m.View()
+		viewOf(m)
 		var hit *keyHit
 		for _, h := range m.vs.keyHits {
 			if h.key == "N" && h.x0 < m.sideW() {

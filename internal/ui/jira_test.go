@@ -132,7 +132,7 @@ func jiraBoot(t *testing.T) (tea.Model, *fakeJiraAPI) {
 
 const tokVal = "tok-s3cret-9"
 
-func plain(m tea.Model) string { return ansi.Strip(m.View()) }
+func plain(m tea.Model) string { return ansi.Strip(viewOf(m)) }
 
 func TestJiraUnconfiguredMakesNoCalls(t *testing.T) {
 	f := &fakeJiraAPI{}

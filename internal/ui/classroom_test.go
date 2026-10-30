@@ -56,7 +56,7 @@ func TestLiveFoldsFinishedSubagents(t *testing.T) {
 	if !strings.Contains(ks, "sub:run") || strings.Contains(ks, "sub:o1") || !strings.Contains(ks, "fold:"+sess.ID) {
 		t.Fatalf("running shown, old ones folded: %s", ks)
 	}
-	if out := ansi.Strip(m.View()); !strings.Contains(out, "2 finished subagents") || !strings.Contains(out, "Old plan") {
+	if out := ansi.Strip(viewOf(m)); !strings.Contains(out, "2 finished subagents") || !strings.Contains(out, "Old plan") {
 		t.Errorf("the fold says how many and the last one:\n%s", out)
 	}
 	for _, r := range m.live.allRows {

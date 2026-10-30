@@ -61,7 +61,7 @@ func TestContextAlertOnce(t *testing.T) {
 	if got := len(m.alerts.events) - n; got != 1 || m.alerts.events[0].kind != alertContext {
 		t.Fatalf("want one context alert, got %d: %+v", got, m.alerts.events)
 	}
-	if !strings.Contains(ansi.Strip(m.View()), "auto-compact") {
+	if !strings.Contains(ansi.Strip(viewOf(m)), "auto-compact") {
 		t.Error("toast not rendered")
 	}
 }

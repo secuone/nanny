@@ -83,7 +83,7 @@ func TestFeatureViewKeys(t *testing.T) {
 			t.Errorf("%s should open %s", k, tabNames[want])
 		}
 	}
-	bar := strings.Split(ansi.Strip(key(m, "E").View()), "\n")[viewY]
+	bar := strings.Split(ansi.Strip(viewOf(key(m, "E"))), "\n")[viewY]
 	for _, w := range []string{"3 Git", "E Jira", "I Insights"} {
 		if !strings.Contains(bar, w) {
 			t.Errorf("the views bar lacks %q: %q", w, bar)
@@ -131,7 +131,7 @@ func TestBasicLeavesFeatureViewsOut(t *testing.T) {
 	for m.(Model).cfg.ActiveProfile() != config.ProfileBasic {
 		m = key(m, "M")
 	}
-	bar := strings.Split(ansi.Strip(m.View()), "\n")[viewY]
+	bar := strings.Split(ansi.Strip(viewOf(m)), "\n")[viewY]
 	for _, w := range []string{"Git", "Jira", "Insights"} {
 		if strings.Contains(bar, w) {
 			t.Errorf("basic shows %s on the bar: %q", w, bar)
@@ -148,7 +148,7 @@ func TestFeatureSections(t *testing.T) {
 	f := fakeJira(t)
 	f.off = 1
 	m := key(boot(t, 150, 42), "E")
-	lines := strings.Split(ansi.Strip(m.View()), "\n")
+	lines := strings.Split(ansi.Strip(viewOf(m)), "\n")
 	if bar := lines[secY]; !strings.Contains(bar, "Alpha") || strings.Contains(bar, "Beta") || !strings.Contains(bar, "Gamma 2") {
 		t.Errorf("sections bar: %q", bar)
 	}
@@ -162,7 +162,7 @@ func TestFeatureSections(t *testing.T) {
 	if f.cur != 2 {
 		t.Errorf("← wraps back: %d", f.cur)
 	}
-	m.View()
+	viewOf(m)
 	var alpha hit
 	for _, h := range m.(Model).vs.secHits {
 		if h.idx == 0 {
@@ -176,7 +176,7 @@ func TestFeatureSections(t *testing.T) {
 		t.Errorf("a click on Alpha should pick it: %d", f.cur)
 	}
 	m = key(m, "E")
-	lines = strings.Split(ansi.Strip(m.View()), "\n")
+	lines = strings.Split(ansi.Strip(viewOf(m)), "\n")
 	if got := strings.Join(lines, "\n"); !strings.Contains(got, "list") || !strings.Contains(got, "detail") {
 		t.Errorf("list and detail should show:\n%s", got)
 	}
@@ -235,7 +235,7 @@ func TestFeatureTypingAndBadge(t *testing.T) {
 	f.typ = false
 	m = key(m, "1")
 	f.badgeText = "⚑ 2 waiting"
-	m.View()
+	viewOf(m)
 	var hit keyHit
 	for _, h := range m.(Model).vs.keyHits {
 		if h.key == secKey(tabJira, 2) {
@@ -245,7 +245,7 @@ func TestFeatureTypingAndBadge(t *testing.T) {
 	if hit.key == "" {
 		t.Fatal("the badge should be a click target on the top bar")
 	}
-	if !strings.Contains(strings.Split(ansi.Strip(m.View()), "\n")[hit.y], "⚑ 2 waiting") {
+	if !strings.Contains(strings.Split(ansi.Strip(viewOf(m)), "\n")[hit.y], "⚑ 2 waiting") {
 		t.Error("the badge should show on the top bar")
 	}
 	m = click(m, hit.x0+1, hit.y)

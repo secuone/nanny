@@ -20,7 +20,7 @@ const demoIdle = "2c3d4e5f-6071-4829-3a4b-5c6d7e8f9012"
 // fits checks the rendered frame is exactly w×h.
 func fits(t *testing.T, m tea.Model, w, h int, what string) string {
 	t.Helper()
-	out := m.View()
+	out := viewOf(m)
 	lines := strings.Split(out, "\n")
 	if len(lines) != h {
 		t.Errorf("%dx%d %s: %d lines", w, h, what, len(lines))
@@ -314,7 +314,7 @@ func TestReviewChanges(t *testing.T) {
 			t.Errorf("%dx%d changes view incomplete:\n%s", size[0], size[1], out)
 		}
 	}
-	if out := ansi.Strip(m.View()); !strings.Contains(out, "+Split payments refund each part") {
+	if out := ansi.Strip(viewOf(m)); !strings.Contains(out, "+Split payments refund each part") {
 		t.Errorf("diff hunk not shown:\n%s", out)
 	}
 	m = key(m, "t")

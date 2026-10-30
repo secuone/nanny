@@ -99,7 +99,7 @@ func TestViewsFitTerminal(t *testing.T) {
 			m := bootIn(t, lang, size[0], size[1])
 			for _, tb := range []string{"1", "n", "A", "u", "2", "3", "4", "5", "6", "7", "8", "E", "I", "?", "ctrl+k", "T", "9"} {
 				m = key(m, tb)
-				out := m.View()
+				out := viewOf(m)
 				lines := strings.Split(out, "\n")
 				if len(lines) != size[1] {
 					t.Errorf("%s %dx%d tab %s: %d lines", lang, size[0], size[1], tb, len(lines))
@@ -159,7 +159,7 @@ func TestLanguageSwitchesLive(t *testing.T) {
 		t.Fatalf("language = %q, want es", got)
 	}
 	m = key(m, "1")
-	if out := ansi.Strip(m.View()); !strings.Contains(out, "1 En vivo") || !strings.Contains(out, "Sesiones") { // Settings moved to the ≡ menu
+	if out := ansi.Strip(viewOf(m)); !strings.Contains(out, "1 En vivo") || !strings.Contains(out, "Sesiones") { // Settings moved to the ≡ menu
 		t.Errorf("tabs not in Spanish:\n%s", out)
 	}
 }
@@ -178,7 +178,7 @@ func TestLiveShowsSubagents(t *testing.T) {
 	if subs != 2 {
 		t.Errorf("want 2 running subagents listed, got %d", subs)
 	}
-	out := ansi.Strip(m.View())
+	out := ansi.Strip(viewOf(m))
 	for _, want := range []string{"Partial refunds for split payments", "Map payment adapters", "SPACES", "acme-api"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("live view lacks %q", want)
@@ -255,7 +255,7 @@ func TestAlertsOnTransitions(t *testing.T) {
 	if !found {
 		t.Error("unseen finished agent should show as done")
 	}
-	if !strings.Contains(ansi.Strip(m.View()), "finished") {
+	if !strings.Contains(ansi.Strip(viewOf(m)), "finished") {
 		t.Error("toast not rendered")
 	}
 	// looking at it clears the badge
@@ -288,10 +288,10 @@ func TestSpacesWithRealPanes(t *testing.T) {
 	}
 	mm, _ = mm.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	deadline := time.Now().Add(4 * time.Second)
-	for time.Now().Before(deadline) && !strings.Contains(ansi.Strip(mm.View()), "nanny-42") {
+	for time.Now().Before(deadline) && !strings.Contains(ansi.Strip(viewOf(mm)), "nanny-42") {
 		time.Sleep(30 * time.Millisecond)
 	}
-	out := mm.View()
+	out := viewOf(mm)
 	if !strings.Contains(ansi.Strip(out), "nanny-42") {
 		t.Fatalf("typed command output not visible:\n%s", ansi.Strip(out))
 	}
@@ -414,7 +414,7 @@ func TestViewerOpensSubagent(t *testing.T) {
 	if m.(Model).view == nil {
 		t.Fatal("enter on a subagent should open the viewer")
 	}
-	if out := ansi.Strip(m.View()); !strings.Contains(out, "Subagent") || !strings.Contains(out, "On it") {
+	if out := ansi.Strip(viewOf(m)); !strings.Contains(out, "Subagent") || !strings.Contains(out, "On it") {
 		t.Errorf("viewer missing content:\n%s", out)
 	}
 }
@@ -439,7 +439,7 @@ func TestThemePicker(t *testing.T) {
 	// every theme renders within bounds, light ones included
 	m = key(m, "T")
 	for range config.Themes {
-		for i, l := range strings.Split(m.View(), "\n") {
+		for i, l := range strings.Split(viewOf(m), "\n") {
 			if w := lipgloss.Width(l); w > 100 {
 				t.Errorf("%s line %d is %d wide", m.(Model).cfg.Theme, i, w)
 			}
@@ -467,3 +467,5 @@ func TestThemePicker(t *testing.T) {
 		t.Error("prefix T should open the picker")
 	}
 }
+
+func viewOf(m tea.Model) string { return m.View() }

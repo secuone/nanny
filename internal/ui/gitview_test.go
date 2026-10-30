@@ -86,7 +86,7 @@ func useGH(t *testing.T) *ghFake {
 
 func gitOf(m tea.Model) *gitView { return m.(Model).gitv }
 
-func screen(m tea.Model) string { return ansi.Strip(m.View()) }
+func screen(m tea.Model) string { return ansi.Strip(viewOf(m)) }
 
 // bar is the sections bar of the view on screen.
 func bar(m tea.Model) string { return strings.Split(screen(m), "\n")[secY] }
@@ -212,7 +212,7 @@ func TestReviewsBadge(t *testing.T) {
 	if !strings.Contains(strings.Join(head, "\n"), "⚑ 3 reviews waiting") {
 		t.Errorf("the badge:\n%s", strings.Join(head, "\n"))
 	}
-	m.View()
+	viewOf(m)
 	var hit keyHit
 	for _, h := range m.(Model).vs.keyHits {
 		if h.key == secKey(tabGit, gsReviews) {

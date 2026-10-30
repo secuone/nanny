@@ -72,14 +72,19 @@ local cross-compiled release (`goreleaser release --snapshot --clean`). The inst
 
 ## Demo GIF
 
-The README can show `docs/demo.gif`, recorded from the script `docs/demo.tape` with
-[vhs](https://github.com/charmbracelet/vhs):
+The README shows `docs/demo.gif`, recorded from `docs/demo.tape` with
+[vhs](https://github.com/charmbracelet/vhs) and `ffmpeg`:
 
 ```sh
-vhs docs/demo.tape      # writes docs/demo.gif
+vhs docs/demo.tape      # writes docs/demo.gif (plays too fast, see below)
+ffmpeg -y -i docs/demo.gif -vf "setpts=1.4*PTS,fps=12,split[a][b];[a]palettegen=max_colors=96:stats_mode=diff[p];[b][p]paletteuse=dither=none:diff_mode=rectangle" docs/demo.gif
 ```
 
-TODO: record the GIF, commit it, and uncomment the `<img>` line in the README header.
+vhs captures frames slower than real time, so the raw GIF is shorter than the tape and
+looks sped up (nanny reacts to every key). The low `Set Framerate` keeps capture stable
+and the `setpts` step stretches it back to about 22 s. Run vhs with a throwaway
+`XDG_CONFIG_HOME`, `XDG_STATE_HOME` and `XDG_RUNTIME_DIR`, and keep the Monitor on its
+Machine section: other sections list the host's real ports, paths and cron jobs.
 
 ## Roadmap ideas
 

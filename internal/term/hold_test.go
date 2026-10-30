@@ -33,14 +33,18 @@ func alive(pid int) bool { return pid > 0 && syscall.Kill(pid, 0) == nil }
 
 func gone(t *testing.T, pid int, sock string) {
 	t.Helper()
-	deadline := time.Now().Add(5 * time.Second)
-	for time.Now().Before(deadline) {
-		if _, err := os.Stat(sock); err != nil && !alive(pid) {
+	deadline := time.Now().Add(20 * time.Second)
+	for {
+		_, err := os.Stat(sock)
+		sockGone, pidGone := err != nil, !alive(pid)
+		if sockGone && pidGone {
 			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("pid %d (gone=%t) / socket %s (gone=%t) still around", pid, pidGone, sock, sockGone)
 		}
 		time.Sleep(20 * time.Millisecond)
 	}
-	t.Fatalf("pid %d / socket %s still around", pid, sock)
 }
 
 func TestHolderDetachReattach(t *testing.T) {

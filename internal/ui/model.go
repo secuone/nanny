@@ -17,6 +17,7 @@ import (
 	"github.com/secuone/nanny/internal/config"
 	"github.com/secuone/nanny/internal/gitwt"
 	"github.com/secuone/nanny/internal/sources"
+	"github.com/secuone/nanny/internal/term"
 	"github.com/secuone/nanny/internal/ws"
 )
 
@@ -162,6 +163,7 @@ type viewState struct {
 	sideSplit int // screen row where its agents half starts
 	area      rect
 	rects     []rect
+	paneLines map[*term.Pane]paneLines // what each pane of the open tab drew last
 	bySession map[string]paneRef
 	byPid     map[int]paneRef
 	dirty     bool

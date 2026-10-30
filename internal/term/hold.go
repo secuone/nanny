@@ -500,6 +500,7 @@ func (p *Pane) attach(sock string, wait time.Duration) error {
 	// prompt redraws (cursor up, clear line) only land right at that width
 	if in.Cols >= 10 && in.Rows >= 3 {
 		p.emu.Resize(in.Cols, in.Rows)
+		p.seq.Add(1)
 		if p.adopt {
 			p.mu.Lock()
 			p.w, p.h = in.Cols, in.Rows
@@ -526,6 +527,7 @@ func (p *Pane) attach(sock string, wait time.Duration) error {
 				_, _ = p.emu.Write(pl)
 				w, h := p.Size()
 				p.emu.Resize(w, h)
+				p.seq.Add(1)
 				p.quietTill.Store(time.Now().Add(400 * time.Millisecond).UnixNano())
 				p.quiet.Store(false)
 				p.bell.Store(false)

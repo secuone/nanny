@@ -163,6 +163,9 @@ func PriceOf(model string) Price {
 	return p
 }
 
+// CostOf is the estimated USD of t spent on model, priced like Usage.Cost.
+func CostOf(model string, t Tokens) float64 { return costOf(map[string]Tokens{model: t}) }
+
 func costOf(m map[string]Tokens) float64 {
 	c := 0.0
 	for mdl, t := range m {

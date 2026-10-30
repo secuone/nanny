@@ -486,6 +486,7 @@ func (m *Model) spaceMenu(i, x, y int) {
 	}
 	items = append(items, sep,
 		menuItem{T("New worktree…"), "t", func(m *Model) tea.Cmd { m.newWorktree(sp); return nil }},
+		menuItem{T("Set folder…"), "F", func(m *Model) tea.Cmd { return m.setFolderPrompt(sp) }},
 		menuItem{T("Add a folder…"), "a", mgr("a")},
 		menuItem{T("Manage spaces…"), "w", func(m *Model) tea.Cmd { m.openManager(); m.mgr.cur = m.indexOf(sp); return nil }},
 		sep,

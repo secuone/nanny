@@ -19,7 +19,8 @@ Prefix (`ctrl+b`, configurable with `prefix` in the config) then:
 
 | Key | Action |
 | --- | --- |
-| `c` / `s` | new Claude tab / new shell tab |
+| `c` / `s` | new Claude tab / new shell tab (they start in the space's folder) |
+| `F` | set the folder of this space |
 | `C` / `g` | new task (folder, prompt, worktree) / review this pane's changes |
 | `G` | this space's Git & PRs: branch, PR and worktrees (the Overview section) |
 | `i` / `0` | this space's views (Live, Sessions, Tasks… scoped to it) / back to the terminal |
@@ -70,6 +71,7 @@ Everywhere (all spaces, or a space after prefix `i`):
 | `A` / `S` | alerts / mute |
 | `T` | themes |
 | `W` / `N` / `D` | manage spaces / new space / discover places |
+| `f` (in the spaces manager) | set the folder of the space |
 | `R` | rescan everything |
 | `?` | the full list |
 | `q` | quit (panes keep running) |

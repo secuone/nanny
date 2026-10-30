@@ -139,7 +139,8 @@ type Model struct {
 	cust       *customize // what is on and off (=)
 	view       *viewer
 	disc       *discovery
-	vs         *viewState // render-time state that must survive value-receiver View
+	fp         *folderPicker // asking for a folder (new space, set the folder of one)
+	vs         *viewState    // render-time state that must survive value-receiver View
 	alerts     *alertState
 	showInbox  bool
 	inbox      inbox
@@ -487,6 +488,19 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.skills.rebuild(&m)
 		return m, nil
 
+	case folderPlacesMsg:
+		if m.fp != nil {
+			m.fp.busy = false
+			for _, p := range msg {
+				m.fp.known = append(m.fp.known, p.Path)
+			}
+			m.fp.known = uniqueDirs(m.fp.known)
+			if m.fp.create == "" && m.fp.cur < 0 {
+				m.fp.refresh()
+			}
+		}
+		return m, nil
+
 	case discoverMsg:
 		if m.disc != nil {
 			m.disc.busy = false
@@ -826,7 +840,7 @@ func (m Model) bodyHeight() int { return max(3, m.h-bodyY-1) }
 func (m Model) popupOpen() bool {
 	return m.menu != nil || m.modal != nil || m.task != nil || m.answer != nil || m.pal != nil || m.themes != nil ||
 		m.showInbox || m.help || m.welcome != nil || m.setup != nil || m.view != nil || m.rev != nil ||
-		m.disc != nil || m.mgr != nil || m.cust != nil
+		m.disc != nil || m.mgr != nil || m.cust != nil || m.fp != nil
 }
 
 // paste goes to the terminal that has the keys, bracketed, or to the text box that has them; anywhere else it is dropped.
@@ -894,6 +908,9 @@ func (m Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	}
 	if m.libShown() && m.lib.ed != nil {
 		return m.editorKey(k)
+	}
+	if m.fp != nil {
+		return m.folderKey(k)
 	}
 	if m.disc != nil {
 		return m.discoveryKey(k)
@@ -1489,6 +1506,8 @@ func (m Model) render() string {
 		box = m.viewTask()
 	case m.answer != nil:
 		box = m.viewAnswer()
+	case m.fp != nil:
+		box = m.viewFolderPicker()
 	case m.disc != nil:
 		box = m.viewDiscovery()
 	case m.mgr != nil:
@@ -1911,5 +1930,5 @@ func (m Model) holdsText() bool {
 	if m.task != nil || m.setup != nil || ((m.dash || !m.inSpace()) && m.typing()) {
 		return true
 	}
-	return m.modal != nil && m.modal.input != nil
+	return m.fp != nil || m.modal != nil && m.modal.input != nil
 }

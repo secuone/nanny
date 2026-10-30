@@ -29,6 +29,11 @@ Every key mentioned here is listed in [keys.md](keys.md).
 - **Discover** (`D`) finds every place you work in: folders where agents ran, git repos
   under your code roots, open workspaces. Tick the ones you want as spaces.
   Or create them by hand (`N`), add/remove folders, rename, reorder, delete (`W`).
+  Every space has a folder: `N` asks for it first (type a path and `tab` to complete it, or pick one of
+  the folders you work in; a missing one can be created) and the name defaults to the folder's. New tabs
+  and splits always start in it, with no `cd`. `F` (prefix), `f` in the manager and the space menu change
+  it; panes already open stay where they are. Spaces saved before this have none: they show
+  `no folder · set` (click it) and keep working from your home.
 - **Detach / reattach**, like tmux: quitting nanny leaves every pane running in the
   background, so agents keep working. Reopen nanny and they come back where they are,
   scrollback included. `prefix Q` (or `k` in the quit dialog) quits and stops them all. `ctrl+q` (configurable with

@@ -272,7 +272,7 @@ func (t *sessTab) view(m *Model, w, h int) string {
 		}
 		blocks[i] = lines
 	}
-	list := m.listBlocks(blocks, t.cur.idx, "sess", h-2-len(head), bodyY+1+len(head))
+	list := m.listBlocks(blocks, t.cur.idx, "sess", bodyRows(h)-len(head), bodyY+1+gapOf(h)+len(head))
 	if len(t.rows) == 0 {
 		list = t.empty(m, inner)
 	}

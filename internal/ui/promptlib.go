@@ -607,7 +607,7 @@ func (m Model) viewPrompts(w, h int) string {
 		}
 	}
 	heads := []string{fit(head, inner), s.Dim.Render(strings.Repeat("─", inner))}
-	room := h - 2 - len(heads)
+	room := bodyRows(h) - len(heads)
 	lw := max(28, min(70, inner*45/100))
 	pw := inner - lw - 3
 
@@ -654,7 +654,7 @@ func (m Model) viewPrompts(w, h int) string {
 	var left []string
 	switch {
 	case len(l.rows) > 0:
-		left = strings.Split(m.listBlocks(blocks, l.cur, "prompts", room, bodyY+1+len(heads)), "\n")
+		left = strings.Split(m.listBlocks(blocks, l.cur, "prompts", room, bodyY+1+gapOf(h)+len(heads)), "\n")
 	case l.filter.Value() != "":
 		left = []string{s.Muted.Render(T("nothing matches"))}
 	default:

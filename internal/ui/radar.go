@@ -422,7 +422,7 @@ func (t *radarTab) view(m *Model, w, h int) string {
 	if off := t.offCount(m); t.sec == secAll && off > 0 { // so nothing is missing silently
 		blocks = append(blocks, []string{"", s.Dim.Render(trunc(Tn(off, "%d section turned off · = customizes", "%d sections turned off · = customizes"), inner))})
 	}
-	return s.panel(title, t.summary(m, inner)+"\n"+m.listBlocks(blocks, t.cur.idx, "radar", h-3, secY+3), w, h, !m.focusR)
+	return s.panel(title, t.summary(m, inner)+"\n"+m.listBlocks(blocks, t.cur.idx, "radar", bodyRows(h)-1, secY+3+gapOf(h)), w, h, !m.focusR)
 }
 
 // summary is the line on top of the Radar: how many things are in each state.

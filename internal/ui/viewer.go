@@ -142,7 +142,7 @@ func (m Model) viewViewer(w, h int) string {
 	if len(body) == 0 {
 		body = []string{s.Muted.Render("  " + spinGlyph + " " + T("loading…"))}
 	}
-	room := h - 2 - len(head) - 1
+	room := bodyRows(h) - len(head) - 1
 	maxOff := max(0, len(body)-room)
 	off := min(v.off, maxOff)
 	end := len(body) - off

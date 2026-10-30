@@ -1,6 +1,8 @@
 package term
 
 import (
+	"bytes"
+	"fmt"
 	"net"
 	"os"
 	"os/exec"
@@ -192,5 +194,35 @@ func TestReattachKeepsOnePrompt(t *testing.T) {
 		}
 		q.Detach()
 		time.Sleep(50 * time.Millisecond)
+	}
+}
+
+func TestRingKeepsTheTailOnALineBoundary(t *testing.T) {
+	var r ring
+	var all []byte
+	for i := 0; len(all) < 10<<20; i++ {
+		line := []byte(fmt.Sprintf("line %07d %s\n", i, strings.Repeat("x", i%97)))
+		r.write(line)
+		all = append(all, line...)
+	}
+	a, b := r.replay()
+	got := append(append([]byte(nil), a...), b...)
+	if len(got) > ringMax {
+		t.Errorf("replay is %d bytes, max %d", len(got), ringMax)
+	}
+	if !bytes.HasPrefix(got, []byte("line ")) || all[len(all)-len(got)-1] != '\n' {
+		t.Errorf("replay does not start right after a newline: %.20q", got)
+	}
+	if !bytes.HasSuffix(all, got) {
+		t.Error("replay is not the last bytes written")
+	}
+}
+
+func TestRingBelowMaxIsVerbatim(t *testing.T) {
+	var r ring
+	r.write([]byte("abc"))
+	r.write([]byte("def\n"))
+	if a, b := r.replay(); string(a)+string(b) != "abcdef\n" {
+		t.Errorf("replay = %q %q", a, b)
 	}
 }

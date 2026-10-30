@@ -19,6 +19,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync"
@@ -77,12 +78,17 @@ func SockDir() string {
 	return filepath.Join(st, "nanny", "sock")
 }
 
-func writeFrame(w io.Writer, t byte, p []byte) error {
-	b := make([]byte, 5+len(p))
-	b[0] = t
-	binary.BigEndian.PutUint32(b[1:], uint32(len(p)))
-	copy(b[5:], p)
-	_, err := w.Write(b)
+// writeFrame sends one frame whose payload is the parts back to back, without copying them.
+func writeFrame(w io.Writer, t byte, parts ...[]byte) error {
+	n := 0
+	for _, p := range parts {
+		n += len(p)
+	}
+	hdr := make([]byte, 5)
+	hdr[0] = t
+	binary.BigEndian.PutUint32(hdr[1:], uint32(n))
+	bufs := append(net.Buffers{hdr}, parts...)
+	_, err := bufs.WriteTo(w)
 	return err
 }
 
@@ -137,14 +143,55 @@ func HoldMain(args []string) {
 		fmt.Fprintln(os.Stderr, "usage: nanny __hold <socket> <cols> <rows> <cwd> -- argv...")
 		os.Exit(2)
 	}
+	debug.SetGCPercent(25) // a holder idles: keep its heap near the ring
+	debug.SetMemoryLimit(8 << 20)
 	w, _ := strconv.Atoi(args[1])
 	h, _ := strconv.Atoi(args[2])
 	os.Exit(hold(args[0], w, h, args[3], args[5:]))
 }
 
+// ring keeps the last ringMax bytes of output. It grows to that size once and
+// then overwrites in place, so a quiet holder stays small and a busy one never allocates.
+type ring struct {
+	buf  []byte
+	pos  int // where the next byte goes, once buf is full
+	full bool
+}
+
+func (r *ring) write(p []byte) {
+	if len(p) >= ringMax {
+		p = p[len(p)-ringMax:]
+	}
+	if room := ringMax - len(r.buf); room > 0 {
+		n := min(room, len(p))
+		r.buf = append(r.buf, p[:n]...)
+		p = p[n:]
+	}
+	if len(p) == 0 {
+		return
+	}
+	n := copy(r.buf[r.pos:], p)
+	copy(r.buf, p[n:])
+	r.pos = (r.pos + len(p)) % ringMax
+	r.full = true
+}
+
+// replay is the kept output, oldest first, as two slices; once the ring has
+// wrapped it starts on a line boundary.
+func (r *ring) replay() (a, b []byte) {
+	if !r.full {
+		return r.buf, nil
+	}
+	a, b = r.buf[r.pos:], r.buf[:r.pos]
+	if i := bytes.IndexByte(a[:min(4096, len(a))], '\n'); i >= 0 {
+		a = a[i+1:]
+	}
+	return a, b
+}
+
 type holder struct {
 	mu     sync.Mutex
-	ring   []byte
+	ring   ring
 	client net.Conn
 	pty    *os.File
 	cmd    *exec.Cmd
@@ -226,14 +273,7 @@ func (h *holder) readPty(done chan struct{}) {
 		n, err := h.pty.Read(buf)
 		if n > 0 {
 			h.mu.Lock()
-			h.ring = append(h.ring, buf[:n]...)
-			if len(h.ring) > ringMax+ringMax/4 {
-				keep := h.ring[len(h.ring)-ringMax:]
-				if i := bytes.IndexByte(keep[:4096], '\n'); i >= 0 {
-					keep = keep[i+1:] // start replay on a line boundary
-				}
-				h.ring = append([]byte(nil), keep...)
-			}
+			h.ring.write(buf[:n])
 			if h.client != nil {
 				h.send(fOutput, buf[:n])
 			}
@@ -246,9 +286,9 @@ func (h *holder) readPty(done chan struct{}) {
 }
 
 // send writes to the attached client (h.mu held); a stuck or gone client is dropped.
-func (h *holder) send(t byte, p []byte) {
+func (h *holder) send(t byte, parts ...[]byte) {
 	_ = h.client.SetWriteDeadline(time.Now().Add(5 * time.Second))
-	if err := writeFrame(h.client, t, p); err != nil {
+	if err := writeFrame(h.client, t, parts...); err != nil {
 		_ = h.client.Close()
 		h.client = nil
 	}
@@ -288,7 +328,8 @@ func (h *holder) serve(c net.Conn) {
 			h.client = c
 			h.send(fInfo, h.infoJSON())
 			if h.client != nil {
-				h.send(fReplay, h.ring)
+				a, b := h.ring.replay()
+				h.send(fReplay, a, b)
 			}
 			if h.client != nil && h.done {
 				h.send(fExit, binary.BigEndian.AppendUint32(nil, uint32(int32(h.code))))

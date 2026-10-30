@@ -91,6 +91,9 @@ func (c *Client) do(ctx context.Context, method, path string, body, out any) err
 	if err != nil {
 		return err
 	}
+	if !secure(req.URL) {
+		return errors.New("jira: the site must be https, the token would go in clear")
+	}
 	req.SetBasicAuth(c.email, c.token)
 	req.Header.Set("Accept", "application/json")
 	if body != nil {
@@ -227,4 +230,13 @@ func ADF(text string) map[string]any {
 		paras = []any{map[string]any{"type": "paragraph", "content": []any{}}}
 	}
 	return map[string]any{"type": "doc", "version": 1, "content": paras}
+}
+
+// secure says the token may go to u: https, or plain http to this machine (tests, a local proxy).
+func secure(u *url.URL) bool {
+	if u.Scheme == "https" {
+		return true
+	}
+	h := u.Hostname()
+	return u.Scheme == "http" && (h == "localhost" || h == "127.0.0.1" || h == "::1")
 }

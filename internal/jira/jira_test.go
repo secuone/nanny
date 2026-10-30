@@ -239,3 +239,12 @@ func TestMatches(t *testing.T) {
 		t.Error("Matches is wrong")
 	}
 }
+
+// The token never goes over plain http to another machine.
+func TestPlainHTTPRefused(t *testing.T) {
+	c := New("http://jira.example.com", "me@x", "secret-token")
+	_, err := c.Myself(context.Background())
+	if err == nil || strings.Contains(err.Error(), "secret-token") {
+		t.Fatalf("plain http should be refused without the token: %v", err)
+	}
+}

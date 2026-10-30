@@ -143,11 +143,25 @@ func HoldMain(args []string) {
 		fmt.Fprintln(os.Stderr, "usage: nanny __hold <socket> <cols> <rows> <cwd> -- argv...")
 		os.Exit(2)
 	}
+	restoreProcsEnv()
 	debug.SetGCPercent(25) // a holder idles: keep its heap near the ring
 	debug.SetMemoryLimit(8 << 20)
 	w, _ := strconv.Atoi(args[1])
 	h, _ := strconv.Atoi(args[2])
 	os.Exit(hold(args[0], w, h, args[3], args[5:]))
+}
+
+// savedProcsEnv carries the user's GOMAXPROCS through the holder's forced one.
+const savedProcsEnv = "NANNY_HOLD_GOMAXPROCS"
+
+// restoreProcsEnv gives the shell the GOMAXPROCS nanny was started with, or none.
+func restoreProcsEnv() {
+	if v, ok := os.LookupEnv(savedProcsEnv); ok {
+		_ = os.Setenv("GOMAXPROCS", v)
+	} else {
+		_ = os.Unsetenv("GOMAXPROCS")
+	}
+	_ = os.Unsetenv(savedProcsEnv)
 }
 
 // ring keeps the last ringMax bytes of output. It grows to that size once and
@@ -390,6 +404,10 @@ func spawnHolder(cwd string, argv []string, w, h int, env []string) (string, err
 	args := append([]string{"nanny", "__hold", sock, strconv.Itoa(w), strconv.Itoa(h), cwd, "--"}, argv...)
 	cmd := &exec.Cmd{Path: exe, Args: args, Dir: "/"}
 	cmd.Env = append(baseEnv(env...), holderEnv+"=1")
+	if v, ok := os.LookupEnv("GOMAXPROCS"); ok {
+		cmd.Env = append(cmd.Env, savedProcsEnv+"="+v)
+	}
+	cmd.Env = append(cmd.Env, "GOMAXPROCS=1") // a holder only copies bytes: one P, far fewer wake-ups
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 	if err := cmd.Start(); err != nil {
 		return "", err

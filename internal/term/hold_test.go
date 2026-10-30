@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"testing"
@@ -224,5 +225,43 @@ func TestRingBelowMaxIsVerbatim(t *testing.T) {
 	r.write([]byte("def\n"))
 	if a, b := r.replay(); string(a)+string(b) != "abcdef\n" {
 		t.Errorf("replay = %q %q", a, b)
+	}
+}
+
+func parentOf(t *testing.T, pid int) int {
+	t.Helper()
+	b, err := os.ReadFile(fmt.Sprintf("/proc/%d/stat", pid))
+	if err != nil {
+		t.Fatal(err)
+	}
+	f := strings.Fields(string(b[bytes.LastIndexByte(b, ')')+1:]))
+	ppid, _ := strconv.Atoi(f[1])
+	return ppid
+}
+
+// The holder runs on one P through its environment; the shell never sees that.
+func TestHolderForcesGomaxprocsButNotForTheChild(t *testing.T) {
+	for _, tc := range []struct{ set, want string }{{"", "unset"}, {"7", "7"}} {
+		if tc.set == "" {
+			if v, ok := os.LookupEnv("GOMAXPROCS"); ok {
+				t.Cleanup(func() { os.Setenv("GOMAXPROCS", v) })
+				os.Unsetenv("GOMAXPROCS")
+			}
+		} else {
+			t.Setenv("GOMAXPROCS", tc.set)
+		}
+		p, err := Start(t.TempDir(), []string{"/bin/sh", "-c", "echo got-${GOMAXPROCS-unset}-end; sleep 30"}, 60, 10, nil, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		waitFor(t, p, "got-"+tc.want+"-end")
+		env, err := os.ReadFile(fmt.Sprintf("/proc/%d/environ", parentOf(t, p.Pid())))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Contains(env, []byte("\x00GOMAXPROCS=1\x00")) {
+			t.Errorf("holder environment lacks GOMAXPROCS=1 (GOMAXPROCS=%q)", tc.set)
+		}
+		p.Close()
 	}
 }

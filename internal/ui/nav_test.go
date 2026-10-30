@@ -66,6 +66,9 @@ func TestSidebarAgentLinesAllClick(t *testing.T) {
 		}
 		for _, h := range titles {
 			for line := 0; line < 2; line++ {
+				if !hasAgentLine(m, h, h.y+line) {
+					continue // cut off by the bottom of the agents half
+				}
 				mm := click(m, 5, h.y+line).(Model)
 				if mm.cur < 0 || mm.spaces[mm.cur] != h.local.space || mm.dash || focusedPane(mm) != any(h.local.pane) {
 					t.Errorf("%dx%d: clicking line %d of %s: cur=%d dash=%v", size[0], size[1], line, h.local.space.Name, mm.cur, mm.dash)
@@ -73,6 +76,16 @@ func TestSidebarAgentLinesAllClick(t *testing.T) {
 			}
 		}
 	}
+}
+
+// hasAgentLine says whether row y of the sidebar belongs to h's agent block.
+func hasAgentLine(m Model, h sideRow, y int) bool {
+	for _, r := range m.vs.sideRows {
+		if r.y == y && r.local == h.local {
+			return true
+		}
+	}
+	return false
 }
 
 func externalRow(m Model) (sideRow, bool) {
@@ -231,6 +244,21 @@ func TestHeaderOverflowKeepsCurrent(t *testing.T) {
 		mm := click(m, x, 0).(Model)
 		if mm.menu == nil || !strings.Contains(viewOf(mm), "space-24") {
 			t.Errorf("%dx%d: the N› chip did not list space-24", size[0], size[1])
+		}
+	}
+}
+
+// The agents half starts at the middle of the sidebar whatever the spaces need.
+func TestSidebarAgentsStartHalfway(t *testing.T) {
+	m := withAgents(t, 150, 42, demoIdle, demoBlocked)
+	m = settle(t, m, func(m Model) bool { return localAgents(m) == 2 })
+	for _, size := range [][2]int{{150, 42}, {110, 30}} {
+		m.w, m.h = size[0], size[1]
+		m.layoutPanes()
+		m.cur, m.tab = -1, tabSessions
+		_ = viewOf(m)
+		if mid := size[1] / 2; m.vs.sideSplit < mid-3 || m.vs.sideSplit > mid+3 {
+			t.Errorf("%dx%d: agents start at row %d, want about %d", size[0], size[1], m.vs.sideSplit, mid)
 		}
 	}
 }

@@ -370,21 +370,13 @@ func (m Model) viewSidebar(h int) string {
 	return strings.Join(out, "\n")
 }
 
-// sideRooms shares the lines left for the two halves: each gets what it
-// needs when it is no more than half, else they split it evenly.
+// sideRooms splits the lines left in two fixed halves: spaces on top, agents
+// from the middle down, however many of each there are; each half scrolls.
 func sideRooms(sp, ag, avail int, noAgents bool) (int, int) {
 	if noAgents {
 		return avail + 2, 0
 	}
 	avail = max(avail, 2)
-	switch {
-	case sp+ag <= avail:
-		return sp, avail - sp
-	case sp <= avail/2:
-		return sp, avail - sp
-	case ag <= avail/2:
-		return avail - ag, ag
-	}
 	return avail / 2, avail - avail/2
 }
 

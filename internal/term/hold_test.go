@@ -162,6 +162,13 @@ func TestReplayAnswersDropped(t *testing.T) {
 	waitFor(t, q, "ready")
 	time.Sleep(800 * time.Millisecond)
 	q.Write([]byte("end\r\x04"))
+	// a stray answer left on cat's line turns that ^D into a flush: end it anyway, the check below says what got in
+	for i := 0; i < 150 && alive(pid); i++ {
+		time.Sleep(20 * time.Millisecond)
+	}
+	if alive(pid) {
+		q.Write([]byte("\x04\x04"))
+	}
 	gone(t, pid, sock)
 	b, _ := os.ReadFile(out)
 	if s := string(b); s != "end\n" {

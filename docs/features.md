@@ -100,6 +100,12 @@ Every key mentioned here is listed in [keys.md](keys.md).
 - **Changes view** (`C` in Live, prefix `g` in a pane): the diff of an agent's folder. `t` switches
   uncommitted vs HEAD and whole branch vs its base, `c` asks the agent to commit, `w` opens the PR
   (`gh`), `y` copies the branch.
+- **Git follows the space**, like Live, Sessions and Tasks: inside a space My PRs, Reviews, Worktrees and Branches
+  show only the repo of that space (its `origin` and `upstream` remotes, from a worktree or a subfolder too) and
+  the title says which (`· acme-api`); in All spaces they show every repo. The PR lists are filtered from what
+  `gh` already answered, so switching space asks GitHub nothing. An empty repo says so (`a` jumps to All
+  spaces), and so does a space that is not a git repo. Profile and the top-bar review count stay global, and
+  Profile says it.
 - **The other sections** of Git (`←→` or a click) work with the PRs and branches you work with, from GitHub through the `gh` CLI (`gh auth login` once): **My PRs** (what is ready to merge, what has conflicts or failing checks; `⏎` open,
   `v` diff in a tab, `w` check it out in a worktree, `C` its changes, `X` merge: it asks, `s`/`m`/`b` pick squash,
   merge or rebase, and a PR that isn't ready is set to auto-merge, never forced), **Reviews** (the PRs waiting for

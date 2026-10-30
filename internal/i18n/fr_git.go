@@ -134,6 +134,12 @@ var frGit = map[string]string{
 	"new claude in it · new worktree":                                           "nouveau claude dedans · nouveau worktree",
 	"No spaces yet.":                                                            "Aucun espace pour l'instant.",
 	"new space":                                                                 "nouvel espace",
+	"%s is not a git repository.":                                               "%s n'est pas un dépôt git.",
+	"%s has no GitHub remote.":                                                  "%s n'a pas de remote GitHub.",
+	"Nothing is waiting for your review in %s.":                                 "Rien n'attend votre revue dans %s.",
+	"No open PRs in %s.":                                                        "Aucune PR ouverte dans %s.",
+	"see all spaces":                                                            "voir tous les espaces",
+	"All your repos, not only %s: your week is the same in every space.": "Tous vos dépôts, pas seulement %s : votre semaine est la même dans chaque espace.",
 }
 
 func init() { merge(fr, frGit) }

@@ -121,7 +121,13 @@ func Slug(root string) string {
 	if err != nil {
 		return ""
 	}
-	url = strings.TrimSuffix(strings.TrimSpace(url), ".git")
+	return ParseSlug(url)
+}
+
+// ParseSlug is owner/name of a GitHub remote URL (https, git@host:o/r or
+// ssh://, with or without .git), "" if it is not a GitHub one.
+func ParseSlug(url string) string {
+	url = strings.TrimSuffix(strings.TrimSuffix(strings.TrimSpace(url), "/"), ".git")
 	i := strings.LastIndexAny(url, ":/")
 	if i < 0 {
 		return ""
@@ -132,6 +138,24 @@ func Slug(root string) string {
 		return ""
 	}
 	return rest[j+1:] + "/" + url[i+1:]
+}
+
+// Slugs are the GitHub repos behind origin and upstream of the repo that
+// holds dir (a worktree or a subfolder of it). ok is false when dir is not
+// in a git repo.
+func Slugs(dir string) (slugs []string, ok bool) {
+	top := Toplevel(dir)
+	if top == "" {
+		return nil, false
+	}
+	for _, remote := range []string{"origin", "upstream"} {
+		if url, err := git(top, "remote", "get-url", remote); err == nil {
+			if s := ParseSlug(url); s != "" {
+				slugs = append(slugs, s)
+			}
+		}
+	}
+	return slugs, true
 }
 
 // FetchBranch brings one branch of origin.

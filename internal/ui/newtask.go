@@ -29,6 +29,7 @@ type newTask struct {
 	queued bool
 	mode   string // queue.Here, New or Worktree
 	edit   string // id of the queued task being edited
+	exact  bool   // the name is the branch as it is (an issue's), not a slug of it
 }
 
 type taskDir struct{ path, label string }
@@ -60,6 +61,17 @@ func (m *Model) openNewTask(prefer string) tea.Cmd {
 	t.focus()
 	m.task = t
 	return textinput.Blink
+}
+
+// openNewTaskWith opens the form already filled: the name (a branch when exact
+// comes with a worktree) and the first prompt, ready to start with ⏎.
+func (m *Model) openNewTaskWith(prefer, name, prompt string, wt bool) tea.Cmd {
+	cmd := m.openNewTask(prefer)
+	t := m.task
+	t.name.SetValue(name)
+	t.prompt.SetValue(prompt)
+	t.wt, t.exact = wt, wt
+	return cmd
 }
 
 // taskDirs lists where a task can start: prefer, spaces, checkouts, recent folders.
@@ -150,7 +162,12 @@ func (t *newTask) focus() {
 var slugRe = regexp.MustCompile(`[^a-z0-9._/-]+`)
 
 // branch derives the worktree branch from the name, else the prompt's first words.
-func (t *newTask) branch() string { return branchName(t.name.Value(), t.prompt.Value()) }
+func (t *newTask) branch() string {
+	if n := strings.TrimSpace(t.name.Value()); t.exact && n != "" {
+		return n
+	}
+	return branchName(t.name.Value(), t.prompt.Value())
+}
 
 func branchName(name, prompt string) string {
 	src := strings.TrimSpace(name)

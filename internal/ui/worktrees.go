@@ -290,7 +290,7 @@ func (t *wtTab) view(m *Model, w, h int) string {
 		}
 		blocks[i] = append(blocks[i], line)
 	}
-	return s.panel(T("Worktrees")+" · "+Tn(countRepos(t.rows), "%d repo", "%d repos")+m.scopeNote(), m.listBlocks(blocks, t.cur.idx, "wt", h-2, bodyY+1), w, h, !m.focusR)
+	return s.panel(T("Worktrees")+" · "+Tn(countRepos(t.rows), "%d repo", "%d repos")+m.scopeNote(), m.listBlocks(blocks, t.cur.idx, "wt", bodyRows(h), bodyY+1+gapOf(h)), w, h, !m.focusR)
 }
 
 // wtCells are the right-hand columns of a worktree row: live agents,

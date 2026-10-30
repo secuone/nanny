@@ -100,8 +100,8 @@ func (g *gitView) viewOverview(m *Model, w, h int) string {
 		}
 		blocks[i] = []string{fit(line, inner)}
 	}
-	g.ov.clamp(len(rows), h-2)
-	return s.panel(title, m.listBlocks(blocks, g.ov.idx, "git"+strconv.Itoa(g.cur), h-2, secY+2), w, h, !m.focusR)
+	g.ov.clamp(len(rows), bodyRows(h))
+	return s.panel(title, m.listBlocks(blocks, g.ov.idx, "git"+strconv.Itoa(g.cur), bodyRows(h), secY+2+gapOf(h)), w, h, !m.focusR)
 }
 
 func (g *gitView) ovState(r ovRow) string {

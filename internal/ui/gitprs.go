@@ -385,12 +385,12 @@ func (g *gitView) viewPRs(m *Model, l *prList, title string, reviews bool, w, h 
 		}
 		blocks[i] = []string{line}
 	}
-	l.cur.clamp(len(l.items), h-2)
+	l.cur.clamp(len(l.items), bodyRows(h))
 	t := title + " · " + strconv.Itoa(len(l.items))
 	if l.err != nil {
 		t += " · ⚠"
 	}
-	return s.panel(t, m.listBlocks(blocks, l.cur.idx, "git"+strconv.Itoa(g.cur), h-2, secY+2), w, h, !m.focusR)
+	return s.panel(t, m.listBlocks(blocks, l.cur.idx, "git"+strconv.Itoa(g.cur), bodyRows(h), secY+2+gapOf(h)), w, h, !m.focusR)
 }
 
 func (g *gitView) detailPR(m *Model, l *prList, reviews bool, w, h int) string {

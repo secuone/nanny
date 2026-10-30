@@ -929,7 +929,7 @@ func (m Model) viewEmptySpace(sp *ws.Space, w, h int) string {
 	for len(lines) < h {
 		lines = append(lines, "")
 	}
-	return s.panel(spaceLabel(sp), strings.Join(lines[:h-2], "\n"), w, h, true)
+	return s.framed(spaceLabel(sp), strings.Join(lines[:h-2], "\n"), w, h, true, 0)
 }
 
 // ---------------------------------------------------------------- input

@@ -464,3 +464,21 @@ func TestBranchStateAndPR(t *testing.T) {
 		t.Errorf("the Live row and detail should show the PR:\n%s", live)
 	}
 }
+
+// A right click on a list with nothing in it opens no menu and doesn't panic.
+func TestRightClickEmptyListNoMenu(t *testing.T) {
+	m := boot(t, 150, 42).(Model)
+	m.menu = nil
+	m.openMenu("Actions", 10, 10, nil)
+	if m.menu != nil {
+		t.Fatal("a menu opened with no items")
+	}
+	m.openMenu("Actions", 10, 10, []menuItem{sep})
+	if m.menu != nil {
+		t.Fatal("a menu opened with only a separator")
+	}
+	for _, k := range []string{"3", "1", "2", "4", "7"} {
+		mm := key(m, k).(Model)
+		_ = mouseAt(mm, 60, 12, tea.MouseRight, mousePress)
+	}
+}

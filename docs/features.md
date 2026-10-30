@@ -88,7 +88,7 @@ Every key mentioned here is listed in [keys.md](keys.md).
 - **Git & PRs** (tab `3`) opens on **Overview** inside a space: the branch, its state and PR, and the space's
   worktrees, from git alone (no GitHub needed). Reach it with prefix `G`, or click the `⎇ branch` in the terminal
   strip or in the sidebar. At home it lists every space. Without `gh` signed in the section bar says
-  `gh: not signed in`, and My PRs offers to sign in (`l`) or open the setup wizard (`s`).
+  `gh: not signed in`, and My PRs offers to sign in (`i`) or open the setup wizard (`s`).
 - The Git & PRs view (tab `3`, formerly Worktrees) lists the worktrees of your repos: which are dirty,
   which have sessions, which can go. `C` changes · `n` new Claude · `a` add · `d` remove ·
   `p` prune.

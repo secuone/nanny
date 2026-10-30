@@ -103,7 +103,7 @@ Everywhere (all spaces, or a space after prefix `i`):
 - **Git & PRs**: sections `←→`. **Overview** (the default inside a space): branch, state and PR of the space and
   its worktrees; `⏎` go to it · `O` open its PR · `C` changes · `P` pull · `F` fetch · `n` new Claude in it ·
   `w` new worktree · `y` copy the branch · `r` refresh. **Worktrees**: `C` changes · `n` new Claude · `a` add ·
-  `d` remove · `p` prune. Without `gh` signed in, the empty state offers `l` sign in (`gh auth login` in a tab) ·
+  `d` remove · `p` prune. Without `gh` signed in, the empty state offers `i` sign in (`gh auth login` in a tab) ·
   `s` setup wizard · `r` try again · `o` open cli.github.com when `gh` is missing.
 - **Skills**: `space` on/off · `n` new (skill, command or subagent; global or in a repo) ·
   `t` type, including the harness (hooks, MCP, plugins, CLAUDE.md, settings) ·

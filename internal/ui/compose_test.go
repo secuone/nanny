@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"strings"
 	"testing"
 
 	"charm.land/lipgloss/v2"
@@ -109,5 +110,26 @@ func BenchmarkRenderPaneOutput(b *testing.B) {
 		p.Note("Thu Oct 30 13:40:25 CET 2026\r\n")
 		m.vs.pending = true
 		_ = m.render()
+	}
+}
+
+// animate gives what the old search and a fresh replacer gave, whichever glyphs are in turn.
+func TestAnimateSwapsPlaceholders(t *testing.T) {
+	if !strings.HasPrefix(spinGlyph, placeholderPrefix) || !strings.HasPrefix(blinkGlyph, placeholderPrefix) {
+		t.Fatal("the placeholders no longer share the prefix animate looks for")
+	}
+	m := boot(t, 100, 30).(Model)
+	frames := []string{"plain ⠋ ● text", spinGlyph + " a " + blinkGlyph + " b " + spinGlyph, "é" + blinkGlyph}
+	for n := 0; n < 24; n++ {
+		m.frame = n
+		for _, f := range frames {
+			want := f
+			if strings.ContainsAny(f, spinGlyph+blinkGlyph) {
+				want = strings.NewReplacer(spinGlyph, spinner[n%len(spinner)], blinkGlyph, [2]string{"●", "○"}[n/4%2]).Replace(f)
+			}
+			if got := m.animate(f); got != want {
+				t.Errorf("frame %d: animate(%q) = %q, want %q", n, f, got, want)
+			}
+		}
 	}
 }

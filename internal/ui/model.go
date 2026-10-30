@@ -203,6 +203,9 @@ type viewState struct {
 	widths     widths      // how wide the lines of the last frames were
 	gen        uint64      // counts the updates but pane output: the chrome is drawn again after each
 	chrome     chromeCache // the header, footer and sidebar of the last frame
+
+	swap    *strings.Replacer // puts the spinner and blink in a frame, for the glyphs in swapFor
+	swapFor [2]string
 }
 
 type modal struct {

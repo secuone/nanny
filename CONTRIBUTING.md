@@ -4,7 +4,7 @@ Thanks for helping! A few ground rules keep nanny fast and trustworthy.
 
 ## Principles
 
-- **Read, don't write.** nanny observes other tools' state (`~/.claude`, `~/.hermes`, git).
+- **Read, don't write.** nanny observes other tools' state (`~/.claude`, `~/.hermes`, git, `gh`, Jira).
   The only things it writes are its own config/layout and actions the user explicitly triggers.
 - **Cheap refreshes.** Anything that runs every tick must be cached by (size, mtime) or be O(1).
   Big transcripts are read from the tail; never scan whole files on a timer.
@@ -19,10 +19,12 @@ make lint   # vet + gofmt
 make demo   # try your change on fake data
 ```
 
+Building needs Go 1.26 on Linux. More in [docs/development.md](docs/development.md).
+
 UI changes: `TestViewsFitTerminal` renders every view at 150×42, 100×30 and 80×24 and fails
 if any line overflows. Keep it green.
 
-## Adding a Radar source
+## Adding a Monitor source
 
 Add a function returning `[]sources.Item` in `internal/sources`, call it from `Collect`, and
 give it a `Group`. Items with `SessionID` resume a Claude session on ⏎; `Cmd` runs a

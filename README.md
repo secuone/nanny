@@ -11,9 +11,9 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/secuone/nanny/ci.yml?branch=main&label=ci)](https://github.com/secuone/nanny/actions/workflows/ci.yml)
 [![Go version](https://img.shields.io/github/go-mod/go-version/secuone/nanny)](go.mod)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Release](https://img.shields.io/github/v/release/secuone/nanny)](https://github.com/secuone/nanny/releases/latest)
+[![Platform: Linux](https://img.shields.io/badge/platform-linux-informational.svg)](#requirements--compatibility)
 
-[Features](#features) · [Install](#install) · [Keys](#keys) · [Docs](#docs)
+[Features](#features) · [Requirements](#requirements--compatibility) · [Install](#install) · [Keys](#keys) · [Docs](#docs)
 
 <img src="docs/demo.gif" alt="nanny showing spaces, agents and subagents" width="900">
 
@@ -31,6 +31,7 @@ Try it on fake data first: `nanny demo` opens nanny on a throwaway `$HOME`. Your
 ## Contents
 
 - [Features](#features)
+- [Requirements & compatibility](#requirements--compatibility)
 - [Install](#install)
 - [Quick start](#quick-start)
 - [Keys](#keys)
@@ -61,18 +62,31 @@ One line each; the details are in [docs/features.md](docs/features.md).
 | ⌨️ [Palette, mouse & guide](docs/features.md#command-palette-mouse-and-welcome-guide) | `ctrl+k` palette, full mouse support, welcome guide. |
 | 🌍 [Languages](docs/features.md#languages) | English, Spanish, French and German. |
 
+## Requirements & compatibility
+
+| | |
+| --- | --- |
+| **OS** | Linux (amd64, arm64). nanny reads `/proc` and uses inotify, so **macOS does not build yet** and Windows is not supported (WSL2 should work, untested). |
+| **Terminal** | Any modern terminal with truecolor and UTF-8. nanny asks for synchronized output and the kitty keyboard protocol when the terminal has them, and works without. |
+| **Needs** | `git` and [Claude Code](https://claude.com/claude-code) (`claude`) for what nanny watches. Go 1.26+ only to build from source. |
+| **Optional** | `gh` (Git & PRs), a Jira Cloud API token (Jira), `python3` (Hermes and opencode), `docker` / `tilt` (Monitor), sound, notification and clipboard tools. |
+
+Details, Nerd Font notes and the full list of optional tools: [docs/install.md](docs/install.md#requirements-and-compatibility).
+
 ## Install
 
 ```sh
-# release binary (falls back to `go install` if there's none for your platform)
 curl -fsSL https://raw.githubusercontent.com/secuone/nanny/main/scripts/install.sh | sh
-
-# or with Go >= 1.25
-go install github.com/secuone/nanny/cmd/nanny@latest
-
-# or from a clone
-make install            # → ~/.local/bin/nanny
 ```
+
+There is no tagged release yet, so the script builds `main` from source (needs `git` and Go 1.26+) into `~/.local/bin`. Once releases exist it downloads the binary instead. From a clone:
+
+```sh
+git clone https://github.com/secuone/nanny && cd nanny
+make install            # → ~/.local/bin/nanny (PREFIX=/usr/local to change)
+```
+
+`go install …@latest` does not work: `go.mod` has a `replace` for a vendored package.
 
 Shell helpers (`sp <query>` and `spr <query>`):
 
@@ -80,15 +94,15 @@ Shell helpers (`sp <query>` and `spr <query>`):
 echo 'eval "$(nanny shell-init zsh)"' >> ~/.zshrc     # bash: shell-init bash · fish: shell-init fish | source
 ```
 
-Requires Linux or macOS and `git`. Optional: `python3` (Hermes and opencode databases), `pw-play`, `paplay` or `afplay` (sounds), `notify-send` (desktop alerts), `wl-copy` or `xclip` (clipboard).
+Updating, uninstalling and where nanny keeps its files: [docs/install.md](docs/install.md).
 
 ## Quick start
 
-1. Run `nanny demo` to look around on fake data.
-2. Run `nanny`. Press `D` to discover your projects and tick the ones you want as spaces.
+1. Run `nanny demo` to look around on fake data. Your real files aren't touched.
+2. Run `nanny`. A short welcome guide opens on the first start, then a setup wizard for Jira and `gh` (skip it with `esc`). Press `D` to discover your projects and tick the ones you want as spaces.
 3. In a space, press `ctrl+b` then `c` for a Claude tab, or `s` for a shell.
-4. Press `1-8` for the views (Live, Sessions, Git, Tasks, Prompts, Skills, Monitor, Settings), `ctrl+k` for the palette, `?` for help.
-5. Press `q` to leave. Panes keep running; run `nanny` again to reattach. `nanny resume <query>` resumes a past session from the shell.
+4. Press `1-8` for the views (Live, Sessions, Git & PRs, Tasks, Prompts, Skills, Monitor, Settings), `E` for Jira, `I` for Insights, `ctrl+k` for the palette, `?` for help.
+5. Press `ctrl+q` to quit (it asks first; `q` from a view does the same). Panes keep running; run `nanny` again to reattach. `nanny resume <query>` resumes a past session from the shell.
 
 ## Keys
 
@@ -101,14 +115,15 @@ Pane commands start with the prefix, `ctrl+b` by default. The essentials:
 | `ctrl+b` `z` / `x` | zoom / close pane |
 | `ctrl+b` `n` / `p` | next / previous tab |
 | `alt+1-9` | switch space |
-| `1-8` | views: Live · Sessions · Git · Tasks · Prompts · Skills · Monitor · Settings |
+| `1-8` | views: Live · Sessions · Git & PRs · Tasks · Prompts · Skills · Monitor · Settings |
+| `E` / `I` | Jira / Insights |
 | `ctrl+k` | command palette |
 | `!` | next agent that needs you |
 | `⏎` | main action in any list: go to · resume · open |
 | `v` | read a conversation full screen |
 | `/` | filter |
-| `ctrl+q` | quit from anywhere (asks first), panes keep running |
-| `q` | quit from a view, panes keep running |
+| `ctrl+q` | quit from anywhere, inside a pane too (asks first), panes keep running |
+| `q` | quit from a view (prefix `q` inside a space) |
 | `?` | full key list for the screen you are on |
 
 All keys: [docs/keys.md](docs/keys.md).
@@ -121,6 +136,7 @@ All keys: [docs/keys.md](docs/keys.md).
 theme = "nanny"              # T opens a live-preview picker
 language = "auto"            # en, es, fr, de
 prefix = "ctrl+b"            # pane command prefix
+quit_key = "ctrl+q"          # "none" gives ctrl+q back to the panes
 restore = true               # reopen spaces and resume Claude panes on start
 claude_args = ""             # appended to every claude you start, e.g. "--model opus"
 profile = "full"             # basic · full · one of yours
@@ -128,6 +144,13 @@ profile = "full"             # basic · full · one of yours
 [alerts]
 sound = true
 on_blocked = true
+
+[jira]                       # the API token is kept in the keyring, never here
+url = "https://acme.atlassian.net"
+email = "you@acme.com"
+
+[git]
+merge_method = "squash"      # squash · merge · rebase
 
 [[watch]]                    # your own Monitor entries
 name = "staging health"
@@ -142,6 +165,7 @@ nanny waits for changes instead of polling: an inotify watch on `~/.claude` says
 
 ## Docs
 
+- [Install & compatibility](docs/install.md): requirements, install, update, uninstall, files and environment variables
 - [Features](docs/features.md): every feature in detail, and the CLI
 - [Keys](docs/keys.md): all keys
 - [Configuration](docs/configuration.md): config file, themes, screen profiles, saved prompts

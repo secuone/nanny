@@ -34,6 +34,7 @@ restore = true               # reopen spaces & resume Claude panes on start
 claude_args = ""             # appended to every claude you start/resume, e.g. "--model opus"
 discover_roots = ["~/dev"]   # where Discover looks for git repos (default: ~/dev, ~/src, ~/code, …)
 hide_bots = true
+launch = "auto"              # auto: resume/new open as nanny tabs · inline: suspend nanny and run here
 profile = "full"             # screen profile: basic (bare minimum) · full (everything) · one of yours
                              # ([profiles.<name>] below; made in Customize =, walked with M)
 
@@ -46,6 +47,7 @@ off = ["view.prompts", "view.skills", "monitor.machine", "monitor.ports", "monit
                          # what the profile turns off, by id:
                          #   layout:  layout.detail (off: one line per agent) layout.extras (model, gauge always, no-repeat off)
                          #   views:   view.live view.sessions view.git view.tasks view.prompts view.skills view.monitor view.jira view.insights
+                         #   Git & PRs sections: git.here (Overview) git.prs git.reviews git.worktrees git.branches git.profile
                          #   Monitor: monitor.machine monitor.ports monitor.containers monitor.tilt
                          #            monitor.jobs monitor.cron monitor.hermes monitor.watchers (off = not collected)
                          #   sidebar: sidebar.branch sidebar.pr sidebar.worktrees sidebar.agents sidebar.hermes sidebar.jira
@@ -69,6 +71,7 @@ toast = true
 desktop = false
 sound_done = ""              # custom file; empty = system "complete"
 sound_blocked = ""           # custom file; empty = system "dialog-warning"
+sound_subagent = ""          # custom file; empty = system "message"
 
 [queue]
 max_parallel = 2             # queued tasks running at once
@@ -134,19 +137,57 @@ tags = ["plan"]
 
 ## State files
 
-Layout state lives in `~/.local/state/nanny/workspace.json`, the task queue in `queue.json`
-next to it (`$XDG_STATE_HOME/nanny/queue.json`).
+Layout state lives in `~/.local/state/nanny/workspace.json` and the task queue in `queue.json` next to it
+(`$XDG_STATE_HOME/nanny/`). The full list of files and where they live is in
+[install.md](install.md#where-nanny-keeps-its-files).
 
 ## Environment variables
 
-- `NANNY_FPS`: maximum screen flushes per second (default 30).
-- `NANNY_DEBUG=1`: logs what the file watch does to `~/.local/state/nanny/debug.log`.
-- `NANNY_CPUPROFILE=file`: writes a CPU profile.
+| Variable | Effect |
+| --- | --- |
+| `XDG_CONFIG_HOME`, `XDG_STATE_HOME`, `XDG_RUNTIME_DIR` | where the config, the state and the pane sockets live |
+| `NANNY_SOCK_DIR` | folder of the pane sockets, overriding the two above |
+| `NANNY_JIRA_TOKEN` | the Jira API token; beats the keyring and the secrets file |
+| `NANNY_FPS` | maximum screen flushes per second (default 30) |
+| `NANNY_NO_WATCH=1` | no inotify watch: scan on a timer (`refresh_secs`) |
+| `NANNY_NO_HOLD=1` | panes run inside nanny, with no holder: they stop when nanny quits |
+| `NANNY_NO_WELCOME=1` | skip the welcome guide and the setup wizard |
+| `NANNY_DEBUG=1` | log what the file watch does to `~/.local/state/nanny/debug.log` |
+| `NANNY_OUTSTATS=file` | log the bytes the screen writes every 5 s |
+| `NANNY_CPUPROFILE=file` | write a CPU profile; `NANNY_CPUPROFILE_AFTER=10s` leaves the start-up out |
+| `HERMES_HOME` | where the Monitor looks for Hermes (default `~/.hermes`) |
+| `DOCKER_HOST`, `DOCKER_CONTEXT`, `TILT_PORT` | which Docker and Tilt the Monitor talks to |
+| `EDITOR`, `VISUAL` | what `e` opens |
+
+`NANNY_DEMO` is set by `nanny demo`; `NANNY_BYTES`, `NANNY_DUMP` and `NANNY_REAL_DIR` only exist for tests
+(see [development.md](development.md)).
 
 ## Git, Jira and Insights
 
-<!-- Git view -->
+Three optional tables; the views they configure are described in [features.md](features.md#git-and-worktrees) and
+[features.md](features.md#jira-and-insights). All of them can be set in Settings too.
 
-<!-- Jira view and setup wizard -->
+```toml
+[git]
+merge_method = "squash"      # what X uses to merge a PR: squash · merge · rebase (it asks first, never forces)
+reviews = "all"              # all: asked of you and your teams · direct: asked of you only
+review_mins = 5              # minutes between looks for reviews while Git & PRs isn't on screen (max 60)
+review_prompt = ""           # what the review agent is told; {url} {number} {repo} are filled in
 
-<!-- Insights view -->
+[jira]
+url = "https://acme.atlassian.net"
+email = "you@acme.com"
+jql = ""                     # "" = assignee = currentUser() AND (statusCategory != Done OR resolved >= -7d)
+sprint_field = ""            # customfield_NNNNN; found by itself when empty
+branch_template = "{key}-{slug}"   # the branch `n` and `b` make for an issue
+refresh_mins = 2             # while the view is on screen
+
+[insights]
+days = 90                    # how many days of transcripts are read and cached
+expensive_usd = 20.0         # a session that costs more is listed under Friction
+export_dir = ""              # where x writes nanny-insights-<week>.json; empty = your home
+```
+
+The Jira API token is never in `config.toml`: it is kept in the desktop keyring (`secret-tool`) or in
+`~/.config/nanny/secrets/` (`0600`), and `NANNY_JIRA_TOKEN` beats both. Create one at
+[id.atlassian.com](https://id.atlassian.com/manage-profile/security/api-tokens).

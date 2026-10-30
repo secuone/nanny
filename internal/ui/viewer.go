@@ -42,6 +42,14 @@ func (m Model) viewerKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch k.String() {
 	case "esc", "q":
 		m.view = nil
+	case "alt+down", "alt+up": // on to the next agent
+		m.view = nil
+		from := m.curAgentKey()
+		if v.parent != nil {
+			from = "s:" + v.parent.ID
+		}
+		mm, cmd, _ := m.navFrom(k.String(), from)
+		return mm, cmd
 	case "k", "up":
 		v.off++
 		v.follow = false

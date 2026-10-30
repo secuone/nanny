@@ -119,8 +119,6 @@ type Model struct {
 	themes    *themePicker
 	look      *lookPass // icons, borders and text weights picked in the config
 	sidebar   bool
-	sideOff   int                // agents scrolled off the top of the sidebar
-	sideSpOff int                // spaces scrolled off the top of the sidebar
 	wtOpen    map[*ws.Space]bool // worktrees opened under a space; folded by default
 	spaceWT   spaceWTMsg         // each space's git worktrees, by its folder
 	spaceWTAt time.Time
@@ -161,17 +159,25 @@ type viewState struct {
 	sideMax   int // how far the sidebar's agents scroll
 	sideSpMax int // how far its spaces scroll
 	sideSplit int // screen row where its agents half starts
-	area      rect
-	rects     []rect
-	paneLines map[*term.Pane]paneLines // what each pane of the open tab drew last
-	bySession map[string]paneRef
-	byPid     map[int]paneRef
-	dirty     bool
-	spaceHits []hit
-	tabHits   []hit
-	termHits  []hit // the terminal tabs strip of a space (row 2)
-	secHits   []hit // the Monitor's sections (row 3)
-	keyHits   []keyHit
+	sideOff   int // agents scrolled off the top of the sidebar
+	sideSpOff int // spaces scrolled off the top of the sidebar
+	// what the sidebar last scrolled into view, so the wheel doesn't fight it
+	sideFollowSpace int
+	sideFollowAgent string
+	sideCurKey      string // the agent last walked to
+	spaceLo         int    // first space chip drawn in the top bar
+	spaceHi         int    // last one
+	area            rect
+	rects           []rect
+	paneLines       map[*term.Pane]paneLines // what each pane of the open tab drew last
+	bySession       map[string]paneRef
+	byPid           map[int]paneRef
+	dirty           bool
+	spaceHits       []hit
+	tabHits         []hit
+	termHits        []hit // the terminal tabs strip of a space (row 2)
+	secHits         []hit // the Monitor's sections (row 3)
+	keyHits         []keyHit
 	// mouse targets recorded while rendering
 	listY0     int   // screen row of the dashboard list's first line
 	listRows   []int // row index shown on each list line
@@ -899,6 +905,9 @@ func (m Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.openThemes()
 		return m, nil
 	}
+	if mm, cmd, ok := m.navKey(k.String()); ok {
+		return mm, cmd
+	}
 	if m.inSpace() && !m.dash {
 		return m.paneKey(k)
 	}
@@ -1173,6 +1182,9 @@ func (m Model) mouse(e mouseEv) (tea.Model, tea.Cmd) {
 			case e.Y == 0 && h.idx == -3:
 				m.appMenu(0, 1)
 				return m, nil
+			case e.Y == 0 && (h.idx == -4 || h.idx == -5):
+				m.hiddenSpacesMenu(h.idx == -4, h.x0)
+				return m, nil
 			case e.Y == 0 && h.idx == m.cur && m.inSpace(): // the space you are in: its terminals
 				m.back()
 				return m, nil
@@ -1241,9 +1253,9 @@ func (m Model) mouse(e mouseEv) (tea.Model, tea.Cmd) {
 			d = -3
 		}
 		if e.Y < m.vs.sideSplit { // each half scrolls on its own
-			m.sideSpOff = max(0, min(m.sideSpOff+d, m.vs.sideSpMax))
+			m.vs.sideSpOff = max(0, min(m.vs.sideSpOff+d, m.vs.sideSpMax))
 		} else {
-			m.sideOff = max(0, min(m.sideOff+d, m.vs.sideMax))
+			m.vs.sideOff = max(0, min(m.vs.sideOff+d, m.vs.sideMax))
 		}
 		return m, nil
 	}
@@ -1266,21 +1278,15 @@ func (m Model) mouse(e mouseEv) (tea.Model, tea.Cmd) {
 			m.cur = r.space
 			m.layoutPanes()
 			return m, m.refreshDetail()
-		case r.sub != nil:
-			return m, m.openViewer(r.sub.Path, true, r.sub.Description, r.sess, r.sub)
-		case r.local != nil:
-			m.focusRef(*r.local)
+		case r.scroll != 0:
+			if e.Y < m.vs.sideSplit {
+				m.vs.sideSpOff = max(0, min(m.vs.sideSpOff+r.scroll, m.vs.sideSpMax))
+			} else {
+				m.vs.sideOff = max(0, min(m.vs.sideOff+r.scroll, m.vs.sideMax))
+			}
+			return m, nil
 		case r.sess != nil:
-			m.cur = -1
-			if !m.toLive() {
-				return m, nil
-			}
-			for i, lr := range m.live.rows {
-				if lr.sess == r.sess && lr.agent() {
-					m.live.cur.idx = i
-				}
-			}
-			return m, m.refreshDetail()
+			return m, m.openAgent(r.sess, r.sub, r.local)
 		}
 		return m, nil
 	}
@@ -1595,7 +1601,7 @@ func (m Model) detailTail(ls []string, headN, h int) string {
 
 func (m Model) viewHeader() string {
 	s := m.st
-	left := m.viewSpaceTabs()
+	left := m.viewSpaceTabs(m.w - 45) // the right side takes about that
 	// fleet summary: what needs you first, then what's moving
 	busy, idle, blocked, done, subsRunning := 0, 0, 0, 0, 0
 	for _, r := range m.live.allRows {
@@ -1679,6 +1685,9 @@ func (m Model) viewHeader() string {
 		if m.w-lipgloss.Width(left)-lipgloss.Width(withSpend) >= 1 {
 			right = withSpend
 		}
+	}
+	if lipgloss.Width(left)+lipgloss.Width(right) >= m.w { // more on the right than guessed
+		left = m.viewSpaceTabs(m.w - lipgloss.Width(right) - 1)
 	}
 	return m.headerLine(left, right, clock)
 }

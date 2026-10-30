@@ -72,21 +72,7 @@ func bootIn(t testing.TB, lang string, w, h int) tea.Model {
 }
 
 func key(m tea.Model, k string) tea.Model {
-	var msg tea.KeyMsg
-	switch k {
-	case "ctrl+k":
-		msg = tea.KeyMsg{Type: tea.KeyCtrlK}
-	case "enter":
-		msg = tea.KeyMsg{Type: tea.KeyEnter}
-	case "esc":
-		msg = tea.KeyMsg{Type: tea.KeyEsc}
-	case "right":
-		msg = tea.KeyMsg{Type: tea.KeyRight}
-	case "left":
-		msg = tea.KeyMsg{Type: tea.KeyLeft}
-	default:
-		msg = tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(k)}
-	}
+	msg := keyPress(k)
 	m, c := m.Update(msg)
 	return drain(m, c, 0)
 }
@@ -286,7 +272,7 @@ func TestSpacesWithRealPanes(t *testing.T) {
 	for _, r := range "echo nanny-$((6*7))" {
 		mm = key(mm, string(r))
 	}
-	mm, _ = mm.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	mm, _ = mm.Update(keyPress("enter"))
 	deadline := time.Now().Add(4 * time.Second)
 	for time.Now().Before(deadline) && !strings.Contains(ansi.Strip(viewOf(mm)), "nanny-42") {
 		time.Sleep(30 * time.Millisecond)
@@ -301,7 +287,7 @@ func TestSpacesWithRealPanes(t *testing.T) {
 		}
 	}
 	// prefix + 0 goes home, prefix + ] comes back
-	mm, _ = mm.Update(tea.KeyMsg{Type: tea.KeyCtrlB})
+	mm, _ = mm.Update(keyPress("ctrl+b"))
 	mm = key(mm, "0")
 	if mm.(Model).inSpace() {
 		t.Error("prefix 0 should go home")
@@ -409,7 +395,7 @@ func TestViewerOpensSubagent(t *testing.T) {
 		}
 	}
 	var c tea.Cmd
-	m, c = tea.Model(mm).Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m, c = tea.Model(mm).Update(keyPress("enter"))
 	m = drain(m, c, 0)
 	if m.(Model).view == nil {
 		t.Fatal("enter on a subagent should open the viewer")
@@ -461,7 +447,7 @@ func TestThemePicker(t *testing.T) {
 		t.Fatal("palette Theme… should open the picker")
 	}
 	m = key(m, "esc")
-	m, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlB})
+	m, _ = m.Update(keyPress("ctrl+b"))
 	m = key(m, "T")
 	if m.(Model).themes == nil {
 		t.Error("prefix T should open the picker")
@@ -469,3 +455,20 @@ func TestThemePicker(t *testing.T) {
 }
 
 func viewOf(m tea.Model) string { return m.View() }
+
+// A row highlight comes back after either spelling of a reset.
+func TestSelSurvivesShortResets(t *testing.T) {
+	prev := lipgloss.ColorProfile()
+	lipgloss.SetColorProfile(termenv.ANSI256)
+	t.Cleanup(func() { lipgloss.SetColorProfile(prev) })
+	s := NewStyles(config.Default().Resolve())
+	on, _, _ := strings.Cut(s.RowSel.UnsetPadding().Render("x"), "x")
+	if on == "" {
+		t.Skip("no colors")
+	}
+	for _, reset := range []string{"\x1b[0m", "\x1b[m"} {
+		if out := s.Sel(s.RowSel, "a\x1b[31mb"+reset+"c"); !strings.Contains(out, reset+on+"c") {
+			t.Errorf("highlight lost after %q: %q", reset, out)
+		}
+	}
+}

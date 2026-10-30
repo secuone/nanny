@@ -184,7 +184,7 @@ func (t *skillsTab) key(m *Model, k tea.KeyMsg) tea.Cmd {
 			}
 			return m.shell(dir)
 		}
-	case " ":
+	case " ", "space":
 		if it == nil {
 			return nil
 		}

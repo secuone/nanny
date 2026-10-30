@@ -158,7 +158,7 @@ func (m Model) helpKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.helpOff++
 	case "k", "up":
 		m.helpOff--
-	case "pgdown", "ctrl+d", " ":
+	case "pgdown", "ctrl+d", " ", "space":
 		m.helpOff += max(1, m.helpRoom()-2)
 	case "pgup", "ctrl+u":
 		m.helpOff -= max(1, m.helpRoom()-2)

@@ -30,7 +30,7 @@ func bootEmpty(t *testing.T, w, h int) tea.Model {
 }
 
 func click(m tea.Model, x, y int) tea.Model {
-	m, c := m.Update(tea.MouseMsg{X: x, Y: y, Button: tea.MouseButtonLeft, Action: tea.MouseActionPress})
+	m, c := m.Update(mouseMsg(x, y, tea.MouseButtonLeft, mousePress))
 	return drain(m, c, 0)
 }
 

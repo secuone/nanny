@@ -169,7 +169,7 @@ func TestFeatureSections(t *testing.T) {
 			alpha = h
 		}
 	}
-	if mm := mouseAt(m, alpha.x0+1, secY, tea.MouseButtonNone, tea.MouseActionMotion); mm.(Model).vs.hover.kind != "sec" {
+	if mm := mouseAt(m, alpha.x0+1, secY, tea.MouseButtonNone, mouseMotion); mm.(Model).vs.hover.kind != "sec" {
 		t.Error("hovering a section should mark it")
 	}
 	if click(m, alpha.x0+1, secY); f.cur != 0 {

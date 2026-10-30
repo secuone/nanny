@@ -473,7 +473,7 @@ func TestGitSectionsFit(t *testing.T) {
 			m := bootIn(t, lang, size[0], size[1])
 			m = key(m, "3")
 			for i := range gitSecs {
-				m, _ = m.Update(tea.KeyMsg{Type: tea.KeyRight})
+				m, _ = m.Update(keyPress("right"))
 				fits(t, m, size[0], size[1], fmt.Sprintf("%s git section %d", lang, gitOf(m).cur))
 				m = drain(m, gitOf(m).due(ptr(m), true), 0)
 				fits(t, m, size[0], size[1], fmt.Sprintf("%s git section %d loaded", lang, gitOf(m).cur))

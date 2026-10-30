@@ -971,7 +971,7 @@ func (m Model) readOnlyKey(p *term.Pane, ks string) (tea.Model, tea.Cmd) {
 		p.Scroll(-1)
 	case "pgup", "ctrl+u", "u":
 		p.Scroll(h / 2)
-	case "pgdown", "ctrl+d", "d", " ":
+	case "pgdown", "ctrl+d", "d", " ", "space":
 		p.Scroll(-h / 2)
 	case "g", "home":
 		p.Scroll(1 << 30)
@@ -1000,7 +1000,7 @@ func (m Model) prefixCmd(ks string) (tea.Model, tea.Cmd) {
 	switch ks {
 	case m.prefixLabel(): // prefix twice sends it literally
 		if t != nil && t.Pane() != nil {
-			t.Pane().Write(keyBytes(tea.KeyMsg{Type: tea.KeyCtrlB}))
+			t.Pane().Write(keyBytes(keyPress(m.prefixLabel())))
 		}
 	case "c":
 		return m, m.openTabIn(sp, "claude", claudeArgv)

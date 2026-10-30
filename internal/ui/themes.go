@@ -184,7 +184,7 @@ func (m Model) themeKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 // askFor opens the input line for what (rename, import, export).
 func (t *themePicker) askFor(what, value string) tea.Cmd {
-	in := textinput.New()
+	in := newInput()
 	in.Prompt = "› "
 	in.SetValue(value)
 	in.CursorEnd()

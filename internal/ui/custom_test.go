@@ -262,7 +262,7 @@ func TestProfileChip(t *testing.T) {
 		}
 		fits(t, m, size[0], size[1], "basic")
 		x, y = chip(m)
-		m = mouseAt(m, x, y, tea.MouseButtonWheelDown, tea.MouseActionPress)
+		m = mouseAt(m, x, y, tea.MouseButtonWheelDown, mousePress)
 		if m.(Model).cfg.ActiveProfile() != config.ProfileFull {
 			t.Errorf("the wheel walks them: %q", m.(Model).cfg.ActiveProfile())
 		}

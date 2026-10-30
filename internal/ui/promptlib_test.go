@@ -4,7 +4,6 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/secuone/nanny/internal/config"
 )
 
@@ -69,7 +68,7 @@ func TestPromptLibrary(t *testing.T) {
 	m.lib.ed.name.SetValue("deploy")
 	m.lib.ed.tags.SetValue("ops, ci")
 	m.lib.ed.text.SetValue("Deploy {branch} to staging\nand watch the logs.")
-	mm, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlS})
+	mm, _ := m.Update(keyPress("ctrl+s"))
 	m = mm.(Model)
 	if m.lib.ed != nil {
 		t.Fatalf("ctrl+s should save: %s", m.status)
@@ -105,7 +104,7 @@ func TestPromptIntoPane(t *testing.T) {
 	m.layoutPanes()
 	p := m.space().Tab().Pane()
 	screenHas(t, p, "────")
-	mm, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlB})
+	mm, _ := m.Update(keyPress("ctrl+b"))
 	m = key(mm, "P").(Model)
 	if m.lib == nil {
 		t.Fatal("prefix P should open the prompt library")
@@ -130,7 +129,7 @@ func TestPromptIntoPane(t *testing.T) {
 		}
 	}
 	// the palette ranks it first now
-	mm, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlB})
+	mm, _ = m.Update(keyPress("ctrl+b"))
 	m = key(mm, ":").(Model)
 	m.pal.input.SetValue("snippet")
 	m.pal.filter()

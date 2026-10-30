@@ -23,13 +23,13 @@ type pressAt struct {
 
 // selectMouse handles the drag of a selection; ok is false when the event is
 // something else.
-func (m Model) selectMouse(e tea.MouseMsg) (tea.Model, tea.Cmd, bool) {
+func (m Model) selectMouse(e mouseEv) (tea.Model, tea.Cmd, bool) {
 	switch {
-	case e.Action == tea.MouseActionPress && e.Button == tea.MouseButtonLeft:
+	case e.Action == mousePress && e.Button == tea.MouseButtonLeft:
 		m.vs.sel = selection{}
 		m.vs.press = pressAt{true, e.X, e.Y}
 		return m, nil, false // the press still clicks
-	case e.Action == tea.MouseActionMotion && e.Button == tea.MouseButtonLeft:
+	case e.Action == mouseMotion && e.Button == tea.MouseButtonLeft:
 		p := m.vs.press
 		if !p.ok || m.vs.drag.kind != "" || m.menu != nil || !m.vs.sel.on && e.X == p.x && e.Y == p.y {
 			return m, nil, false
@@ -41,7 +41,7 @@ func (m Model) selectMouse(e tea.MouseMsg) (tea.Model, tea.Cmd, bool) {
 		m.vs.sel.bx = max(b.x, min(e.X, b.x+b.w-1))
 		m.vs.sel.by = max(b.y, min(e.Y, b.y+b.h-1))
 		return m, nil, true
-	case e.Action == tea.MouseActionRelease:
+	case e.Action == mouseRelease:
 		m.vs.press = pressAt{}
 		if !m.vs.sel.on {
 			return m, nil, false

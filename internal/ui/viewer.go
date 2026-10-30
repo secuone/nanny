@@ -51,7 +51,7 @@ func (m Model) viewerKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "pgup", "ctrl+u", "b":
 		v.off += page
 		v.follow = false
-	case "pgdown", "ctrl+d", " ":
+	case "pgdown", "ctrl+d", " ", "space":
 		v.off = max(0, v.off-page)
 		v.follow = v.off == 0
 	case "g", "home":

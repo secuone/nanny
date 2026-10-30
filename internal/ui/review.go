@@ -174,7 +174,7 @@ func (m Model) reviewKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		r.focusR = true
 	case "h", "left":
 		r.focusR = false
-	case "pgdown", "ctrl+d", " ":
+	case "pgdown", "ctrl+d", " ", "space":
 		scroll(page)
 	case "pgup", "ctrl+u", "b":
 		scroll(-page)

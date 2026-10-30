@@ -22,7 +22,7 @@ func TestSpaceViews(t *testing.T) {
 	if lines := strings.Split(out, "\n"); !strings.Contains(lines[viewY], "0 ▣ terminal") || !strings.Contains(lines[viewY], "1 Live") {
 		t.Fatalf("the view bar should stay in a space:\n%s", lines[viewY])
 	}
-	mm, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlB})
+	mm, _ := m.Update(keyPress("ctrl+b"))
 	m = key(mm, "i").(Model)
 	if !m.dash || !m.onTab(tabLive) {
 		t.Fatal("prefix i should show the space's views")

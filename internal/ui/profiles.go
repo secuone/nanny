@@ -3,7 +3,6 @@ package ui
 import (
 	"fmt"
 
-	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/secuone/nanny/internal/config"
 )
@@ -80,7 +79,7 @@ func (m *Model) custNewName() { m.custAsk(false, "") }
 // custAsk opens the name line of the customize screen: a new profile, or a
 // new name for the one in use.
 func (m *Model) custAsk(rename bool, value string) {
-	in := textinput.New()
+	in := newInput()
 	in.Prompt = "› "
 	in.CharLimit = 24
 	in.SetValue(value)

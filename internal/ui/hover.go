@@ -64,7 +64,7 @@ func (m Model) hoverTarget(x, y int) hoverAt {
 
 // hoverMove follows the pointer. Most moves change nothing on screen, so the
 // last frame is reused instead of drawn again.
-func (m Model) hoverMove(e tea.MouseMsg) (tea.Model, tea.Cmd) {
+func (m Model) hoverMove(e mouseEv) (tea.Model, tea.Cmd) {
 	h := m.hoverTarget(e.X, e.Y)
 	if h == m.vs.hover {
 		m.vs.reuse = true
@@ -75,7 +75,7 @@ func (m Model) hoverMove(e tea.MouseMsg) (tea.Model, tea.Cmd) {
 }
 
 // dropTab ends a drag: a tab let go over another one takes its place.
-func (m Model) dropTab(e tea.MouseMsg) (tea.Model, tea.Cmd) {
+func (m Model) dropTab(e mouseEv) (tea.Model, tea.Cmd) {
 	d := m.vs.drag
 	m.vs.drag = dragFrom{}
 	if d.kind == "" {
@@ -589,7 +589,7 @@ func (m *Model) listMenu(x, y int) {
 }
 
 // rightClick opens the menu of whatever is under the pointer.
-func (m Model) rightClick(e tea.MouseMsg) (tea.Model, tea.Cmd) {
+func (m Model) rightClick(e mouseEv) (tea.Model, tea.Cmd) {
 	if !m.noModal() || m.view != nil || m.rev != nil {
 		return m, nil
 	}
@@ -723,16 +723,16 @@ func (m Model) runMenu(i int) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m Model) menuMouse(e tea.MouseMsg) (tea.Model, tea.Cmd) {
+func (m Model) menuMouse(e mouseEv) (tea.Model, tea.Cmd) {
 	i := m.menuAt(e.X, e.Y)
 	switch {
-	case e.Action == tea.MouseActionMotion:
+	case e.Action == mouseMotion:
 		if i < 0 || i == m.menu.cur {
 			m.vs.reuse = true
 			return m, nil
 		}
 		m.menu.cur = i
-	case e.Action == tea.MouseActionRelease:
+	case e.Action == mouseRelease:
 	case e.Button == tea.MouseButtonWheelUp:
 		m.menu.move(-1)
 	case e.Button == tea.MouseButtonWheelDown:
@@ -759,7 +759,7 @@ func (m Model) menuKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		mn.move(-1)
 	case "right", "l":
 		mn.move(1)
-	case "enter", " ":
+	case "enter", " ", "space":
 		return m.runMenu(mn.cur)
 	default:
 		for i, it := range mn.items {
@@ -774,7 +774,7 @@ func (m Model) menuKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (r rect) has(x, y int) bool { return x >= r.x && x < r.x+r.w && y >= r.y && y < r.y+r.h }
 
 // middleClose closes the terminal tab under a middle click, like a browser.
-func (m Model) middleClose(e tea.MouseMsg) (tea.Model, tea.Cmd) {
+func (m Model) middleClose(e mouseEv) (tea.Model, tea.Cmd) {
 	if h := m.hoverTarget(e.X, e.Y); h.kind == "term" && h.idx >= 0 {
 		m.space().Active = h.idx
 		m.layoutPanes()

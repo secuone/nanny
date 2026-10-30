@@ -115,7 +115,7 @@ type jiraView struct {
 }
 
 func newJiraView() *jiraView {
-	in := textinput.New()
+	in := newInput()
 	in.Prompt = "/ "
 	in.Placeholder = "…"
 	return &jiraView{search: in, dev: map[string][]jira.DevPR{}, devAsked: map[string]bool{}}

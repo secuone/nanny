@@ -260,7 +260,7 @@ func (m Model) customizeKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 	case "right", "l":
 		delete(c.shut, r.n.name)
-	case " ", "enter", "x":
+	case " ", "space", "enter", "x":
 		m.custSwitch(r.n, m.custState(r.n) != custAll)
 		m.live.rebuild(&m)
 		return m, m.saveConfig()

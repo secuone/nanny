@@ -14,8 +14,19 @@ import (
 	"github.com/secuone/nanny/internal/sources"
 )
 
-func mouseAt(m tea.Model, x, y int, b tea.MouseButton, a tea.MouseAction) tea.Model {
-	m, c := m.Update(tea.MouseMsg{X: x, Y: y, Button: b, Action: a})
+func mouseMsg(x, y int, b tea.MouseButton, a mouseAction) tea.MouseMsg {
+	act := tea.MouseActionPress
+	switch a {
+	case mouseRelease:
+		act = tea.MouseActionRelease
+	case mouseMotion:
+		act = tea.MouseActionMotion
+	}
+	return tea.MouseMsg{X: x, Y: y, Button: b, Action: act}
+}
+
+func mouseAt(m tea.Model, x, y int, b tea.MouseButton, a mouseAction) tea.Model {
+	m, c := m.Update(mouseMsg(x, y, b, a))
 	return drain(m, c, 0)
 }
 
@@ -37,20 +48,20 @@ func TestHoverTermTab(t *testing.T) {
 	m.layoutPanes()
 	viewOf(m)
 	h := termHit(t, m, 0)
-	mm := mouseAt(m, h.x0+1, termY, tea.MouseButtonNone, tea.MouseActionMotion)
+	mm := mouseAt(m, h.x0+1, termY, tea.MouseButtonNone, mouseMotion)
 	out := ansi.Strip(viewOf(mm))
 	if !strings.Contains(out, "right-click menu") || !strings.Contains(out, tilde(m.space().Tabs[0].Pane().Cwd)) {
 		t.Fatalf("hovering a tab should show its panes:\n%s", out)
 	}
 	fits(t, mm, 150, 42, "tooltip")
-	mm = mouseAt(mm, 100, 20, tea.MouseButtonNone, tea.MouseActionMotion)
+	mm = mouseAt(mm, 100, 20, tea.MouseButtonNone, mouseMotion)
 	if strings.Contains(ansi.Strip(viewOf(mm)), "right-click menu") {
 		t.Error("moving away should hide the tooltip")
 	}
 	// the views bar explains each view
 	for _, th := range mm.(Model).vs.tabHits {
 		if th.idx == int(tabRadar) {
-			mm = mouseAt(mm, th.x0+1, viewY, tea.MouseButtonNone, tea.MouseActionMotion)
+			mm = mouseAt(mm, th.x0+1, viewY, tea.MouseButtonNone, mouseMotion)
 		}
 	}
 	if !strings.Contains(ansi.Strip(viewOf(mm)), "open ports") {
@@ -65,7 +76,7 @@ func TestTermTabMenu(t *testing.T) {
 	m.layoutPanes()
 	viewOf(m)
 	h := termHit(t, m, 0)
-	var mm tea.Model = mouseAt(m, h.x0+1, termY, tea.MouseButtonRight, tea.MouseActionPress)
+	var mm tea.Model = mouseAt(m, h.x0+1, termY, tea.MouseButtonRight, mousePress)
 	if mm.(Model).menu == nil {
 		t.Fatal("right-click on a tab should open its menu")
 	}
@@ -86,9 +97,9 @@ func TestTermTabMenu(t *testing.T) {
 		t.Errorf("tab label = %q, want api", got)
 	}
 	// a click outside closes a menu
-	mm = mouseAt(mm, h.x0+1, termY, tea.MouseButtonRight, tea.MouseActionPress)
+	mm = mouseAt(mm, h.x0+1, termY, tea.MouseButtonRight, mousePress)
 	viewOf(mm)
-	if mm = mouseAt(mm, 140, 30, tea.MouseButtonLeft, tea.MouseActionPress); mm.(Model).menu != nil {
+	if mm = mouseAt(mm, 140, 30, tea.MouseButtonLeft, mousePress); mm.(Model).menu != nil {
 		t.Error("clicking elsewhere should close the menu")
 	}
 }
@@ -105,9 +116,9 @@ func TestDragTab(t *testing.T) {
 	viewOf(m)
 	first := sp.Tabs[0]
 	a, b := termHit(t, m, 0), termHit(t, m, 1)
-	var mm tea.Model = mouseAt(m, a.x0+1, termY, tea.MouseButtonLeft, tea.MouseActionPress)
-	mm = mouseAt(mm, b.x0+1, termY, tea.MouseButtonLeft, tea.MouseActionMotion)
-	mm = mouseAt(mm, b.x0+1, termY, tea.MouseButtonLeft, tea.MouseActionRelease)
+	var mm tea.Model = mouseAt(m, a.x0+1, termY, tea.MouseButtonLeft, mousePress)
+	mm = mouseAt(mm, b.x0+1, termY, tea.MouseButtonLeft, mouseMotion)
+	mm = mouseAt(mm, b.x0+1, termY, tea.MouseButtonLeft, mouseRelease)
 	if sp.Tabs[1] != first || sp.Active != 1 {
 		t.Error("the dragged tab should land where it was dropped, still active")
 	}
@@ -124,7 +135,7 @@ func TestSpaceIcon(t *testing.T) {
 			x = h.x0 + 1
 		}
 	}
-	var mm tea.Model = mouseAt(m, x, 0, tea.MouseButtonRight, tea.MouseActionPress)
+	var mm tea.Model = mouseAt(m, x, 0, tea.MouseButtonRight, mousePress)
 	viewOf(mm)
 	mm = key(mm, "e") // Icon…
 	if mm.(Model).menu == nil || mm.(Model).menu.cols != 8 {
@@ -298,7 +309,7 @@ func TestHoverButtonsAndSections(t *testing.T) {
 	m.layoutPanes()
 	viewOf(m)
 	h := termHit(t, m, -2)
-	mm := mouseAt(m, h.x0+1, termY, tea.MouseButtonNone, tea.MouseActionMotion)
+	mm := mouseAt(m, h.x0+1, termY, tea.MouseButtonNone, mouseMotion)
 	if got := mm.(Model).vs.hover; got.kind != "term" || got.idx != -2 {
 		t.Errorf("hovering + claude: %+v", got)
 	}
@@ -308,7 +319,7 @@ func TestHoverButtonsAndSections(t *testing.T) {
 	mon := key(mb, "7")
 	viewOf(mon)
 	sh := mon.(Model).vs.secHits[2]
-	mon = mouseAt(mon, sh.x0+1, secY, tea.MouseButtonNone, tea.MouseActionMotion)
+	mon = mouseAt(mon, sh.x0+1, secY, tea.MouseButtonNone, mouseMotion)
 	if got := mon.(Model).vs.hover; got.kind != "sec" || got.idx != 2 {
 		t.Errorf("hovering a section: %+v", got)
 	}

@@ -49,7 +49,7 @@ type taskReadyMsg struct {
 func (m *Model) openNewTask(prefer string) tea.Cmd {
 	t := &newTask{dirs: m.taskDirs(prefer), field: fieldPrompt}
 	mk := func(prompt, ph string) textinput.Model {
-		in := textinput.New()
+		in := newInput()
 		in.Prompt, in.Placeholder = prompt, ph
 		return in
 	}

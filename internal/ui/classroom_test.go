@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/secuone/nanny/internal/classroom"
 	"github.com/secuone/nanny/internal/claude"
@@ -70,7 +69,7 @@ func TestLiveFoldsFinishedSubagents(t *testing.T) {
 			m.live.cur.idx = i
 		}
 	}
-	enter := tea.KeyMsg{Type: tea.KeyEnter}
+	enter := keyPress("enter")
 	m.live.key(&m, enter) // its commands would reload the demo's own subagents
 	if ks := liveKeys(m); !strings.Contains(ks, "sub:o1") || !strings.Contains(ks, "sub:o2") || !strings.Contains(ks, "fold:"+sess.ID) {
 		t.Fatalf("⏎ unfolds them, the fold stays to fold them back: %s", ks)

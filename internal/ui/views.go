@@ -3,6 +3,7 @@ package ui
 import (
 	"path/filepath"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -206,6 +207,63 @@ func harvestKeys(out string) (string, []keyHit) {
 	return strings.Join(lines, "\n"), hits
 }
 
+var namedKeys = map[string]tea.KeyType{
+	"enter": tea.KeyEnter, "esc": tea.KeyEsc, "tab": tea.KeyTab, "backspace": tea.KeyBackspace,
+	"up": tea.KeyUp, "down": tea.KeyDown, "left": tea.KeyLeft, "right": tea.KeyRight,
+	"home": tea.KeyHome, "end": tea.KeyEnd, "pgup": tea.KeyPgUp, "pgdown": tea.KeyPgDown,
+	"delete": tea.KeyDelete, "insert": tea.KeyInsert,
+	"f1": tea.KeyF1, "f2": tea.KeyF2, "f3": tea.KeyF3, "f4": tea.KeyF4, "f5": tea.KeyF5, "f6": tea.KeyF6,
+	"f7": tea.KeyF7, "f8": tea.KeyF8, "f9": tea.KeyF9, "f10": tea.KeyF10, "f11": tea.KeyF11, "f12": tea.KeyF12,
+}
+
+var modKeys = map[string][2]tea.KeyType{ // shift and ctrl arrows
+	"up": {tea.KeyShiftUp, tea.KeyCtrlUp}, "down": {tea.KeyShiftDown, tea.KeyCtrlDown},
+	"left": {tea.KeyShiftLeft, tea.KeyCtrlLeft}, "right": {tea.KeyShiftRight, tea.KeyCtrlRight},
+}
+
+// keyPress parses a key label: "a", "R", "enter", "space", "shift+tab", "ctrl+b", "alt+up".
+// Anything else is typed text.
+func keyPress(s string) tea.KeyMsg {
+	var ctrl, alt, shift bool
+	name := s
+	for {
+		if r, ok := strings.CutPrefix(name, "ctrl+"); ok && r != "" {
+			name, ctrl = r, true
+		} else if r, ok := strings.CutPrefix(name, "alt+"); ok && r != "" {
+			name, alt = r, true
+		} else if r, ok := strings.CutPrefix(name, "shift+"); ok && r != "" {
+			name, shift = r, true
+		} else {
+			break
+		}
+	}
+	if name == "space" {
+		return tea.KeyMsg{Type: tea.KeySpace, Runes: []rune{' '}, Alt: alt}
+	}
+	if t, ok := namedKeys[name]; ok {
+		if mk, ok := modKeys[name]; ok && ctrl {
+			t = mk[1]
+		} else if ok && shift {
+			t = mk[0]
+		}
+		if shift && t == tea.KeyTab {
+			t = tea.KeyShiftTab
+		}
+		return tea.KeyMsg{Type: t, Alt: alt}
+	}
+	if utf8.RuneCountInString(name) == 1 {
+		r, _ := utf8.DecodeRuneInString(name)
+		if ctrl && unicode.IsLetter(r) && r < unicode.MaxASCII {
+			return tea.KeyMsg{Type: tea.KeyCtrlA + tea.KeyType(unicode.ToLower(r)-'a'), Alt: alt}
+		}
+		if shift {
+			r = unicode.ToUpper(r)
+		}
+		return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}, Alt: alt}
+	}
+	return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(s)}
+}
+
 // hintKey is the key press a hint label stands for; ok is false for labels
 // that name several keys ("j/k", "1-9", "←→").
 func hintKey(label string) (tea.KeyMsg, bool) {
@@ -214,13 +272,9 @@ func hintKey(label string) (tea.KeyMsg, bool) {
 	}
 	switch strings.ToLower(label) {
 	case "⏎", "enter":
-		return tea.KeyMsg{Type: tea.KeyEnter}, true
-	case "esc":
-		return tea.KeyMsg{Type: tea.KeyEsc}, true
-	case "tab":
-		return tea.KeyMsg{Type: tea.KeyTab}, true
-	case "space":
-		return tea.KeyMsg{Type: tea.KeySpace, Runes: []rune{' '}}, true
+		return keyPress("enter"), true
+	case "esc", "tab", "space":
+		return keyPress(strings.ToLower(label)), true
 	}
 	ctrl := ""
 	switch {
@@ -230,14 +284,14 @@ func hintKey(label string) (tea.KeyMsg, bool) {
 		ctrl = label[5:]
 	}
 	if c := strings.ToLower(ctrl); c != "" && c[0] >= 'a' && c[0] <= 'z' {
-		return tea.KeyMsg{Type: tea.KeyCtrlA + tea.KeyType(c[0]-'a')}, true
+		return keyPress("ctrl+" + c), true
 	}
 	if utf8.RuneCountInString(label) == 1 {
 		r, _ := utf8.DecodeRuneInString(label)
 		if strings.ContainsRune("←→↑↓", r) {
 			return tea.KeyMsg{}, false
 		}
-		return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}}, true
+		return keyPress(label), true
 	}
 	return tea.KeyMsg{}, false
 }

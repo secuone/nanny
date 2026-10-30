@@ -45,7 +45,7 @@ var tokenInfo = map[string]string{
 // editTheme opens the editor on a copy of from; was is the user theme being
 // changed (it keeps its name unless you give it another), or "" for a new one.
 func (m *Model) editTheme(from, was string) {
-	in := textinput.New()
+	in := newInput()
 	in.Prompt = ""
 	in.CharLimit = 32
 	name := was
@@ -146,7 +146,7 @@ func (m Model) themeEditKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 			e.name.CursorEnd()
 			return m, e.name.Focus()
 		}
-		in := textinput.New()
+		in := newInput()
 		in.Prompt = "#"
 		in.CharLimit = 7
 		in.SetValue(strings.TrimPrefix(e.p.Get(e.token()), "#"))

@@ -87,7 +87,7 @@ func (m Model) lookKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case "enter":
 		if e.cur.idx == 5 {
-			in := textinput.New()
+			in := newInput()
 			in.Prompt = "› "
 			in.SetValue(l.WebFont)
 			in.CursorEnd()
@@ -105,7 +105,7 @@ func (m Model) lookKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, m.saveConfig()
 	case "left", "h":
 		step = -1
-	case "right", "l", " ":
+	case "right", "l", " ", "space":
 	default:
 		return m, nil
 	}

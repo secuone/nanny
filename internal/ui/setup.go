@@ -78,7 +78,7 @@ func (m *Model) finishSetup() {
 
 func (m *Model) openSetup(step int) {
 	mk := func(prompt, ph, v string) textinput.Model {
-		in := textinput.New()
+		in := newInput()
 		in.Prompt, in.Placeholder = prompt, ph
 		in.SetValue(v)
 		in.CharLimit = 300
@@ -232,7 +232,7 @@ func (m Model) setupKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		switch ks {
 		case "s":
 			m.finishSetup()
-		case "enter", "right", "n", " ", "tab":
+		case "enter", "right", "n", " ", "space", "tab":
 			return m, m.setupGo(setupJira)
 		}
 		return m, nil

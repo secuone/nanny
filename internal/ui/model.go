@@ -238,7 +238,7 @@ func New(cfg config.Config) Model {
 		tq:     loadQueue(),
 		paneCh: make(chan struct{}, 1),
 	}
-	m.sess.filter = textinput.New()
+	m.sess.filter = newInput()
 	m.sess.filter.Prompt = "  "
 	m.sess.filter.Placeholder = T("type to filter — title, repo, branch, prompt, id…")
 	m.sess.hideBots = cfg.HideBots
@@ -249,7 +249,7 @@ func New(cfg config.Config) Model {
 		m.welcome = &welcome{}
 	}
 	m.tab = m.homeTab()
-	m.skills.filter = textinput.New()
+	m.skills.filter = newInput()
 	m.skills.filter.Prompt = "  "
 	m.skills.filter.Placeholder = T("filter skills, commands, agents…")
 	if st, err := ws.Load(); err == nil {
@@ -697,7 +697,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(m.scanCmd())
 
 	case tea.MouseMsg:
-		return m.mouse(msg)
+		return m.mouse(toMouseEv(msg))
 
 	case tea.KeyMsg:
 		return m.key(msg)
@@ -1086,7 +1086,7 @@ func (m Model) switchTab(t tab) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m Model) mouse(e tea.MouseMsg) (tea.Model, tea.Cmd) {
+func (m Model) mouse(e mouseEv) (tea.Model, tea.Cmd) {
 	if mm, cmd, ok := m.selectMouse(e); ok {
 		return mm, cmd
 	}
@@ -1094,9 +1094,9 @@ func (m Model) mouse(e tea.MouseMsg) (tea.Model, tea.Cmd) {
 		return m.menuMouse(e)
 	}
 	switch e.Action {
-	case tea.MouseActionMotion:
+	case mouseMotion:
 		return m.hoverMove(e)
-	case tea.MouseActionRelease:
+	case mouseRelease:
 		return m.dropTab(e)
 	}
 	m.vs.hover = hoverAt{}
@@ -1257,9 +1257,9 @@ func (m Model) mouse(e tea.MouseMsg) (tea.Model, tea.Cmd) {
 			m.detailOff = max(0, m.detailOff+d*3)
 			return m, nil
 		}
-		key := tea.KeyMsg{Type: tea.KeyDown}
+		key := keyPress("down")
 		if d < 0 {
-			key = tea.KeyMsg{Type: tea.KeyUp}
+			key = keyPress("up")
 		}
 		m.focusR = false
 		return m.key(key)
@@ -1322,7 +1322,7 @@ func (m *Model) ask(title, body string, fn func(m *Model, v string) tea.Cmd) {
 }
 
 func (m *Model) prompt(title, body, placeholder string, fn func(m *Model, v string) tea.Cmd) {
-	in := textinput.New()
+	in := newInput()
 	in.Placeholder = placeholder
 	in.Prompt = "› "
 	in.Focus()

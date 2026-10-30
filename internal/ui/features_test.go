@@ -267,7 +267,7 @@ func TestSnippetIntoPane(t *testing.T) {
 	m.layoutPanes()
 	p := m.space().Tab().Pane()
 	screenHas(t, p, "────")
-	mm, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlB}) // in a space the palette is prefix :
+	mm, _ := m.Update(keyPress("ctrl+b")) // in a space the palette is prefix :
 	m = key(mm, ":").(Model)
 	m.pal.input.SetValue("snippet tests")
 	m.pal.filter()

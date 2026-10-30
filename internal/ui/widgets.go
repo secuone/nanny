@@ -5,9 +5,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 )
+
+// newInput is a plain one-line input: no prompt or text styling, a dim placeholder.
+func newInput() textinput.Model {
+	in := textinput.New()
+	in.PlaceholderStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+	return in
+}
 
 // cursor tracks a selection and scroll offset over n rows.
 type cursor struct{ idx, off int }

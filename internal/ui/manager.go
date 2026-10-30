@@ -256,7 +256,7 @@ func (m Model) discoveryKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		d.cur = 0
 	case "G", "end":
 		d.cur = max(0, n-1)
-	case " ", "x":
+	case " ", "space", "x":
 		if d.cur < n && !m.existing(d.places[d.cur].Path) {
 			d.picked[d.cur] = !d.picked[d.cur]
 		}

@@ -21,7 +21,7 @@ func typeText(m tea.Model, s string) tea.Model {
 
 func backspaces(m tea.Model, n int) tea.Model {
 	for i := 0; i < n; i++ {
-		m, _ = m.Update(tea.KeyMsg{Type: tea.KeyBackspace})
+		m, _ = m.Update(keyPress("backspace"))
 	}
 	return m
 }

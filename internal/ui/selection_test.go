@@ -14,8 +14,8 @@ import (
 func TestMouseSelectionCopies(t *testing.T) {
 	var m tea.Model = boot(t, 150, 42)
 	viewOf(m)
-	m = mouseAt(m, 40, 6, tea.MouseButtonLeft, tea.MouseActionPress)
-	m = mouseAt(m, 60, 6, tea.MouseButtonLeft, tea.MouseActionMotion)
+	m = mouseAt(m, 40, 6, tea.MouseButtonLeft, mousePress)
+	m = mouseAt(m, 60, 6, tea.MouseButtonLeft, mouseMotion)
 	out := viewOf(m)
 	if !strings.Contains(out, "\x1b[0;7m") {
 		t.Fatal("the selection should show")
@@ -24,7 +24,7 @@ func TestMouseSelectionCopies(t *testing.T) {
 	if got := m.(Model).selText(m.(Model).vs.frame); got != want || got == "" {
 		t.Errorf("selected %q, want %q", got, want)
 	}
-	m, cmd := m.Update(tea.MouseMsg{X: 60, Y: 6, Action: tea.MouseActionRelease, Button: tea.MouseButtonLeft})
+	m, cmd := m.Update(mouseMsg(60, 6, tea.MouseButtonLeft, mouseRelease))
 	if cmd == nil {
 		t.Error("letting go should copy")
 	}
@@ -88,7 +88,7 @@ func TestBackgroundRefreshesCoalesce(t *testing.T) {
 		t.Fatal("the flush draws them")
 	}
 	mm, _ = mm.Update(sessionsMsg(m.sessions))
-	mm, _ = mm.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("j")})
+	mm, _ = mm.Update(keyPress("j"))
 	if strings.Contains(ansi.Strip(viewOf(mm)), "Renamed while you look") {
 		t.Error("a key draws at once, with what the refresh brought")
 	}

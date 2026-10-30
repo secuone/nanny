@@ -40,7 +40,7 @@ func (m Model) welcomeKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch k.String() {
 	case "esc", "q", "ctrl+c":
 		m.closeWelcome()
-	case "right", "l", "n", "enter", " ", "tab":
+	case "right", "l", "n", "enter", " ", "space", "tab":
 		if w.page++; w.page >= welcomePages {
 			m.closeWelcome()
 		}
@@ -53,7 +53,7 @@ func (m Model) welcomeKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m Model) welcomeMouse(e tea.MouseMsg) (tea.Model, tea.Cmd) {
+func (m Model) welcomeMouse(e mouseEv) (tea.Model, tea.Cmd) {
 	if e.Button == tea.MouseButtonLeft {
 		if mm, cmd, ok := m.keyClick(e.X, e.Y); ok {
 			return mm, cmd

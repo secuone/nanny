@@ -79,7 +79,7 @@ func historyCmd() tea.Cmd {
 }
 
 func (m *Model) openPrompts() tea.Cmd {
-	in := textinput.New()
+	in := newInput()
 	in.Prompt = "/ "
 	in.Placeholder = T("filter prompts, tags, projects…")
 	m.lib = &promptLib{filter: in, saved: config.LoadSnippets()}
@@ -416,9 +416,9 @@ func (m *Model) editPrompt(s *config.Snippet, text string) tea.Cmd {
 	p := m.st.P
 	c := func(h string) lipgloss.Color { return lipgloss.Color(h) }
 	e := &promptEditor{}
-	e.name = textinput.New()
+	e.name = newInput()
 	e.name.Prompt, e.name.Placeholder = "› ", T("short name, e.g. tests")
-	e.tags = textinput.New()
+	e.tags = newInput()
 	e.tags.Prompt, e.tags.Placeholder = "› ", T("optional, comma separated")
 	e.text = textarea.New()
 	e.text.ShowLineNumbers = false

@@ -78,7 +78,7 @@ func (s Styles) BadgeColor(bg string) lipgloss.Style {
 // resets of inner styled segments so the highlight doesn't stop at the first one.
 func (s Styles) Sel(st lipgloss.Style, line string) string {
 	if on, _, ok := strings.Cut(st.UnsetPadding().Render("x"), "x"); ok && on != "" {
-		line = strings.ReplaceAll(line, "\x1b[0m", "\x1b[0m"+on)
+		line = strings.ReplaceAll(strings.ReplaceAll(line, "\x1b[0m", "\x1b[0m"+on), "\x1b[m", "\x1b[m"+on)
 	}
 	return st.Render(line)
 }

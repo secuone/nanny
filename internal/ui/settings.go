@@ -178,7 +178,7 @@ type settingsTab struct {
 func (t *settingsTab) key(m *Model, k tea.KeyMsg) tea.Cmd {
 	n := len(settingsList)
 	it := settingsList[t.cur.idx]
-	if it.open != nil && (k.String() == "enter" || k.String() == " " || k.String() == "right" || k.String() == "l") {
+	if it.open != nil && (k.String() == "enter" || k.String() == " " || k.String() == "space" || k.String() == "right" || k.String() == "l") {
 		return it.open(m)
 	}
 	change := func(d int) tea.Cmd {
@@ -197,7 +197,7 @@ func (t *settingsTab) key(m *Model, k tea.KeyMsg) tea.Cmd {
 		t.cur.idx = 0
 	case "G", "end":
 		t.cur.idx = n - 1
-	case "right", "l", " ":
+	case "right", "l", " ", "space":
 		return change(1)
 	case "left", "h":
 		return change(-1)
@@ -210,7 +210,7 @@ func (t *settingsTab) key(m *Model, k tea.KeyMsg) tea.Cmd {
 			return nil
 		}
 		if it.set != nil {
-			in := textinput.New()
+			in := newInput()
 			in.Prompt = "› "
 			in.SetValue(it.get(&m.cfg))
 			in.CursorEnd()

@@ -86,3 +86,7 @@ off = ["view.prompts", "view.skills", "monitor.machine", "monitor.ports", "monit
 # [jira] — the Jira view
 
 # [insights] — the Insights view
+# [insights]
+# days          = 90      # how many days of transcripts are read (and kept in the cache)
+# expensive_usd = 20.0    # a session that costs more is listed under Friction
+# export_dir    = ""      # where x writes nanny-insights-<week>.json; empty = your home

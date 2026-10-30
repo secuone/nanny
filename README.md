@@ -172,6 +172,16 @@ nanny is a terminal workspace (spaces → tabs → panes) built around those que
 <!-- Jira view and setup wizard -->
 
 <!-- Insights view -->
+- **Insights** (`I`): what your Claude usage costs and does, read from the local transcripts, with nothing sent
+  anywhere and nothing read while the view is off or not on screen. Sections (`←→`): Summary, Cost (per day),
+  Projects, Models, Tools (calls, failures, speed), Permissions (by rules, asked, accepted, rejected, blocked),
+  Edits (accepted, rejected, lines), Friction (API retries, interruptions, compactions, error loops, and the
+  sessions that cost more than `expensive_usd`: `⏎` reads one) and Week. `t` walks 7 days · 30 days · 90 days ·
+  today, `[ ]` scope to a project like everywhere, `,` `.` move through weeks, `x` writes the week as
+  `nanny-insights-2026-W44.json` (keys in order, numbers rounded) and `y` copies it, `r` reads everything again.
+  The first run reads every transcript of the last `days` (a few seconds for a year of use); after that only the
+  new bytes are read, and the tally is kept in `~/.local/state/nanny/insights/v1.gob`.
+  `nanny insights [--week 2026-W44] [--json]` prints the same week without the TUI.
 
 ### CLI
 

@@ -7,6 +7,9 @@
 <!-- Jira view and setup wizard -->
 
 <!-- Insights view -->
+- **Insights view** (`I`): cost, tokens, active time, tools, permissions, edits and friction per day, project and
+  model, read from your transcripts with an incremental on-disk cache; the week exports as JSON (`x`, `y`) and
+  `nanny insights [--week] [--json]` prints it. `[insights]` in the config: `days`, `expensive_usd`, `export_dir`.
 
 - **Worktrees is now Git** (still key `3`) and the views bar has room for two more: `E` Jira and `I` Insights. In your profiles `view.worktrees` is read once as `view.git`.
 

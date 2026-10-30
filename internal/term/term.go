@@ -330,8 +330,8 @@ func (p *Pane) Detach() {
 	})
 }
 
-// View renders the screen (or scrollback) as w×h ANSI lines; cursor drawn when focused.
-func (p *Pane) View(focused bool) []string {
+// View renders the screen (or scrollback) as w×h ANSI lines.
+func (p *Pane) View() []string {
 	p.mu.Lock()
 	scroll, h := p.scroll, p.h
 	p.mu.Unlock()
@@ -354,23 +354,24 @@ func (p *Pane) View(focused bool) []string {
 		lines = append(lines, screen...)
 		return lines[:h]
 	}
-	if focused && !p.emu.CursorHidden() && !p.exited.Load() {
-		pos := p.emu.CursorPosition()
-		if pos.Y >= 0 && pos.Y < len(screen) {
-			ch := " "
-			if c := p.emu.CellAt(pos.X, pos.Y); c != nil && c.Content != "" {
-				ch = c.Content
-			}
-			l := screen[pos.Y]
-			left := ansi.Truncate(l, pos.X, "")
-			if lw := ansi.StringWidth(left); lw < pos.X {
-				left += strings.Repeat(" ", pos.X-lw)
-			}
-			right := ansi.TruncateLeft(l, pos.X+ansi.StringWidth(ch), "")
-			screen[pos.Y] = left + "\x1b[7m" + ch + "\x1b[27m" + right
-		}
-	}
 	return screen
+}
+
+// Cursor is where the program's cursor sits on the screen, with its shape; ok is
+// false while it is hidden, scrolled away, or the program has exited.
+func (p *Pane) Cursor() (x, y int, ok bool, style vt.CursorStyle, blink bool) {
+	p.mu.Lock()
+	scroll, w, h := p.scroll, p.w, p.h
+	p.mu.Unlock()
+	if scroll > 0 || p.exited.Load() || p.emu.CursorHidden() {
+		return 0, 0, false, 0, false
+	}
+	pos := p.emu.CursorPosition()
+	if pos.Y < 0 || pos.Y >= h || w < 1 {
+		return 0, 0, false, 0, false
+	}
+	style, blink = p.emu.CursorStyle()
+	return max(0, min(pos.X, w-1)), pos.Y, true, style, blink
 }
 
 // Text returns the plain text of the last n screen lines (for state detection).

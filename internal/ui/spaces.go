@@ -11,6 +11,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/charmbracelet/x/vt"
 	"github.com/secuone/nanny/internal/claude"
 	"github.com/secuone/nanny/internal/gitwt"
 	"github.com/secuone/nanny/internal/term"
@@ -673,15 +674,15 @@ type paneLines struct {
 
 // paneRest draws what sits under a pane's title line: the body between its side
 // borders, then the bottom border. It redraws only when the pane's output, size,
-// cursor, scroll, border colour or look changed; the cache lives in keep.
-func (m Model) paneRest(p *term.Pane, r rect, bc lipgloss.Style, col string, cursor bool, keep map[*term.Pane]paneLines) []string {
-	key := fmt.Sprintf("%d|%d|%d|%t|%d|%t|%s|%s", p.Seq(), r.w, r.h, cursor, p.Scrolled(), p.Exited(), col, m.look.fenceOn())
+// scroll, border colour or look changed; the cache lives in keep.
+func (m Model) paneRest(p *term.Pane, r rect, bc lipgloss.Style, col string, keep map[*term.Pane]paneLines) []string {
+	key := fmt.Sprintf("%d|%d|%d|%d|%t|%s|%s", p.Seq(), r.w, r.h, p.Scrolled(), p.Exited(), col, m.look.fenceOn())
 	if c, ok := m.vs.paneLines[p]; ok && c.key == key {
 		keep[p] = c
 		return c.rest
 	}
 	var rest []string
-	body := p.View(cursor)
+	body := p.View()
 	for j := 0; j < r.h-2; j++ {
 		l := ""
 		if j < len(body) {
@@ -741,7 +742,10 @@ func (m Model) viewPanes(w, h int) string {
 		if tw > r.w-3 {
 			top = bc.Render("╭" + strings.Repeat("─", r.w-2) + "╮")
 		}
-		lines := append([]string{top}, m.paneRest(p, r, bc, col, focused && !m.prefix, keep)...)
+		lines := append([]string{top}, m.paneRest(p, r, bc, col, keep)...)
+		if focused && !m.prefix {
+			m.vs.paneCursor = m.paneCursor(p, r)
+		}
 		for j, l := range lines {
 			y := r.y + j
 			if y >= h {
@@ -769,6 +773,23 @@ func (m Model) viewPanes(w, h int) string {
 		out[y] = b.String()
 	}
 	return strings.Join(out, "\n")
+}
+
+// paneCursor is the pane's own cursor on the screen: inside its borders, below the terminal tabs.
+func (m Model) paneCursor(p *term.Pane, r rect) *tea.Cursor {
+	x, y, ok, style, blink := p.Cursor()
+	if !ok {
+		return nil
+	}
+	c := tea.NewCursor(m.vs.area.x+r.x+1+x, m.vs.area.y+r.y+1+y)
+	c.Blink = blink
+	switch style {
+	case vt.CursorUnderline:
+		c.Shape = tea.CursorUnderline
+	case vt.CursorBar:
+		c.Shape = tea.CursorBar
+	}
+	return c
 }
 
 func paneTitle(p *term.Pane) string {

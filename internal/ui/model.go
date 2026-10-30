@@ -181,23 +181,25 @@ type viewState struct {
 	clickAt    time.Time
 	clickKey   string
 	// hover, drag and the right-click menu
-	hover    hoverAt
-	drag     dragFrom
-	menuHits []menuHit
-	menuBox  rect
-	reuse    bool      // nothing on screen changed: View returns frame again
-	noop     bool      // the last update changed nothing (a refresh that came back the same)
-	pending  bool      // an update changed something since frame was drawn
-	wait     bool      // a background refresh changed it: drawn at the flush
-	flushing bool      // a flush is on its way
-	frame    string    // the last frame drawn
-	raw      string    // the last frame with its spinners as placeholders
-	anim     bool      // only the spinners moved since it was drawn
-	press    pressAt   // where the left button went down, while it is down
-	sel      selection // text being selected with the mouse
-	frameOn  bool      // a frame is on its way (none while nothing moves)
-	drawnMin int64     // the minute the last frame was drawn in (clock, "3m ago")
-	monWas   bool      // the Monitor was on screen after the last update
+	hover      hoverAt
+	drag       dragFrom
+	menuHits   []menuHit
+	menuBox    rect
+	reuse      bool        // nothing on screen changed: View returns frame again
+	noop       bool        // the last update changed nothing (a refresh that came back the same)
+	pending    bool        // an update changed something since frame was drawn
+	wait       bool        // a background refresh changed it: drawn at the flush
+	flushing   bool        // a flush is on its way
+	frame      string      // the last frame drawn
+	cursor     *tea.Cursor // the real cursor of that frame: the focused pane's
+	paneCursor *tea.Cursor // what viewPanes drew it at, before popups cover it
+	raw        string      // the last frame with its spinners as placeholders
+	anim       bool        // only the spinners moved since it was drawn
+	press      pressAt     // where the left button went down, while it is down
+	sel        selection   // text being selected with the mouse
+	frameOn    bool        // a frame is on its way (none while nothing moves)
+	drawnMin   int64       // the minute the last frame was drawn in (clock, "3m ago")
+	monWas     bool        // the Monitor was on screen after the last update
 }
 
 type modal struct {
@@ -1377,6 +1379,7 @@ func (m Model) leftWidth() int {
 
 func (m Model) View() tea.View {
 	v := tea.NewView(m.render())
+	v.Cursor = m.vs.cursor
 	v.AltScreen = true
 	v.MouseMode = tea.MouseModeAllMotion
 	v.WindowTitle = "nanny"
@@ -1398,6 +1401,7 @@ func (m Model) render() string {
 		return m.vs.frame
 	}
 	m.vs.reuse, m.vs.noop, m.vs.pending, m.vs.anim = false, false, false, false
+	m.vs.paneCursor = nil
 	m.vs.drawnMin = time.Now().Unix() / 60
 	header := m.viewHeader() + "\n\n" + fit(m.viewTabBar(), m.w) + "\n" // blank rows around the views bar
 	footer := m.viewFooter()
@@ -1433,6 +1437,7 @@ func (m Model) render() string {
 	out := lipgloss.JoinVertical(lipgloss.Left, header, body, footer)
 	m.vs.modalN = 0
 	var box string
+	tipShown := false
 	switch {
 	case m.help:
 		box = m.viewHelp()
@@ -1477,6 +1482,7 @@ func (m Model) render() string {
 	} else if box == "" && m.vs.hover.kind != "" {
 		if tip, x, y := m.viewTooltip(); tip != "" {
 			out = m.overlayAt(out, tip, x, y)
+			tipShown = true
 		}
 	}
 	out, m.vs.keyHits = harvestKeys(m.st.App.Width(m.w).Height(m.h).MaxHeight(m.h).Render(out))
@@ -1487,6 +1493,10 @@ func (m Model) render() string {
 	m.vs.raw = out
 	out = m.vs.sel.paint(m.animate(out))
 	m.vs.frame = out
+	m.vs.cursor = m.vs.paneCursor
+	if box != "" || m.menu != nil || m.help || m.view != nil || m.rev != nil || m.vs.sel.on || tipShown {
+		m.vs.cursor = nil
+	}
 	return out
 }
 

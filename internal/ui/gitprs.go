@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/secuone/nanny/internal/config"
 	"github.com/secuone/nanny/internal/gh"
 	"github.com/secuone/nanny/internal/gitwt"
@@ -61,7 +61,7 @@ func (g *gitView) refresh(m *Model) tea.Cmd {
 	return g.due(m, true)
 }
 
-func (g *gitView) keyPR(m *Model, k tea.KeyMsg, l *prList, reviews bool) tea.Cmd {
+func (g *gitView) keyPR(m *Model, k tea.KeyPressMsg, l *prList, reviews bool) tea.Cmd {
 	s := k.String()
 	if moveKey(&l.cur, len(l.items), m.bodyHeight(), s) {
 		return nil

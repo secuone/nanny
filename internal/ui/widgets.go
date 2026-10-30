@@ -5,15 +5,21 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/bubbles/textinput"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/textinput"
+	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 )
 
-// newInput is a plain one-line input: no prompt or text styling, a dim placeholder.
+// newInput is a plain one-line input: no prompt or text styling, a dim placeholder, a cursor in the text color.
 func newInput() textinput.Model {
 	in := textinput.New()
-	in.PlaceholderStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+	st := in.Styles()
+	for _, s := range []*textinput.StyleState{&st.Focused, &st.Blurred} {
+		s.Prompt, s.Text = lipgloss.NewStyle(), lipgloss.NewStyle()
+		s.Placeholder = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+	}
+	st.Cursor.Color = nil
+	in.SetStyles(st)
 	return in
 }
 
@@ -65,7 +71,7 @@ func (s Styles) panel(title string, body string, w, h int, focus bool) string {
 	for len(lines) < h-2 {
 		lines = append(lines, strings.Repeat(" ", max(0, inner)))
 	}
-	box := st.Width(w - 2).Render(strings.Join(lines, "\n"))
+	box := st.Width(w).Render(strings.Join(lines, "\n"))
 	if title == "" {
 		return box
 	}

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/secuone/nanny/internal/config"
 	"github.com/secuone/nanny/internal/gh"
 	"github.com/secuone/nanny/internal/gitwt"
@@ -220,7 +220,7 @@ func (g *gitView) detail(m *Model, w, h int) string {
 	return m.wt.detail(m, w, h)
 }
 
-func (g *gitView) key(m *Model, k tea.KeyMsg) tea.Cmd {
+func (g *gitView) key(m *Model, k tea.KeyPressMsg) tea.Cmd {
 	g.fix(m)
 	switch g.cur {
 	case gsPRs:

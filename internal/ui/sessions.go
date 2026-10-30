@@ -5,9 +5,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/secuone/nanny/internal/claude"
 )
 
@@ -119,7 +119,7 @@ func hidden(pats []string, cwd string) bool {
 	return false
 }
 
-func (t *sessTab) filterKey(m *Model, k tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (t *sessTab) filterKey(m *Model, k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch k.String() {
 	case "esc":
 		t.filter.Blur()
@@ -150,7 +150,7 @@ func (t *sessTab) filterKey(m *Model, k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return *m, tea.Batch(cmd, m.refreshDetail())
 }
 
-func (t *sessTab) key(m *Model, k tea.KeyMsg) tea.Cmd {
+func (t *sessTab) key(m *Model, k tea.KeyPressMsg) tea.Cmd {
 	n := len(t.rows)
 	h := m.bodyHeight() / 2
 	switch k.String() {
@@ -232,7 +232,7 @@ func (t *sessTab) view(m *Model, w, h int) string {
 	s := m.st
 	inner := w - 4
 	// filter line
-	t.filter.Width = inner - 24
+	t.filter.SetWidth(inner - 24)
 	fl := t.filter.View()
 	if !t.filter.Focused() && t.filter.Value() == "" {
 		fl = s.Muted.Render("  " + T("/ to filter"))

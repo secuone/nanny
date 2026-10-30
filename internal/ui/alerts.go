@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
 type alertKind string
@@ -230,7 +230,7 @@ func (m Model) viewToasts() string {
 			hint = s.Muted.Render(T("A inbox · ! then ⏎ answers"))
 		}
 		boxes = append(boxes, lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color(col)).
-			Padding(0, 1).Width(42).Render(head+"\n"+body+"\n"+hint))
+			Padding(0, 1).Width(44).Render(head+"\n"+body+"\n"+hint))
 	}
 	return strings.Join(boxes, "\n")
 }
@@ -296,10 +296,10 @@ func (m Model) viewInbox() string {
 		b.WriteString(line + "\n")
 	}
 	b.WriteString("\n" + s.hintsFit([][2]string{{"⏎", T("jump · answer")}, {"c", T("clear")}, {"S", T("mute/unmute")}, {"esc", T("close")}}, inner))
-	return s.Modal.Width(w).Render(b.String())
+	return s.Modal.Width(w + 2).Render(b.String())
 }
 
-func (m Model) inboxKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) inboxKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	n := len(m.alerts.events)
 	switch k.String() {
 	case "esc", "A", "q":

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/secuone/nanny/internal/claude"
 	"github.com/secuone/nanny/internal/gitwt"
@@ -813,85 +813,89 @@ func (m Model) prefixLabel() string {
 	return p
 }
 
-// keyBytes encodes a key press the way a terminal would send it.
-func keyBytes(k tea.KeyMsg) []byte {
-	var b []byte
-	switch k.Type {
-	case tea.KeyRunes:
-		b = []byte(string(k.Runes))
-		if k.Paste {
-			b = append(append([]byte("\x1b[200~"), b...), []byte("\x1b[201~")...)
-			return b
-		}
-	case tea.KeySpace:
-		b = []byte(" ")
-	case tea.KeyEnter:
-		b = []byte("\r")
-	case tea.KeyTab:
-		b = []byte("\t")
-	case tea.KeyShiftTab:
-		return []byte("\x1b[Z")
-	case tea.KeyBackspace:
-		b = []byte{0x7f}
-	case tea.KeyEsc:
-		return []byte{0x1b}
-	case tea.KeyUp:
-		b = []byte("\x1b[A")
-	case tea.KeyDown:
-		b = []byte("\x1b[B")
-	case tea.KeyRight:
-		b = []byte("\x1b[C")
-	case tea.KeyLeft:
-		b = []byte("\x1b[D")
-	case tea.KeyShiftUp:
-		return []byte("\x1b[1;2A")
-	case tea.KeyShiftDown:
-		return []byte("\x1b[1;2B")
-	case tea.KeyShiftRight:
-		return []byte("\x1b[1;2C")
-	case tea.KeyShiftLeft:
-		return []byte("\x1b[1;2D")
-	case tea.KeyCtrlUp:
-		return []byte("\x1b[1;5A")
-	case tea.KeyCtrlDown:
-		return []byte("\x1b[1;5B")
-	case tea.KeyCtrlRight:
-		return []byte("\x1b[1;5C")
-	case tea.KeyCtrlLeft:
-		return []byte("\x1b[1;5D")
-	case tea.KeyHome:
-		b = []byte("\x1b[H")
-	case tea.KeyEnd:
-		b = []byte("\x1b[F")
-	case tea.KeyPgUp:
-		b = []byte("\x1b[5~")
-	case tea.KeyPgDown:
-		b = []byte("\x1b[6~")
-	case tea.KeyDelete:
-		b = []byte("\x1b[3~")
-	case tea.KeyInsert:
-		b = []byte("\x1b[2~")
-	case tea.KeyF1:
-		b = []byte("\x1bOP")
-	case tea.KeyF2:
-		b = []byte("\x1bOQ")
-	case tea.KeyF3:
-		b = []byte("\x1bOR")
-	case tea.KeyF4:
-		b = []byte("\x1bOS")
-	default:
-		if k.Type >= 0 && k.Type < 32 || k.Type == 127 {
-			b = []byte{byte(k.Type)}
-		}
+// csiKeys are the keys sent as CSI sequences: a final byte, or a number and "~".
+var csiKeys = map[rune]string{
+	tea.KeyUp: "A", tea.KeyDown: "B", tea.KeyRight: "C", tea.KeyLeft: "D", tea.KeyHome: "H", tea.KeyEnd: "F",
+	tea.KeyPgUp: "5~", tea.KeyPgDown: "6~", tea.KeyDelete: "3~", tea.KeyInsert: "2~",
+	tea.KeyF1: "P", tea.KeyF2: "Q", tea.KeyF3: "R", tea.KeyF4: "S",
+	tea.KeyF5: "15~", tea.KeyF6: "17~", tea.KeyF7: "18~", tea.KeyF8: "19~",
+	tea.KeyF9: "20~", tea.KeyF10: "21~", tea.KeyF11: "23~", tea.KeyF12: "24~",
+}
+
+// csiKey is a CSI key with its modifier parameter (1 + shift + 2 alt + 4 ctrl); F1-F4 are SS3 when plain.
+func csiKey(code rune, param int) []byte {
+	spec := csiKeys[code]
+	last, num := spec[len(spec)-1:], spec[:len(spec)-1]
+	switch {
+	case param == 1 && code >= tea.KeyF1 && code <= tea.KeyF4:
+		return []byte("\x1bO" + spec)
+	case param == 1:
+		return []byte("\x1b[" + spec)
+	case last == "~":
+		return []byte(fmt.Sprintf("\x1b[%s;%d~", num, param))
 	}
-	if k.Alt && len(b) > 0 {
+	return []byte(fmt.Sprintf("\x1b[1;%d%s", param, last))
+}
+
+// keyBytes encodes a key press the way a terminal would send it.
+func keyBytes(k tea.KeyPressMsg) []byte {
+	mod := k.Mod &^ (tea.ModCapsLock | tea.ModNumLock | tea.ModScrollLock)
+	ctrl, alt, shift := mod.Contains(tea.ModCtrl), mod.Contains(tea.ModAlt), mod.Contains(tea.ModShift)
+	if k.Text != "" && !ctrl && !alt {
+		return []byte(k.Text)
+	}
+	if _, ok := csiKeys[k.Code]; ok {
+		param := 1
+		if shift {
+			param += 1
+		}
+		if alt {
+			param += 2
+		}
+		if ctrl {
+			param += 4
+		}
+		return csiKey(k.Code, param)
+	}
+	var b []byte
+	switch c := k.Code; {
+	case c == tea.KeyEnter || c == tea.KeyKpEnter:
+		b = []byte("\r")
+	case c == tea.KeyTab && shift:
+		return []byte("\x1b[Z")
+	case c == tea.KeyTab:
+		b = []byte("\t")
+	case c == tea.KeyBackspace && ctrl:
+		b = []byte{0x08}
+	case c == tea.KeyBackspace:
+		b = []byte{0x7f}
+	case c == tea.KeyEsc:
+		return []byte{0x1b}
+	case c == tea.KeySpace && ctrl:
+		b = []byte{0}
+	case c == tea.KeySpace:
+		b = []byte(" ")
+	case ctrl && c >= 'a' && c <= 'z':
+		b = []byte{byte(c) & 0x1f}
+	case ctrl && c == '?':
+		b = []byte{0x7f}
+	case ctrl && c >= '@' && c <= '_':
+		b = []byte{byte(c) & 0x1f}
+	case k.Text != "":
+		b = []byte(k.Text)
+	case shift && c >= 'a' && c <= 'z':
+		b = []byte(string(c - 'a' + 'A'))
+	case c > 0 && c != tea.KeyExtended:
+		b = []byte(string(c))
+	}
+	if alt && len(b) > 0 {
 		b = append([]byte{0x1b}, b...)
 	}
 	return b
 }
 
 // paneKey routes keys while a space is shown: prefix commands, else to the pane.
-func (m Model) paneKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) paneKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	ks := k.String()
 	sp := m.space()
 	t := sp.Tab()

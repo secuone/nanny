@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/secuone/nanny/internal/claude"
 )
@@ -14,8 +14,8 @@ import (
 func TestMouseSelectionCopies(t *testing.T) {
 	var m tea.Model = boot(t, 150, 42)
 	viewOf(m)
-	m = mouseAt(m, 40, 6, tea.MouseButtonLeft, mousePress)
-	m = mouseAt(m, 60, 6, tea.MouseButtonLeft, mouseMotion)
+	m = mouseAt(m, 40, 6, tea.MouseLeft, mousePress)
+	m = mouseAt(m, 60, 6, tea.MouseLeft, mouseMotion)
 	out := viewOf(m)
 	if !strings.Contains(out, "\x1b[0;7m") {
 		t.Fatal("the selection should show")
@@ -24,7 +24,7 @@ func TestMouseSelectionCopies(t *testing.T) {
 	if got := m.(Model).selText(m.(Model).vs.frame); got != want || got == "" {
 		t.Errorf("selected %q, want %q", got, want)
 	}
-	m, cmd := m.Update(mouseMsg(60, 6, tea.MouseButtonLeft, mouseRelease))
+	m, cmd := m.Update(mouseMsg(60, 6, tea.MouseLeft, mouseRelease))
 	if cmd == nil {
 		t.Error("letting go should copy")
 	}

@@ -16,7 +16,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/secuone/nanny/internal/claude"
 	"github.com/secuone/nanny/internal/config"
 	"github.com/secuone/nanny/internal/demo"
@@ -102,7 +102,7 @@ func runTUI() {
 	if n, err := strconv.Atoi(os.Getenv("NANNY_FPS")); err == nil {
 		fps = n
 	}
-	opts := []tea.ProgramOption{tea.WithAltScreen(), tea.WithMouseAllMotion(), tea.WithFPS(fps)}
+	opts := []tea.ProgramOption{tea.WithFPS(fps)}
 	if f := os.Getenv("NANNY_OUTSTATS"); f != "" { // debugging: how much the screen writes
 		if out, err := os.Create(f); err == nil {
 			defer out.Close()

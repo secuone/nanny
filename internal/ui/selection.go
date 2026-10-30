@@ -3,7 +3,7 @@ package ui
 import (
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 )
 
@@ -25,11 +25,11 @@ type pressAt struct {
 // something else.
 func (m Model) selectMouse(e mouseEv) (tea.Model, tea.Cmd, bool) {
 	switch {
-	case e.Action == mousePress && e.Button == tea.MouseButtonLeft:
+	case e.Action == mousePress && e.Button == tea.MouseLeft:
 		m.vs.sel = selection{}
 		m.vs.press = pressAt{true, e.X, e.Y}
 		return m, nil, false // the press still clicks
-	case e.Action == mouseMotion && e.Button == tea.MouseButtonLeft:
+	case e.Action == mouseMotion && e.Button == tea.MouseLeft:
 		p := m.vs.press
 		if !p.ok || m.vs.drag.kind != "" || m.menu != nil || !m.vs.sel.on && e.X == p.x && e.Y == p.y {
 			return m, nil, false

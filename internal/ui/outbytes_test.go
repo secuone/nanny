@@ -7,7 +7,8 @@ import (
 	"testing"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/colorprofile"
 )
 
 type byteCounter struct{ bytes, writes atomic.Int64 }
@@ -25,7 +26,8 @@ func TestOutBytes(t *testing.T) {
 	}
 	m := manyPanes(t, 10)
 	out := &byteCounter{}
-	p := tea.NewProgram(m, tea.WithInput(nil), tea.WithOutput(out), tea.WithoutSignalHandler())
+	p := tea.NewProgram(m, tea.WithInput(nil), tea.WithOutput(out), tea.WithoutSignalHandler(),
+		tea.WithWindowSize(200, 40), tea.WithColorProfile(colorprofile.TrueColor))
 	done := make(chan struct{})
 	go func() { _, _ = p.Run(); close(done) }()
 	p.Send(tea.WindowSizeMsg{Width: 200, Height: 40})

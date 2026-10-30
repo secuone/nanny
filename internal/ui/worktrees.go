@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/secuone/nanny/internal/claude"
 	"github.com/secuone/nanny/internal/gitwt"
 	"github.com/secuone/nanny/internal/ws"
@@ -103,7 +103,7 @@ func (r wtRow) key() string {
 
 var branchRe = regexp.MustCompile(`^[A-Za-z0-9._/-]+$`)
 
-func (t *wtTab) key(m *Model, k tea.KeyMsg) tea.Cmd {
+func (t *wtTab) key(m *Model, k tea.KeyPressMsg) tea.Cmd {
 	n := len(t.rows)
 	h := m.bodyHeight()
 	r := t.sel()

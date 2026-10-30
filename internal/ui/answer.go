@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/secuone/nanny/internal/claude"
 	"github.com/secuone/nanny/internal/term"
 )
@@ -114,7 +114,7 @@ func (m *Model) answerPane(ref paneRef, pick func(p *claude.Prompt) *claude.Opti
 	m.setStatus(Tf("answered “%s”", trunc(o.Label, 40))+" · "+ref.tab.Label, false)
 }
 
-func (m Model) answerKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) answerKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	a := m.answer
 	p := panePrompt(a.ref.pane)
 	if p == nil {
@@ -176,7 +176,7 @@ func (m Model) viewAnswer() string {
 	p := panePrompt(a.ref.pane)
 	if p == nil {
 		b.WriteString(s.Green.Render("✓ "+T("it isn't waiting anymore")) + "\n\n" + s.hints([][2]string{{"esc", T("close")}}))
-		return s.Modal.Width(w).Render(b.String())
+		return s.Modal.Width(w + 2).Render(b.String())
 	}
 	b.WriteString(strings.Join(m.promptLines(p, inner, 4), "\n"))
 	b.WriteString("\n\n")
@@ -202,7 +202,7 @@ func (m Model) viewAnswer() string {
 	}
 	keys = append(keys, [2]string{"t", T("tell it something else")}, [2]string{"g", T("go to pane")}, [2]string{"esc", T("close")})
 	b.WriteString("\n" + s.hintsFit(keys, inner))
-	return s.Modal.Width(w).Render(b.String())
+	return s.Modal.Width(w + 2).Render(b.String())
 }
 
 // promptLines renders a prompt's title, what it asks about and the question.

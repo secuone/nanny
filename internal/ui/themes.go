@@ -7,9 +7,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/secuone/nanny/internal/config"
 )
 
@@ -86,7 +86,7 @@ func (m *Model) preview(name string) {
 	m.st = NewStyles(m.cfg.Resolve())
 }
 
-func (m Model) themeKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) themeKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	t := m.themes
 	if t.ed != nil {
 		return m.themeEditKey(k)
@@ -193,7 +193,7 @@ func (t *themePicker) askFor(what, value string) tea.Cmd {
 	return textinput.Blink
 }
 
-func (m Model) themeAskKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) themeAskKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	t := m.themes
 	switch k.String() {
 	case "esc", "ctrl+c":
@@ -307,5 +307,5 @@ func (m Model) viewThemes() string {
 	b.WriteString(key("↑↓", T("preview")) + key("⏎", T("keep")) + key("esc", T("revert")) + "\n" +
 		key("n", T("new")) + key("e", T("edit")) + key("d", T("duplicate")) + key("r", T("rename")) + key("x", T("delete")) + "\n" +
 		key("i", T("import")) + key("o", T("export")) + key("a", T("icons, borders, fonts")))
-	return s.Modal.Width(w).Render(b.String())
+	return s.Modal.Width(w + 2).Render(b.String())
 }

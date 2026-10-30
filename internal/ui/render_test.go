@@ -3,14 +3,15 @@ package ui
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/colorprofile"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/muesli/termenv"
 	"github.com/secuone/nanny/internal/claude"
 	"github.com/secuone/nanny/internal/config"
 	"github.com/secuone/nanny/internal/demo"
@@ -94,6 +95,12 @@ func TestViewsFitTerminal(t *testing.T) {
 					if w := lipgloss.Width(l); w > size[0] {
 						t.Errorf("%s %dx%d tab %s line %d is %d wide: %q", lang, size[0], size[1], tb, i, w, ansi.Strip(l))
 					}
+					if wc, gr := ansi.StringWidthWc(l), ansi.StringWidth(l); wc != gr {
+						t.Errorf("%s %dx%d tab %s line %d: wcwidth %d, graphemes %d: %q", lang, size[0], size[1], tb, i, wc, gr, ansi.Strip(l))
+					}
+				}
+				if strings.Contains(out, keyMark) {
+					t.Errorf("%s %dx%d tab %s: a key marker reached the screen", lang, size[0], size[1], tb)
 				}
 				if popups[tb] {
 					m = key(m, "esc")
@@ -298,18 +305,25 @@ func TestSpacesWithRealPanes(t *testing.T) {
 	}
 }
 
+var emptySpan = regexp.MustCompile(`\x1b\[[0-9;]*m\x1b\[0?m`)
+
+// downsample is what a 256-color terminal gets of a truecolor frame.
+func downsample(s string) string {
+	var b strings.Builder
+	w := colorprofile.Writer{Forward: &b, Profile: colorprofile.ANSI256}
+	_, _ = w.WriteString(s)
+	return b.String()
+}
+
 // Ten side-by-side panes must not balloon the rows with escapes of cut-away text.
 func TestViewPanesManyPanesStaysLean(t *testing.T) {
-	prev := lipgloss.ColorProfile()
-	lipgloss.SetColorProfile(termenv.ANSI256)
-	t.Cleanup(func() { lipgloss.SetColorProfile(prev) })
 	m := manyPanes(t, 10)
 	tab := m.space().Tab()
 	if len(tab.Panes) != 10 {
 		t.Fatalf("got %d panes", len(tab.Panes))
 	}
 	w, h := m.vs.area.w, m.vs.area.h
-	rows := strings.Split(m.viewPanes(w, h), "\n")
+	rows := strings.Split(downsample(m.viewPanes(w, h)), "\n")
 	if len(rows) != h {
 		t.Fatalf("got %d rows, want %d", len(rows), h)
 	}
@@ -317,7 +331,7 @@ func TestViewPanesManyPanesStaysLean(t *testing.T) {
 		if len(row) > 8*w {
 			t.Errorf("row %d is %d bytes", y, len(row))
 		}
-		if strings.Contains(row, "\x1b[38;5;59m\x1b[0m") {
+		if emptySpan.MatchString(row) {
 			t.Errorf("row %d has an empty SGR span", y)
 		}
 		plain := []rune(ansi.Strip(row))
@@ -454,13 +468,10 @@ func TestThemePicker(t *testing.T) {
 	}
 }
 
-func viewOf(m tea.Model) string { return m.View() }
+func viewOf(m tea.Model) string { return m.View().Content }
 
 // A row highlight comes back after either spelling of a reset.
 func TestSelSurvivesShortResets(t *testing.T) {
-	prev := lipgloss.ColorProfile()
-	lipgloss.SetColorProfile(termenv.ANSI256)
-	t.Cleanup(func() { lipgloss.SetColorProfile(prev) })
 	s := NewStyles(config.Default().Resolve())
 	on, _, _ := strings.Cut(s.RowSel.UnsetPadding().Render("x"), "x")
 	if on == "" {

@@ -3,8 +3,8 @@ package ui
 import (
 	"strings"
 
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
 	"github.com/secuone/nanny/internal/config"
 )
 
@@ -208,7 +208,7 @@ func (m *Model) custPreset(p custPreset) {
 	}
 }
 
-func (m Model) customizeKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) customizeKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	c := m.cust
 	if c.name != nil {
 		return m.custName(k)
@@ -337,7 +337,7 @@ func (m Model) viewCustomize() string {
 	}
 	b.WriteString(line + "\n")
 	b.WriteString(s.hintsFit([][2]string{{"space", T("on/off")}, {"←→", T("fold")}, {"tab", T("profile")}, {"N", T("new")}, {"R", T("rename")}, {"X", T("delete")}, {"esc", T("close")}}, inner))
-	return s.Modal.Width(w).Render(b.String())
+	return s.Modal.Width(w + 2).Render(b.String())
 }
 
 // custProfiles is the profile line: every profile, the one being edited

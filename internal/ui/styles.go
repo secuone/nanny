@@ -1,9 +1,10 @@
 package ui
 
 import (
+	"image/color"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 	"github.com/secuone/nanny/internal/config"
 )
 
@@ -22,7 +23,7 @@ type Styles struct {
 }
 
 func NewStyles(p config.Palette) Styles {
-	c := func(h string) lipgloss.Color { return lipgloss.Color(h) }
+	c := func(h string) color.Color { return lipgloss.Color(h) }
 	fg := func(h string) lipgloss.Style { return lipgloss.NewStyle().Foreground(c(h)) }
 	s := Styles{P: p}
 	s.App = lipgloss.NewStyle() // keep the terminal background; themes color the content

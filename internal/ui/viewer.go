@@ -3,7 +3,7 @@ package ui
 import (
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/secuone/nanny/internal/claude"
 )
 
@@ -36,7 +36,7 @@ func (m *Model) openViewer(path string, sub bool, title string, parent *claude.S
 	return viewerCmd(path, sub)
 }
 
-func (m Model) viewerKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) viewerKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	v := m.view
 	page := max(1, m.h-8)
 	switch k.String() {

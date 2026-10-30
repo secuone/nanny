@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
 
 // Views that bring their own state, keys and data (Git, Jira, Insights) plug
@@ -35,7 +35,7 @@ type featView interface {
 	// the view: list left, detail right
 	view(m *Model, w, h int) string
 	detail(m *Model, w, h int) string
-	key(m *Model, k tea.KeyMsg) tea.Cmd
+	key(m *Model, k tea.KeyPressMsg) tea.Cmd
 	click(m *Model, row int) tea.Cmd // a click on a list row (-1: none); a double click then presses ⏎
 	footer(m *Model) [][2]string
 	help() []helpSec
@@ -110,7 +110,7 @@ func (m *Model) stepSec(f featView, d int) tea.Cmd {
 }
 
 // featKey gives a key to a feature; the detail scroll resets when the selection moves.
-func (m Model) featKey(f featView, k tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) featKey(f featView, k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	before := m.selKey()
 	cmd := f.key(&m, k)
 	if m.selKey() != before {

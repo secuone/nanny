@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/secuone/nanny/internal/claude"
 	"github.com/secuone/nanny/internal/queue"
 )
@@ -223,7 +223,7 @@ func (r liveRow) started() time.Time {
 	return time.Time{}
 }
 
-func (t *liveTab) key(m *Model, k tea.KeyMsg) tea.Cmd {
+func (t *liveTab) key(m *Model, k tea.KeyPressMsg) tea.Cmd {
 	n := len(t.rows)
 	h := m.bodyHeight()
 	defer t.markSeen(m)

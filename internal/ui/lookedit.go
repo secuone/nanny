@@ -4,9 +4,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/secuone/nanny/internal/config"
 )
 
@@ -51,7 +51,7 @@ func cycle(list []string, cur string, step int) string {
 	return list[(i+step+len(list))%len(list)]
 }
 
-func (m Model) lookKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) lookKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	t := m.themes
 	e := t.lk
 	l := m.cfg.Look
@@ -179,7 +179,7 @@ func (m Model) viewLook() string {
 	b.WriteString("\n" + s.Muted.Render(wrapTo(T("The font itself is your terminal's: change it in its settings (Ghostty, kitty, WezTerm…). nanny picks the glyphs, so pick Nerd Font icons if your font is one."), inner)) + "\n\n")
 	key := func(k, d string) string { return s.Key.Render(k) + s.KeyDesc.Render(" "+d+"  ") }
 	b.WriteString(key("←→", T("change")) + key("⏎", T("keep")) + key("esc", T("revert")))
-	return s.Modal.Width(w).Render(b.String())
+	return s.Modal.Width(w + 2).Render(b.String())
 }
 
 // wrapTo breaks text into lines of at most w columns.

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
 
 const doubleClick = 400 * time.Millisecond
@@ -31,14 +31,15 @@ type mouseEv struct {
 }
 
 func toMouseEv(e tea.MouseMsg) mouseEv {
+	mo := e.Mouse()
 	a := mousePress
-	switch e.Action {
-	case tea.MouseActionRelease:
+	switch e.(type) {
+	case tea.MouseReleaseMsg:
 		a = mouseRelease
-	case tea.MouseActionMotion:
+	case tea.MouseMotionMsg:
 		a = mouseMotion
 	}
-	return mouseEv{X: e.X, Y: e.Y, Button: e.Button, Action: a}
+	return mouseEv{X: mo.X, Y: mo.Y, Button: mo.Button, Action: a}
 }
 
 // double reports whether this click repeats the previous one on the same target.
@@ -56,12 +57,12 @@ func (m Model) double(target string) bool {
 func (m Model) overlayMouse(e mouseEv) (tea.Model, tea.Cmd, bool) {
 	wheel := 0
 	switch e.Button {
-	case tea.MouseButtonWheelUp:
+	case tea.MouseWheelUp:
 		wheel = -1
-	case tea.MouseButtonWheelDown:
+	case tea.MouseWheelDown:
 		wheel = 1
 	}
-	step := func(fn func(tea.KeyMsg) (tea.Model, tea.Cmd)) (tea.Model, tea.Cmd, bool) {
+	step := func(fn func(tea.KeyPressMsg) (tea.Model, tea.Cmd)) (tea.Model, tea.Cmd, bool) {
 		k := keyDown
 		if wheel < 0 {
 			k = keyUp
@@ -81,7 +82,7 @@ func (m Model) overlayMouse(e mouseEv) (tea.Model, tea.Cmd, bool) {
 		if wheel != 0 {
 			return step(m.helpKey)
 		}
-		if e.Button == tea.MouseButtonLeft {
+		if e.Button == tea.MouseLeft {
 			m.help, m.helpOff = false, 0
 		}
 		return m, nil, true
@@ -96,7 +97,7 @@ func (m Model) overlayMouse(e mouseEv) (tea.Model, tea.Cmd, bool) {
 			return mm, cmd, true
 		}
 		i := e.Y - m.vs.modalY
-		if e.Button != tea.MouseButtonLeft || i < 0 || i >= m.vs.modalN {
+		if e.Button != tea.MouseLeft || i < 0 || i >= m.vs.modalN {
 			return m, nil, true
 		}
 		idx := m.vs.modalStart + i
@@ -128,7 +129,7 @@ func (m Model) overlayMouse(e mouseEv) (tea.Model, tea.Cmd, bool) {
 		if wheel != 0 {
 			return step(m.promptsKey)
 		}
-		if y := e.Y - m.vs.listY0; e.Button == tea.MouseButtonLeft && y >= 0 && y < len(m.vs.listRows) {
+		if y := e.Y - m.vs.listY0; e.Button == tea.MouseLeft && y >= 0 && y < len(m.vs.listRows) {
 			idx := m.vs.listRows[y]
 			m.lib.cur = idx
 			if m.double(fmt.Sprintf("prompt/%d", idx)) {
@@ -141,7 +142,7 @@ func (m Model) overlayMouse(e mouseEv) (tea.Model, tea.Cmd, bool) {
 		if wheel != 0 {
 			return step(m.queueKey)
 		}
-		if y := e.Y - m.vs.listY0; e.Button == tea.MouseButtonLeft && y >= 0 && y < len(m.vs.listRows) {
+		if y := e.Y - m.vs.listY0; e.Button == tea.MouseLeft && y >= 0 && y < len(m.vs.listRows) {
 			rows := m.tq.rows()
 			if idx := m.vs.listRows[y]; idx < len(rows) {
 				m.tq.sel = rows[idx].ID

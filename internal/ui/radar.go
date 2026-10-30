@@ -5,7 +5,7 @@ import (
 	"os/exec"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/secuone/nanny/internal/sources"
 )
 
@@ -133,7 +133,7 @@ func (t *radarTab) sel() *sources.Item {
 	return &t.items[t.cur.idx]
 }
 
-func (t *radarTab) key(m *Model, k tea.KeyMsg) tea.Cmd {
+func (t *radarTab) key(m *Model, k tea.KeyPressMsg) tea.Cmd {
 	n := len(t.items)
 	h := m.bodyHeight()
 	step := func(d int) {

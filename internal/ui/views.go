@@ -6,7 +6,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/secuone/nanny/internal/ws"
 )
@@ -95,7 +95,7 @@ func (m Model) typing() bool {
 
 // viewSwitchKey moves between views: 1-9 pick one, tab cycles the bar, 0
 // goes back to a space's terminals. ok is false for any other key.
-func (m Model) viewSwitchKey(k tea.KeyMsg) (tea.Model, tea.Cmd, bool) {
+func (m Model) viewSwitchKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 	if m.typing() {
 		return m, nil, false
 	}
@@ -207,7 +207,7 @@ func harvestKeys(out string) (string, []keyHit) {
 	return strings.Join(lines, "\n"), hits
 }
 
-var namedKeys = map[string]tea.KeyType{
+var namedKeys = map[string]rune{
 	"enter": tea.KeyEnter, "esc": tea.KeyEsc, "tab": tea.KeyTab, "backspace": tea.KeyBackspace,
 	"up": tea.KeyUp, "down": tea.KeyDown, "left": tea.KeyLeft, "right": tea.KeyRight,
 	"home": tea.KeyHome, "end": tea.KeyEnd, "pgup": tea.KeyPgUp, "pgdown": tea.KeyPgDown,
@@ -216,57 +216,48 @@ var namedKeys = map[string]tea.KeyType{
 	"f7": tea.KeyF7, "f8": tea.KeyF8, "f9": tea.KeyF9, "f10": tea.KeyF10, "f11": tea.KeyF11, "f12": tea.KeyF12,
 }
 
-var modKeys = map[string][2]tea.KeyType{ // shift and ctrl arrows
-	"up": {tea.KeyShiftUp, tea.KeyCtrlUp}, "down": {tea.KeyShiftDown, tea.KeyCtrlDown},
-	"left": {tea.KeyShiftLeft, tea.KeyCtrlLeft}, "right": {tea.KeyShiftRight, tea.KeyCtrlRight},
-}
-
-// keyPress parses a key label: "a", "R", "enter", "space", "shift+tab", "ctrl+b", "alt+up".
-// Anything else is typed text.
-func keyPress(s string) tea.KeyMsg {
-	var ctrl, alt, shift bool
+// keyPress parses a key label the way the terminal decoder reports it: "a", "R",
+// "enter", "space", "shift+tab", "ctrl+b", "alt+up". Anything else is typed text.
+func keyPress(s string) tea.KeyPressMsg {
+	var mod tea.KeyMod
 	name := s
 	for {
 		if r, ok := strings.CutPrefix(name, "ctrl+"); ok && r != "" {
-			name, ctrl = r, true
+			name, mod = r, mod|tea.ModCtrl
 		} else if r, ok := strings.CutPrefix(name, "alt+"); ok && r != "" {
-			name, alt = r, true
+			name, mod = r, mod|tea.ModAlt
 		} else if r, ok := strings.CutPrefix(name, "shift+"); ok && r != "" {
-			name, shift = r, true
+			name, mod = r, mod|tea.ModShift
 		} else {
 			break
 		}
 	}
 	if name == "space" {
-		return tea.KeyMsg{Type: tea.KeySpace, Runes: []rune{' '}, Alt: alt}
+		name = " "
 	}
-	if t, ok := namedKeys[name]; ok {
-		if mk, ok := modKeys[name]; ok && ctrl {
-			t = mk[1]
-		} else if ok && shift {
-			t = mk[0]
-		}
-		if shift && t == tea.KeyTab {
-			t = tea.KeyShiftTab
-		}
-		return tea.KeyMsg{Type: t, Alt: alt}
+	if c, ok := namedKeys[name]; ok {
+		return tea.KeyPressMsg{Code: c, Mod: mod}
 	}
-	if utf8.RuneCountInString(name) == 1 {
-		r, _ := utf8.DecodeRuneInString(name)
-		if ctrl && unicode.IsLetter(r) && r < unicode.MaxASCII {
-			return tea.KeyMsg{Type: tea.KeyCtrlA + tea.KeyType(unicode.ToLower(r)-'a'), Alt: alt}
-		}
-		if shift {
-			r = unicode.ToUpper(r)
-		}
-		return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}, Alt: alt}
+	if utf8.RuneCountInString(name) != 1 {
+		return tea.KeyPressMsg{Code: tea.KeyExtended, Text: s}
 	}
-	return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(s)}
+	r, _ := utf8.DecodeRuneInString(name)
+	k := tea.KeyPressMsg{Code: r, Mod: mod}
+	if mod.Contains(tea.ModShift) {
+		r = unicode.ToUpper(r)
+	}
+	if unicode.IsUpper(r) {
+		k.Code, k.Mod = unicode.ToLower(r), mod|tea.ModShift
+	}
+	if mod&(tea.ModCtrl|tea.ModAlt) == 0 {
+		k.Text = string(r)
+	}
+	return k
 }
 
 // hintKey is the key press a hint label stands for; ok is false for labels
 // that name several keys ("j/k", "1-9", "←→").
-func hintKey(label string) (tea.KeyMsg, bool) {
+func hintKey(label string) (tea.KeyPressMsg, bool) {
 	if f := strings.Fields(label); len(f) > 1 {
 		label = f[0] // "v -", "n p": the first
 	}
@@ -289,11 +280,11 @@ func hintKey(label string) (tea.KeyMsg, bool) {
 	if utf8.RuneCountInString(label) == 1 {
 		r, _ := utf8.DecodeRuneInString(label)
 		if strings.ContainsRune("←→↑↓", r) {
-			return tea.KeyMsg{}, false
+			return tea.KeyPressMsg{}, false
 		}
 		return keyPress(label), true
 	}
-	return tea.KeyMsg{}, false
+	return tea.KeyPressMsg{}, false
 }
 
 // keyClick presses the hint under the pointer, if any. Over a space's

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/secuone/nanny/internal/gitwt"
 	"github.com/secuone/nanny/internal/queue"
 	"github.com/secuone/nanny/internal/term"
@@ -406,7 +406,7 @@ func (tq *taskQueue) selTask() *queue.Task {
 	return rows[tq.cur(rows)]
 }
 
-func (m Model) queueKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) queueKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	tq := m.tq
 	rows := tq.rows()
 	i := tq.cur(rows)

@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/secuone/nanny/internal/claude"
 	"github.com/secuone/nanny/internal/config"
@@ -30,7 +30,7 @@ func bootEmpty(t *testing.T, w, h int) tea.Model {
 }
 
 func click(m tea.Model, x, y int) tea.Model {
-	m, c := m.Update(mouseMsg(x, y, tea.MouseButtonLeft, mousePress))
+	m, c := m.Update(mouseMsg(x, y, tea.MouseLeft, mousePress))
 	return drain(m, c, 0)
 }
 

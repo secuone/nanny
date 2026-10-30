@@ -8,7 +8,7 @@ import (
 	"testing"
 	"unicode"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/secuone/nanny/internal/classroom"
 	"github.com/secuone/nanny/internal/config"

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/secuone/nanny/internal/config"
 )
@@ -39,7 +39,7 @@ func (f *fakeFeat) view(m *Model, w, h int) string {
 	return m.st.panel("Fake", "list", w, h, !m.focusR)
 }
 func (f *fakeFeat) detail(m *Model, w, h int) string { return m.st.panel("", "detail", w, h, m.focusR) }
-func (f *fakeFeat) key(_ *Model, k tea.KeyMsg) tea.Cmd {
+func (f *fakeFeat) key(_ *Model, k tea.KeyPressMsg) tea.Cmd {
 	f.keys = append(f.keys, k.String())
 	return nil
 }
@@ -169,7 +169,7 @@ func TestFeatureSections(t *testing.T) {
 			alpha = h
 		}
 	}
-	if mm := mouseAt(m, alpha.x0+1, secY, tea.MouseButtonNone, mouseMotion); mm.(Model).vs.hover.kind != "sec" {
+	if mm := mouseAt(m, alpha.x0+1, secY, tea.MouseNone, mouseMotion); mm.(Model).vs.hover.kind != "sec" {
 		t.Error("hovering a section should mark it")
 	}
 	if click(m, alpha.x0+1, secY); f.cur != 0 {

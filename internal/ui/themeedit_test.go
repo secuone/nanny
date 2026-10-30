@@ -6,15 +6,15 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/secuone/nanny/internal/config"
 )
 
 func typeText(m tea.Model, s string) tea.Model {
 	for _, r := range s { // no key(): the cursor's blink would wait
-		m, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+		m, _ = m.Update(keyPress(string(r)))
 	}
 	return m
 }

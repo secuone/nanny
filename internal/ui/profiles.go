@@ -3,7 +3,7 @@ package ui
 import (
 	"fmt"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/secuone/nanny/internal/config"
 )
 
@@ -89,7 +89,7 @@ func (m *Model) custAsk(rename bool, value string) {
 }
 
 // custName handles the name line: ⏎ makes or renames, esc drops it.
-func (m Model) custName(k tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) custName(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	c := m.cust
 	switch k.String() {
 	case "esc":

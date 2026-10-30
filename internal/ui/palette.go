@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
 	"github.com/sahilm/fuzzy"
 	"github.com/secuone/nanny/internal/config"
 )
@@ -186,7 +186,7 @@ func (m *Model) paletteEntries() []paletteEntry {
 	return es
 }
 
-func (m Model) paletteKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) paletteKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	p := m.pal
 	switch k.String() {
 	case "esc", "ctrl+c", "ctrl+k":
@@ -219,7 +219,7 @@ func (m Model) viewPalette() string {
 	p := m.pal
 	w := min(96, m.w-6)
 	inner := w - 6
-	p.input.Width = inner - 4
+	p.input.SetWidth(inner - 4)
 	var b strings.Builder
 	b.WriteString(p.input.View() + "\n" + s.Dim.Render(strings.Repeat("─", inner)) + "\n")
 	rows := min(14, m.h-10)
@@ -254,7 +254,7 @@ func (m Model) viewPalette() string {
 	}
 	count := s.Muted.Render(Tn(len(p.shown), "%d result", "%d results") + "   ")
 	b.WriteString(count + s.hintsFit([][2]string{{"↑↓", T("move")}, {"⏎", T("run")}, {"esc", T("close")}}, inner-lipglossW(count)))
-	return s.Modal.Width(w).Render(b.String())
+	return s.Modal.Width(w + 2).Render(b.String())
 }
 
 // nextAttention jumps the Live view to the next agent that is blocked, then done, then working.

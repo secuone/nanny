@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
 	"github.com/secuone/nanny/internal/gitwt"
 	"github.com/secuone/nanny/internal/queue"
 	"github.com/secuone/nanny/internal/term"
@@ -204,7 +204,7 @@ func (m *Model) claudeArgv(prompt string) []string {
 	return argv
 }
 
-func (m Model) taskKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) taskKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	t := m.task
 	ks := k.String()
 	switch ks {
@@ -326,7 +326,7 @@ func (m Model) viewTask() string {
 		return s.Label.Render(fit(name, 10))
 	}
 	for _, in := range []*textinput.Model{&t.where, &t.name, &t.prompt} {
-		in.Width = inner - 14
+		in.SetWidth(inner - 14)
 	}
 	var ls []string
 	head := s.Accent.Render(T("New task")) + s.Muted.Render("  "+T("claude starts in a new tab with your prompt"))
@@ -389,7 +389,7 @@ func (m Model) viewTask() string {
 	for i := range ls {
 		ls[i] = fit(ls[i], inner)
 	}
-	return s.Modal.Width(w).Render(strings.Join(ls, "\n"))
+	return s.Modal.Width(w + 2).Render(strings.Join(ls, "\n"))
 }
 
 // worktreesDir is where gitwt.Add puts new worktrees for dir, without running git.

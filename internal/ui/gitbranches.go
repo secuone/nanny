@@ -288,7 +288,7 @@ func (g *gitView) viewBranches(m *Model, w, h int) string {
 		}
 		blocks[i] = []string{line}
 	}
-	g.br.cur.clamp(len(g.br.rows), h-2)
+	g.br.cur.clamp(len(g.br.rows), bodyRows(h))
 	n := 0
 	for _, r := range g.br.rows {
 		if r.done() {
@@ -299,7 +299,7 @@ func (g *gitView) viewBranches(m *Model, w, h int) string {
 	if n > 0 {
 		t += " · " + Tf("%d merged", n)
 	}
-	return s.panel(t, m.listBlocks(blocks, g.br.cur.idx, "gitbr", h-2, secY+2), w, h, !m.focusR)
+	return s.panel(t, m.listBlocks(blocks, g.br.cur.idx, "gitbr", bodyRows(h), secY+2+gapOf(h)), w, h, !m.focusR)
 }
 
 func (g *gitView) detailBranch(m *Model, w, h int) string {

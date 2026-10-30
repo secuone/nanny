@@ -52,8 +52,25 @@ func (c *cursor) move(d, n, h int) {
 	c.clamp(n, h)
 }
 
+// gapOf is the blank line kept between a panel's title and its content; it is
+// dropped when the panel is too short to spare it.
+func gapOf(h int) int {
+	if h >= 20 {
+		return 1
+	}
+	return 0
+}
+
+// bodyRows is how many content lines a panel of height h shows under its gap.
+func bodyRows(h int) int { return h - 2 - gapOf(h) }
+
 // panel draws a bordered box of exact outer size w×h with a title in the top border.
 func (s Styles) panel(title string, body string, w, h int, focus bool) string {
+	return s.framed(title, body, w, h, focus, gapOf(h))
+}
+
+// framed is panel with the title gap given: 0 for content that spaces itself.
+func (s Styles) framed(title string, body string, w, h int, focus bool, gap int) string {
 	st := s.Panel
 	ts := s.PanelTitle
 	if focus {
@@ -62,6 +79,9 @@ func (s Styles) panel(title string, body string, w, h int, focus bool) string {
 	}
 	inner := w - 4
 	lines := strings.Split(body, "\n")
+	if gap > 0 {
+		lines = append([]string{""}, lines...)
+	}
 	if len(lines) > h-2 {
 		lines = lines[:max(0, h-2)]
 	}

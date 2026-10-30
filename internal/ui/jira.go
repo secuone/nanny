@@ -669,7 +669,7 @@ func (j *jiraView) view(m *Model, w, h int) string {
 		}
 		blocks[i] = []string{line}
 	}
-	list := m.listBlocks(blocks, j.cur.idx, "jira", h-2-len(head), bodyY+1+len(head))
+	list := m.listBlocks(blocks, j.cur.idx, "jira", bodyRows(h)-len(head), bodyY+1+gapOf(h)+len(head))
 	return s.panel(title, strings.Join(append(head, list), "\n"), w, h, !m.focusR)
 }
 

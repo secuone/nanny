@@ -333,8 +333,8 @@ func (v *insightsView) view(m *Model, w, h int) string {
 	p := v.page(m, w-4)
 	body := strings.Join(p.head, "\n")
 	if len(p.rows) > 0 {
-		v.cur.clamp(len(p.rows), h-2-len(p.head))
-		body += "\n" + v.list(m, p, w-4, h-2-len(p.head), secY+2+len(p.head))
+		v.cur.clamp(len(p.rows), bodyRows(h)-len(p.head))
+		body += "\n" + v.list(m, p, w-4, bodyRows(h)-len(p.head), secY+2+gapOf(h)+len(p.head))
 	}
 	return s.panel(title, strings.TrimPrefix(body, "\n"), w, h, !m.focusR)
 }

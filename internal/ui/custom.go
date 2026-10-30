@@ -284,14 +284,14 @@ func (m Model) viewCustomize() string {
 	w := min(84, m.w-6)
 	inner := w - 6
 	var b strings.Builder
-	b.WriteString(s.Accent.Render(T("Customize")) + s.Muted.Render("  "+T("what shows and what runs · off is gone, and not collected")) + "\n")
+	b.WriteString(s.Accent.Render(T("Customize")) + s.Muted.Render("  "+T("what shows and what runs · off is gone, and not collected")) + "\n\n")
 	b.WriteString(m.custProfiles(inner) + "\n")
 	b.WriteString(s.Yellow.Render(fit(c.note, inner)) + "\n")
 	rows := c.rows()
 	c.cur = max(0, min(c.cur, len(rows)-1))
-	room := max(5, min(len(rows), m.h-14))
+	room := max(5, min(len(rows), m.h-15))
 	start := max(0, min(c.cur-room/2, len(rows)-room))
-	m.vs.modalY, m.vs.modalStart, m.vs.modalN = 4, start, min(len(rows), start+room)-start
+	m.vs.modalY, m.vs.modalStart, m.vs.modalN = 5, start, min(len(rows), start+room)-start
 	for i := start; i < min(len(rows), start+room); i++ {
 		r := rows[i]
 		box := map[int]string{custOff: s.Muted.Render("☐"), custSome: s.Yellow.Render("◩"), custAll: s.Green.Render("☑")}[m.custState(r.n)]

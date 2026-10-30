@@ -289,7 +289,7 @@ func (m Model) viewReview(w, h int) string {
 		head[1] += s.Muted.Render("  ·  "+Tn(len(r.commits), "%d commit ahead: ", "%d commits ahead: ")) + s.Text.Render(trunc(r.commits[0], inner/2))
 	}
 	head = append(head, s.Dim.Render(strings.Repeat("─", inner)))
-	room := h - 2 - len(head)
+	room := bodyRows(h) - len(head)
 
 	// file list | diff
 	lw := min(44, max(24, inner/3))

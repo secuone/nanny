@@ -231,6 +231,16 @@ English, Spanish, French and German. It follows your locale (`$LC_ALL`,
   Set it up in the first-run wizard, in Settings → Connections or from the `≡` menu and the palette: your site URL, your email and an [API token](https://id.atlassian.com/manage-profile/security/api-tokens). The token never goes to `config.toml`: it is kept in the keyring (`secret-tool`) or in a file only you can read (`~/.config/nanny/secrets/`), and `NANNY_JIRA_TOKEN` beats both. Nothing is asked of Jira while `view.jira` is off or there is no URL and token; the view on screen refreshes every `refresh_mins`, and every 10 minutes off screen only for the sidebar line.
 
 <!-- Insights view -->
+- **Insights** (`I`): what your Claude usage costs and does, read from the local transcripts, with nothing sent
+  anywhere and nothing read while the view is off or not on screen. Sections (`←→`): Summary, Cost (per day),
+  Projects, Models, Tools (calls, failures, speed), Permissions (by rules, asked, accepted, rejected, blocked),
+  Edits (accepted, rejected, lines), Friction (API retries, interruptions, compactions, error loops, and the
+  sessions that cost more than `expensive_usd`: `⏎` reads one) and Week. `t` walks 7 days · 30 days · 90 days ·
+  today, `[ ]` scope to a project like everywhere, `,` `.` move through weeks, `x` writes the week as
+  `nanny-insights-2026-W44.json` (keys in order, numbers rounded) and `y` copies it, `r` reads everything again.
+  The first run reads every transcript of the last `days` (a few seconds for a year of use); after that only the
+  new bytes are read, and the tally is kept in `~/.local/state/nanny/insights/v1.gob`.
+  `nanny insights [--week 2026-W44] [--json]` prints the same week without the TUI.
 
 ## CLI
 

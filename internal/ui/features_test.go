@@ -284,7 +284,7 @@ func TestSnippetIntoPane(t *testing.T) {
 // C on a worktree opens its changes; t switches to the whole branch.
 func TestReviewChanges(t *testing.T) {
 	m := boot(t, 150, 42)
-	m = key(m, "3")
+	m = inWorktrees(key(m, "3"))
 	mm := m.(Model)
 	for i, r := range mm.wt.rows {
 		if r.wt != nil && filepath.Base(r.wt.Path) == "PAY-412" {

@@ -69,6 +69,9 @@ func (g *gitView) keyPR(m *Model, k tea.KeyPressMsg, l *prList, reviews bool) te
 	if s == "r" {
 		return g.refresh(m)
 	}
+	if cmd, ok := g.keyNoSess(m, s); ok {
+		return cmd
+	}
 	p, ok := l.sel()
 	if !ok {
 		return nil
@@ -318,13 +321,37 @@ func (g *gitView) prLine(m *Model, p gh.PR, w int, reviews bool) string {
 	return fit(left, w-lipglossW(right)-1) + " " + right
 }
 
+// noSessState is what is shown instead of GitHub's lists while gh can't be used.
+func (g *gitView) noSessState(m *Model, w int) string {
+	s := m.st
+	if g.noGH {
+		return s.emptyState(T("gh isn't installed."), [][2]string{{"o", T("open cli.github.com")}, {"r", T("try again")}}, w)
+	}
+	return s.emptyState(T("GitHub isn't connected. nanny reads your PRs and reviews with the gh CLI."),
+		[][2]string{{"i", T("sign in now (gh auth login in a tab)")}, {"s", T("setup wizard")}, {"r", T("try again")}}, w)
+}
+
+// keyNoSess takes the keys of that state; false = not one of them.
+func (g *gitView) keyNoSess(m *Model, k string) (tea.Cmd, bool) {
+	switch {
+	case !g.noSess:
+		return nil, false
+	case g.noGH && k == "o":
+		return m.openURL("https://cli.github.com"), true
+	case !g.noGH && k == "i":
+		return m.run(home, "gh auth login", "gh auth login"), true
+	case !g.noGH && k == "s":
+		m.openSetup(setupGitHub)
+		return nil, true
+	}
+	return nil, false
+}
+
 func (g *gitView) hint(m *Model, l *prList, w int) (string, bool) {
 	s := m.st
 	switch {
-	case g.noSess && g.noGH:
-		return s.emptyState(T("gh isn't installed: https://cli.github.com"), [][2]string{{"r", T("try again")}}, w), true
 	case g.noSess:
-		return s.emptyState(T("gh: sign in (gh auth login)"), [][2]string{{"r", T("try again")}}, w), true
+		return g.noSessState(m, w), true
 	case l.err != nil && len(l.items) == 0:
 		return s.emptyState(trunc(l.err.Error(), w), [][2]string{{"r", T("try again")}}, w), true
 	case !l.loaded:

@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -655,7 +656,7 @@ func (m Model) viewTermTabs(w int) string {
 	left := strings.Join(parts, "")
 	right := s.Peach.Render(tilde(sp.Dir()))
 	if br := branchOf(sp.Dir()); br != "" {
-		right += " " + s.Blue.Render("⎇ "+br)
+		right += " " + clickable("@githere:"+strconv.Itoa(m.cur), s.Blue.Render("⎇ "+br))
 	}
 	gap := w - lipgloss.Width(left) - lipgloss.Width(right) - 1
 	if gap < 1 {
@@ -1068,6 +1069,9 @@ func (m Model) prefixCmd(ks string) (tea.Model, tea.Cmd) {
 		return m, m.openTabIn(sp, "claude", claudeArgv)
 	case "C":
 		return m, m.openNewTask("")
+	case "G":
+		cmd := m.openGitHere(m.cur)
+		return m, cmd
 	case "P":
 		return m.switchTab(tabPrompts)
 	case "U":

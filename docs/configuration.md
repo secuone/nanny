@@ -47,7 +47,7 @@ off = ["view.prompts", "view.skills", "monitor.machine", "monitor.ports", "monit
                          # what the profile turns off, by id:
                          #   layout:  layout.detail (off: one line per agent) layout.extras (model, gauge always, no-repeat off)
                          #   views:   view.live view.sessions view.git view.tasks view.prompts view.skills view.monitor view.jira view.insights
-                         #   Git & PRs sections: git.here (Overview) git.prs git.reviews git.worktrees git.branches git.profile
+                         #   Git sections: git.here (Overview) git.prs git.reviews git.worktrees git.branches git.profile
                          #   Monitor: monitor.machine monitor.ports monitor.containers monitor.tilt
                          #            monitor.jobs monitor.cron monitor.hermes monitor.watchers (off = not collected)
                          #   sidebar: sidebar.branch sidebar.pr sidebar.worktrees sidebar.agents sidebar.hermes sidebar.jira
@@ -171,7 +171,7 @@ Three optional tables; the views they configure are described in [features.md](f
 [git]
 merge_method = "squash"      # what X uses to merge a PR: squash · merge · rebase (it asks first, never forces)
 reviews = "all"              # all: asked of you and your teams · direct: asked of you only
-review_mins = 5              # minutes between looks for reviews while Git & PRs isn't on screen (max 60)
+review_mins = 5              # minutes between looks for reviews while Git isn't on screen (max 60)
 review_prompt = ""           # what the review agent is told; {url} {number} {repo} are filled in
 
 [jira]

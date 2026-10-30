@@ -13,7 +13,7 @@ import (
 	"github.com/secuone/nanny/internal/gitwt"
 )
 
-// The Git & PRs view (3): the branch of each space, your pull requests, the reviews waiting for you, the
+// The Git view (3): the branch of each space, your pull requests, the reviews waiting for you, the
 // worktrees, the local branches and your week. GitHub is asked through gh,
 // only from due(), only for the section on screen (and the reviews badge),
 // and not at all once gh is missing or has no session, until r.

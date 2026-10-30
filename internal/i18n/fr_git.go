@@ -114,7 +114,6 @@ var frGit = map[string]string{
 	"upstream gone":  "upstream supprimé",
 	"week / month":   "semaine / mois",
 	"… and %d more":  "… et %d de plus",
-	"Git & PRs":      "Git et PR",
 	"Overview":       "Vue d'ensemble",
 	"Branch, PR and worktrees of each space, from git; no GitHub needed.": "Branche, PR et worktrees de chaque espace, depuis git ; sans GitHub.",
 	"No git repository in %s.":             "Aucun dépôt git dans %s.",

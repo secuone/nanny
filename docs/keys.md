@@ -21,7 +21,7 @@ Prefix (`ctrl+b`, configurable with `prefix` in the config) then:
 | --- | --- |
 | `c` / `s` | new Claude tab / new shell tab |
 | `C` / `g` | new task (folder, prompt, worktree) / review this pane's changes |
-| `G` | this space's Git & PRs: branch, PR and worktrees (the Overview section) |
+| `G` | this space's Git: branch, PR and worktrees (the Overview section) |
 | `i` / `0` | this space's views (Live, Sessions, Tasks… scoped to it) / back to the terminal |
 | `P` / `U` | prompt library / task queue of this space |
 | `a` | the 3D classroom, in the browser |
@@ -55,7 +55,7 @@ Everywhere (all spaces, or a space after prefix `i`):
 
 | Key | Action |
 | --- | --- |
-| `1-8` | Live · Sessions · Git & PRs · Tasks · Prompts · Skills · Monitor · Settings |
+| `1-8` | Live · Sessions · Git · Tasks · Prompts · Skills · Monitor · Settings |
 | `E` / `I` | Jira / Insights |
 | `9` | the 3D classroom |
 | `tab` | next view |
@@ -95,7 +95,7 @@ Everywhere (all spaces, or a space after prefix `i`):
   `n` new task · `+` queue a task in its folder · `.` repeat its last prompt · `C` changes ·
   `s` screen mirror · `a` finished subagents · `O` open its PR.
 - **Sessions**: `F` full-text search · `b` / `w` / `L` bots, worktrees, live.
-- **Git & PRs**: sections `←→`. **Overview** (the default inside a space): branch, state and PR of the space and
+- **Git**: sections `←→`. **Overview** (the default inside a space): branch, state and PR of the space and
   its worktrees; `⏎` go to it · `O` open its PR · `C` changes · `P` pull · `F` fetch · `n` new Claude in it ·
   `w` new worktree · `y` copy the branch · `r` refresh. **Worktrees**: `C` changes · `n` new Claude · `a` add ·
   `d` remove · `p` prune. Without `gh` signed in, the empty state offers `i` sign in (`gh auth login` in a tab) ·

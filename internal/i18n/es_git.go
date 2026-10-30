@@ -114,7 +114,6 @@ var esGit = map[string]string{
 	"upstream gone":  "upstream borrado",
 	"week / month":   "semana / mes",
 	"… and %d more":  "… y %d más",
-	"Git & PRs":      "Git y PRs",
 	"Overview":       "Resumen",
 	"Branch, PR and worktrees of each space, from git; no GitHub needed.": "Rama, PR y worktrees de cada espacio, desde git; sin GitHub.",
 	"No git repository in %s.":             "No hay repositorio git en %s.",

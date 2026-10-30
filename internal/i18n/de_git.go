@@ -114,7 +114,6 @@ var deGit = map[string]string{
 	"upstream gone":  "Upstream gelöscht",
 	"week / month":   "Woche / Monat",
 	"… and %d more":  "… und %d weitere",
-	"Git & PRs":      "Git & PRs",
 	"Overview":       "Übersicht",
 	"Branch, PR and worktrees of each space, from git; no GitHub needed.": "Branch, PR und Worktrees jedes Space, aus git; ohne GitHub.",
 	"No git repository in %s.":             "Kein Git-Repository in %s.",

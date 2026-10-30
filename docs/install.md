@@ -40,7 +40,7 @@ Terminals that lack them ignore the requests and nanny keeps working, with the k
 | --- | --- |
 | `git` | worktrees, branches, diffs (required for most of nanny) |
 | `claude` | starting and resuming agents from nanny, `nanny resume`, `nanny new` |
-| `gh` | Git & PRs: your PRs, reviews, merge, PR badges on branches (`gh auth login` once) |
+| `gh` | Git: your PRs, reviews, merge, PR badges on branches (`gh auth login` once) |
 | Jira Cloud API token | the Jira view; kept in the keyring (`secret-tool`) or a `0600` file, or `NANNY_JIRA_TOKEN` |
 | `python3` | reading Hermes and opencode SQLite databases (no cgo) |
 | `docker`, `tilt` | Monitor: containers and Tilt resources, over their own sockets and APIs; the commands are used when there is no socket or config |

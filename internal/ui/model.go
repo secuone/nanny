@@ -229,7 +229,7 @@ func New(cfg config.Config) Model {
 		alerts:      newAlertState(),
 		cur:         -1,
 		gitv:        &gitView{},
-		jira:        &jiraView{},
+		jira:        newJiraView(),
 		ins:         &insightsView{},
 
 		tq:     loadQueue(),
@@ -1097,7 +1097,7 @@ func (m Model) mouse(e tea.MouseMsg) (tea.Model, tea.Cmd) {
 		return m.dropTab(e)
 	}
 	m.vs.hover = hoverAt{}
-	if m.welcome != nil {
+	if m.welcome != nil || m.setup != nil {
 		return m.welcomeMouse(e)
 	}
 	switch e.Button {

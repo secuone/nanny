@@ -51,6 +51,7 @@ One line each; the details are in [docs/features.md](docs/features.md).
 | 📡 [Monitor](docs/features.md#monitor) | Tilt, Docker, open ports, jobs, cron, Hermes, this machine, and your own watchers. |
 | 🧩 [Skills & prompts](docs/features.md#skills-and-prompts) | The skills catalog and a prompt library with your most used prompts. |
 | ☰ [Tasks](docs/features.md#tasks) | A queue of prompts that nanny hands to agents by itself. |
+| 📋 [Jira](docs/features.md#jira-and-insights) | Your issues by status and sprint: transition, comment, assign, start a branch and an agent from one. |
 | 📊 [Insights](docs/features.md#jira-and-insights) | Cost, tokens, tools, permissions, edits and friction from your own transcripts, with a weekly JSON export. |
 | 🎚️ [Screen profiles & Customize](docs/features.md#screen-profiles-and-customize) | Basic, Full or your own: turn off any view, source or bar item. |
 | 🎨 [Themes & appearance](docs/features.md#themes-and-appearance) | 20 themes with live preview, your own themes, icon sets and borders. |

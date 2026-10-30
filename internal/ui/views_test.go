@@ -3,6 +3,7 @@ package ui
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -148,5 +149,18 @@ func TestSidebarNewSpaceStays(t *testing.T) {
 		if mm := click(m, hit.x0, hit.y).(Model); mm.modal == nil {
 			t.Errorf("cur=%d: clicking N new should ask for the folder", cur)
 		}
+	}
+}
+
+// Two marks on a line, around wide characters, still start and end where they are drawn.
+func TestHarvestKeysWidths(t *testing.T) {
+	line := "ab" + clickable("k1", "\x1b[31m日本\x1b[0m") + "é" + clickable("k2", "😀x") + " tail"
+	out, hits := harvestKeys("top\n" + line)
+	if ansi.Strip(out) != "top\nab日本é😀x tail" {
+		t.Fatalf("the marks stay in the frame: %q", out)
+	}
+	want := []keyHit{{y: 1, x0: 2, x1: 6, key: "k1"}, {y: 1, x0: 7, x1: 10, key: "k2"}}
+	if !slices.Equal(hits, want) {
+		t.Errorf("hits = %v, want %v", hits, want)
 	}
 }

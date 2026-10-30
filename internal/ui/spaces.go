@@ -85,6 +85,9 @@ func (m Model) waitPane() tea.Cmd {
 }
 
 func (m *Model) spawn(cwd string, argv []string) (*term.Pane, error) {
+	if cwd == "" {
+		cwd = home
+	}
 	w, h, notify := m.paneSize()
 	return term.Start(cwd, argv, w, h, nil, notify)
 }
@@ -150,6 +153,11 @@ func (m *Model) openTab(cwd, label string, argv []string) tea.Cmd {
 // spawnTab starts argv in a new tab of the space owning cwd, without switching to it.
 func (m *Model) spawnTab(cwd, label string, argv []string) (paneRef, error) {
 	s, _ := m.spaceFor(cwd, true)
+	return m.spawnTabIn(s, cwd, label, argv)
+}
+
+// spawnTabIn starts argv in cwd as a new tab of s, without switching to it.
+func (m *Model) spawnTabIn(s *ws.Space, cwd, label string, argv []string) (paneRef, error) {
 	p, err := m.spawn(cwd, argv)
 	if err != nil {
 		return paneRef{}, err
@@ -168,11 +176,7 @@ func (m *Model) split(vertical bool, argv []string) {
 		return
 	}
 	t := s.Tab()
-	cwd := s.Dir()
-	if p := t.Pane(); p != nil {
-		cwd = p.Cwd
-	}
-	p, err := m.spawn(cwd, argv)
+	p, err := m.spawn(s.Dir(), argv)
 	if err != nil {
 		m.setStatus(err.Error(), true)
 		return
@@ -725,7 +729,9 @@ func (m Model) viewTermTabs(w int) string {
 	add("+ "+T("shell"), false, -4)
 	left := strings.Join(parts, "")
 	right := s.Peach.Render(tilde(sp.Dir()))
-	if br := branchOf(sp.Dir()); br != "" {
+	if !sp.HasFolder() {
+		right = clickable("@setfolder:"+strconv.Itoa(m.cur), s.Yellow.Render(T("no folder · set")))
+	} else if br := branchOf(sp.Dir()); br != "" {
 		right += " " + clickable("@githere:"+strconv.Itoa(m.cur), s.Blue.Render("⎇ "+br))
 	}
 	gap := w - lipgloss.Width(left) - lipgloss.Width(right) - 1
@@ -916,12 +922,13 @@ func (m Model) viewEmptySpace(sp *ws.Space, w, h int) string {
 	px := m.prefixLabel()
 	lines := []string{
 		"", "",
-		"   " + s.Bold.Render(spaceLabel(sp)) + s.Muted.Render("  ·  "+tilde(sp.Dir())),
+		"   " + s.Bold.Render(spaceLabel(sp)) + m.folderTag(sp, "  ·  "),
 		"",
 		k("c", T("new Claude tab here")),
 		k("s", T("new shell tab")),
 		k("r", T("resume the latest session of this space")),
 		k("f", T("find a session of this space")),
+		k("F", T("set the folder of this space")),
 		k("w", T("manage spaces · D discover")),
 		"",
 		s.Muted.Render("   " + Tf("inside a pane, commands use the prefix %s (%s ? for help)", px, px)),
@@ -1137,6 +1144,10 @@ func (m Model) prefixCmd(ks string) (tea.Model, tea.Cmd) {
 		}
 	case "c":
 		return m, m.openTabIn(sp, "claude", claudeArgv)
+	case "F":
+		if sp != nil {
+			return m, m.setFolderPrompt(sp)
+		}
 	case "C":
 		return m, m.openNewTask("")
 	case "G":
@@ -1285,15 +1296,19 @@ func (m Model) prefixCmd(ks string) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// openTabIn starts argv in a new tab of sp, in the space's folder, and shows it.
 func (m *Model) openTabIn(sp *ws.Space, label string, argv []string) tea.Cmd {
-	dir := home
-	if sp != nil {
-		dir = sp.Dir()
-		if t := sp.Tab(); t != nil && t.Pane() != nil {
-			dir = t.Pane().Cwd
-		}
+	if sp == nil {
+		return m.openTab(home, label, argv)
 	}
-	return m.openTab(dir, label, argv)
+	r, err := m.spawnTabIn(sp, sp.Dir(), label, argv)
+	if err != nil {
+		m.setStatus(T("could not start: ")+err.Error(), true)
+		return nil
+	}
+	m.focusRef(r)
+	m.setStatus(Tf("opened %s in %s", label, sp.Name), false)
+	return nil
 }
 
 // confirmQuit quits leaving panes running in the background (kill = stop them

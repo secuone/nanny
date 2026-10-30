@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -41,21 +42,10 @@ func expandPath(p string) string {
 	return p
 }
 
+// newSpacePrompt creates a space: the folder first, then its name (the folder's by default).
 func (m *Model) newSpacePrompt() tea.Cmd {
-	def := home
-	if s := m.sess.sel(); s != nil && !m.inSpace() && m.tab == tabSessions {
-		def = s.Cwd
-	}
-	m.prompt(T("New space · folder"), T("Folder this space lives in (you can add more later). New tabs start here."), tilde(def),
-		func(m *Model, v string) tea.Cmd {
-			if v == "" {
-				v = tilde(def)
-			}
-			dir := expandPath(v)
-			if st, err := os.Stat(dir); err != nil || !st.IsDir() {
-				m.setStatus(T("not a folder: ")+v, true)
-				return nil
-			}
+	return m.openFolderPicker(T("New space · folder"), T("Pick the folder this space works in: every tab and split starts there."), "",
+		func(m *Model, dir string) tea.Cmd {
 			if s, i := m.spaceFor(dir, false); s != nil && s.Dir() == dir {
 				m.cur = i
 				m.setStatus(T("space already exists: ")+s.Name, false)
@@ -73,9 +63,36 @@ func (m *Model) newSpacePrompt() tea.Cmd {
 				m.setStatus(Tf("space “%s” created — c for Claude, s for a shell", n), false)
 				return nil
 			})
+			m.modal.input.SetValue(name)
+			m.modal.input.CursorEnd()
 			return nil
 		})
-	return nil
+}
+
+// setFolderPrompt changes the folder of a space. Panes already open stay where they
+// are; the tabs and splits started from now on begin in the new folder.
+func (m *Model) setFolderPrompt(sp *ws.Space) tea.Cmd {
+	start := ""
+	if sp.HasFolder() {
+		start = tilde(sp.Dir()) + "/"
+	}
+	return m.openFolderPicker(Tf("Folder of %s", sp.Name), T("New tabs and splits start here. Panes that are already open stay where they are."), start,
+		func(m *Model, dir string) tea.Cmd {
+			sp.SetFolder(dir)
+			m.saveSpaces()
+			m.layoutPanes()
+			m.setStatus(Tf("“%s” starts in %s now", sp.Name, tilde(dir)), false)
+			return nil
+		})
+}
+
+// folderTag is the folder of a space for a row or a title; one without a folder says so, and a click sets it.
+func (m Model) folderTag(sp *ws.Space, sep string) string {
+	s := m.st
+	if sp.HasFolder() {
+		return s.Muted.Render(sep + tilde(sp.Dir()))
+	}
+	return s.Muted.Render(sep) + clickable("@setfolder:"+strconv.Itoa(m.indexOf(sp)), s.Yellow.Render(T("no folder · set")))
 }
 
 func (m *Model) discoverCmd() tea.Cmd {
@@ -137,6 +154,11 @@ func (m Model) managerKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case "D":
 		m.mgr = nil
 		return m, m.discoverCmd()
+	case "f":
+		if sp != nil {
+			m.mgr = nil
+			return m, m.setFolderPrompt(sp)
+		}
 	case "r":
 		if sp != nil {
 			m.rename(T("Rename space"), sp.Name, func(v string) { sp.Name = v })
@@ -229,6 +251,9 @@ func (m Model) viewManager() string {
 		}
 		right := s.Muted.Render(Tn(len(sp.Tabs), "%d tab", "%d tabs") + " · " + Tn(panes, "%d pane", "%d panes") + " · " + Tn(sess, "%d session", "%d sessions"))
 		line := fmt.Sprintf("%s %s  %s", m.paneGlyph(m.spaceState(sp)), s.Bold.Render(spaceLabel(sp)), s.Peach.Render(trunc(tilde(sp.Dir()), inner/2)))
+		if !sp.HasFolder() {
+			line = fmt.Sprintf("%s %s  %s", m.paneGlyph(m.spaceState(sp)), s.Bold.Render(spaceLabel(sp)), s.Yellow.Render(T("no folder · set")))
+		}
 		if len(sp.Paths) > 1 {
 			line += s.Muted.Render(fmt.Sprintf(" +%d", len(sp.Paths)-1))
 		}
@@ -238,7 +263,7 @@ func (m Model) viewManager() string {
 		}
 		b.WriteString(line + "\n")
 	}
-	b.WriteString("\n" + s.hintsFit([][2]string{{"⏎", T("open")}, {"n", T("new")}, {"D", T("discover")}, {"r", T("rename")}, {"a/x", T("add/drop folder")}, {"d", T("delete")}, {"J/K", T("move")}, {"esc", T("close")}}, inner))
+	b.WriteString("\n" + s.hintsFit([][2]string{{"⏎", T("open")}, {"n", T("new")}, {"D", T("discover")}, {"f", T("folder")}, {"r", T("rename")}, {"a/x", T("add/drop folder")}, {"d", T("delete")}, {"J/K", T("move")}, {"esc", T("close")}}, inner))
 	return s.Modal.Width(w + 2).Render(b.String())
 }
 

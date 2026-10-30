@@ -42,12 +42,39 @@ type Tab struct {
 	SessionIDs map[string]string
 }
 
+// Dir is where new tabs and splits start: the space's folder, or your home
+// for a space saved before spaces had one.
 func (s *Space) Dir() string {
-	if len(s.Paths) > 0 {
+	if s.HasFolder() {
 		return s.Paths[0]
 	}
 	h, _ := os.UserHomeDir()
 	return h
+}
+
+// HasFolder reports whether the space has a folder of its own.
+func (s *Space) HasFolder() bool { return len(s.Paths) > 0 && s.Paths[0] != "" }
+
+// SetFolder makes dir the space's folder. Panes already open stay where they
+// are; the ones started from now on begin in dir.
+func (s *Space) SetFolder(dir string) {
+	var rest []string
+	if s.HasFolder() {
+		rest = s.Paths[1:]
+	} else {
+		rest = s.Paths
+	}
+	s.Paths = append([]string{dir}, without(rest, dir)...)
+}
+
+func without(paths []string, dir string) []string {
+	out := []string{}
+	for _, p := range paths {
+		if p != "" && p != dir {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 // Contains reports whether a folder belongs to the space.
@@ -132,6 +159,9 @@ func (t *Tab) Pane() *term.Pane {
 }
 
 func NewSpace(name string, paths ...string) *Space {
+	if len(paths) > 0 {
+		paths = without(paths, "")
+	}
 	return &Space{ID: newID("s"), Name: name, Paths: paths}
 }
 

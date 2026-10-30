@@ -257,6 +257,9 @@ func (m Model) viewSidebar(h int) string {
 		}
 		// where it is working: branch and its state, its open PR, worktrees
 		where := spaceWhere(sp)
+		if !sp.HasFolder() {
+			rows = append(rows, sbLine{"    " + clickable("@setfolder:"+fmt.Sprint(i), s.Yellow.Render(T("no folder · set"))), nil})
+		}
 		if br := branchOf(where); br != "" && m.cfg.On("sidebar.branch") {
 			bits := ""
 			if c, ok := m.stateOf(where); ok {

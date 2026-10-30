@@ -320,6 +320,13 @@ func (m Model) keyClick(x, y int) (tea.Model, tea.Cmd, bool) {
 			cmd := m.openGitHere(i)
 			return m, cmd, true
 		}
+		if v, ok := strings.CutPrefix(h.key, "@setfolder:"); ok {
+			i, _ := strconv.Atoi(v)
+			if i >= 0 && i < len(m.spaces) {
+				return m, m.setFolderPrompt(m.spaces[i]), true
+			}
+			return m, nil, true
+		}
 		if st, ok := strings.CutPrefix(h.key, "@only:"); ok {
 			mm, cmd := m.showOnly(st)
 			return mm, cmd, true
@@ -364,5 +371,5 @@ func (m Model) showOnly(st string) (tea.Model, tea.Cmd) {
 // noModal is true when nothing pops up over the screen.
 func (m Model) noModal() bool {
 	return !m.help && m.pal == nil && m.themes == nil && !m.showInbox && m.modal == nil && m.task == nil &&
-		m.answer == nil && m.disc == nil && m.mgr == nil && m.cust == nil && m.menu == nil && m.welcome == nil && m.setup == nil && !(m.libShown() && m.lib.ed != nil)
+		m.answer == nil && m.fp == nil && m.disc == nil && m.mgr == nil && m.cust == nil && m.menu == nil && m.welcome == nil && m.setup == nil && !(m.libShown() && m.lib.ed != nil)
 }

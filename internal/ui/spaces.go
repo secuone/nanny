@@ -39,12 +39,40 @@ func (m Model) space() *ws.Space {
 	return m.spaces[m.cur]
 }
 
-// waitPane blocks until any pane writes, then coalesces bursts into one redraw.
+// Redraw delays after pane output: the focused pane feels live, the rest can wait.
+const (
+	focusedDelay    = 16 * time.Millisecond
+	backgroundDelay = 50 * time.Millisecond
+)
+
+// paneDelay picks how long to coalesce output, given whether the focused pane wrote.
+func paneDelay(focusedWrote bool) time.Duration {
+	if focusedWrote {
+		return focusedDelay
+	}
+	return backgroundDelay
+}
+
+// focusedPane is the pane that takes the keys, if a space is open.
+func (m Model) focusedPane() *term.Pane {
+	if !m.inSpace() {
+		return nil
+	}
+	return m.space().Tab().Pane()
+}
+
+// waitPane blocks until any pane writes, then coalesces bursts into one redraw:
+// 16 ms when the focused pane wrote since the last frame, 50 ms for the others.
 func (m Model) waitPane() tea.Cmd {
 	ch := m.paneCh
+	fp := m.focusedPane()
+	var seq uint64
+	if fp != nil {
+		seq = fp.Seq()
+	}
 	return func() tea.Msg {
 		<-ch
-		time.Sleep(16 * time.Millisecond)
+		time.Sleep(paneDelay(fp != nil && fp.Seq() != seq)) // seq moves before the signal
 		for {
 			select {
 			case <-ch:
@@ -193,6 +221,9 @@ func (m *Model) allPanes() []paneRef {
 	return out
 }
 
+// procChildren is swapped by tests to count /proc scans.
+var procChildren = ws.ProcChildren
+
 // trackAgents links pane processes to Claude sessions (by pid tree) and reaps exited panes.
 func (m *Model) trackAgents() {
 	refs := m.allPanes()
@@ -205,12 +236,16 @@ func (m *Model) trackAgents() {
 			m.shellAfterClaude(r)
 		}
 	}
-	kids := ws.ProcChildren()
+	live := claude.LiveProcs()
+	m.vs.bySession = map[string]paneRef{}
+	if len(live) == 0 {
+		return // nothing can match: skip the /proc scan
+	}
 	procs := map[int]claude.Proc{}
-	for _, p := range claude.LiveProcs() {
+	for _, p := range live {
 		procs[p.Pid] = p
 	}
-	m.vs.bySession = map[string]paneRef{}
+	kids := procChildren()
 	for _, r := range refs {
 		for _, pid := range ws.Tree(r.pane.Pid(), kids) {
 			if pr, ok := procs[pid]; ok {
@@ -683,12 +718,14 @@ func (m Model) paneRest(p *term.Pane, r rect, bc lipgloss.Style, col string, kee
 	}
 	var rest []string
 	body := p.View()
+	side := bc.Render("│")
+	on, off := m.look.fenceOn(), m.look.fenceOff()
 	for j := 0; j < r.h-2; j++ {
 		l := ""
 		if j < len(body) {
 			l = body[j]
 		}
-		rest = append(rest, bc.Render("│")+m.look.fenceOn()+fit(l+"\x1b[0m", r.w-2)+m.look.fenceOff()+bc.Render("│"))
+		rest = append(rest, side+on+fit(l+"\x1b[0m", r.w-2)+off+side)
 	}
 	rest = append(rest, bc.Render("╰"+strings.Repeat("─", r.w-2)+"╯"))
 	keep[p] = paneLines{key, rest}

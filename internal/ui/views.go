@@ -174,9 +174,10 @@ func harvestKeys(out string) (string, []keyHit) {
 		}
 		var b strings.Builder
 		var open *keyHit
+		x := 0 // the width of b so far
 		closeAt := func() {
 			if open != nil {
-				if open.x1 = ansi.StringWidth(b.String()); open.x1 > open.x0 {
+				if open.x1 = x; open.x1 > open.x0 {
 					hits = append(hits, *open)
 				}
 				open = nil
@@ -186,9 +187,11 @@ func harvestKeys(out string) (string, []keyHit) {
 			i := strings.Index(l, keyMark)
 			if i < 0 {
 				b.WriteString(l)
+				x += ansi.StringWidth(l)
 				break
 			}
 			b.WriteString(l[:i])
+			x += ansi.StringWidth(l[:i])
 			l = l[i+len(keyMark):]
 			j := strings.Index(l, keyMarkEnd)
 			if j < 0 {
@@ -198,7 +201,7 @@ func harvestKeys(out string) (string, []keyHit) {
 			l = l[j+len(keyMarkEnd):]
 			closeAt()
 			if strings.HasPrefix(body, ";") {
-				open = &keyHit{y: y, x0: ansi.StringWidth(b.String()), key: body[1:]}
+				open = &keyHit{y: y, x0: x, key: body[1:]}
 			}
 		}
 		closeAt()

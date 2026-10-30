@@ -201,18 +201,24 @@ var spinner = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "
 const (
 	spinGlyph  = "\U00100000"
 	blinkGlyph = "\U00100001"
+
+	placeholderPrefix = "\xf4\x80\x80" // what both share in UTF-8: a plain search, not a rune decode
 )
 
 // animate puts the current spinner and blink in a frame drawn with placeholders.
 func (m Model) animate(frame string) string {
-	if !strings.ContainsAny(frame, spinGlyph+blinkGlyph) {
+	if !strings.Contains(frame, placeholderPrefix) {
 		return frame
 	}
 	spin, blink := spinner, [2]string{"●", "○"}
 	if m.look != nil {
 		spin, blink = m.look.spin, m.look.blink
 	}
-	return strings.NewReplacer(spinGlyph, spin[m.frame%len(spin)], blinkGlyph, blink[m.frame/4%2]).Replace(frame)
+	glyphs := [2]string{spin[m.frame%len(spin)], blink[m.frame/4%2]}
+	if m.vs.swap == nil || m.vs.swapFor != glyphs {
+		m.vs.swap, m.vs.swapFor = strings.NewReplacer(spinGlyph, glyphs[0], blinkGlyph, glyphs[1]), glyphs
+	}
+	return m.vs.swap.Replace(frame)
 }
 
 // renderBlocks stacks variable-height row blocks, scrolling (by line) so the

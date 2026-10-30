@@ -1,14 +1,19 @@
 package ui
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/secuone/nanny/internal/claude"
+	"github.com/secuone/nanny/internal/term"
+	"github.com/secuone/nanny/internal/ws"
 )
 
 // In a space the view bar stays, scoped to the space; prefix i opens it, 0
@@ -148,5 +153,104 @@ func TestSidebarNewSpaceStays(t *testing.T) {
 		if mm := click(m, hit.x0, hit.y).(Model); mm.modal == nil {
 			t.Errorf("cur=%d: clicking N new should ask for the folder", cur)
 		}
+	}
+}
+
+// Two marks on a line, around wide characters, still start and end where they are drawn.
+func TestHarvestKeysWidths(t *testing.T) {
+	line := "ab" + clickable("k1", "\x1b[31m日本\x1b[0m") + "é" + clickable("k2", "😀x") + " tail"
+	out, hits := harvestKeys("top\n" + line)
+	if ansi.Strip(out) != "top\nab日本é😀x tail" {
+		t.Fatalf("the marks stay in the frame: %q", out)
+	}
+	want := []keyHit{{y: 1, x0: 2, x1: 6, key: "k1"}, {y: 1, x0: 7, x1: 10, key: "k2"}}
+	if !slices.Equal(hits, want) {
+		t.Errorf("hits = %v, want %v", hits, want)
+	}
+}
+
+// With no live Claude session nothing can match, so the /proc scan is skipped;
+// a session that appears makes the next tick scan and link it.
+func TestTrackAgentsScansOnlyWithLiveSessions(t *testing.T) {
+	m := boot(t, 120, 36).(Model)
+	r, err := m.spawnTab(t.TempDir(), "shell", []string{"/bin/sh"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { r.pane.Close() })
+	scans := 0
+	procChildren = func() map[int][]int { scans++; return ws.ProcChildren() }
+	t.Cleanup(func() { procChildren = ws.ProcChildren })
+	old, _ := filepath.Glob(claude.Dir("sessions", "*.json"))
+	for _, f := range old {
+		_ = os.Remove(f)
+	}
+
+	m.trackAgents()
+	if scans != 0 || len(m.vs.bySession) != 0 {
+		t.Fatalf("scanned %d times with no sessions", scans)
+	}
+
+	dir := claude.Dir("sessions")
+	_ = os.MkdirAll(dir, 0o755)
+	js := fmt.Sprintf(`{"pid":%d,"sessionId":"new-session","startedAt":1}`, r.pane.Pid())
+	if err := os.WriteFile(filepath.Join(dir, "new.json"), []byte(js), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	m.trackAgents()
+	if scans != 1 {
+		t.Fatalf("scans = %d, want 1 once a session is live", scans)
+	}
+	if got, ok := m.vs.bySession["new-session"]; !ok || got.pane != r.pane {
+		t.Fatalf("new session not linked: %v", m.vs.bySession)
+	}
+}
+
+func TestPaneDelayFavoursTheFocusedPane(t *testing.T) {
+	if got := paneDelay(true); got != 16*time.Millisecond {
+		t.Errorf("focused pane delay = %v", got)
+	}
+	if got := paneDelay(false); got != 50*time.Millisecond {
+		t.Errorf("background delay = %v", got)
+	}
+}
+
+// waitPane redraws fast for the focused pane's output and slowly for the rest.
+func TestWaitPaneCoalescesBackgroundOutput(t *testing.T) {
+	m := boot(t, 120, 36).(Model)
+	a, err := m.spawnTab(t.TempDir(), "a", []string{"/bin/sh"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := m.spawnTab(t.TempDir(), "b", []string{"/bin/sh"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { a.pane.Close(); b.pane.Close() })
+	m.cur = len(m.spaces) - 1
+	m.space().Active = len(m.space().Tabs) - 1
+	focus, other := m.focusedPane(), a.pane
+	if focus == nil || focus == other {
+		t.Fatalf("focus %v other %v", focus, other)
+	}
+	for len(m.paneCh) > 0 {
+		<-m.paneCh
+	}
+	time.Sleep(300 * time.Millisecond) // let the shells' prompts settle
+	for len(m.paneCh) > 0 {
+		<-m.paneCh
+	}
+	took := func(p *term.Pane) time.Duration {
+		cmd := m.waitPane()
+		start := time.Now()
+		go func() { p.Note("x"); m.paneCh <- struct{}{} }()
+		cmd()
+		return time.Since(start)
+	}
+	if d := took(focus); d >= 45*time.Millisecond {
+		t.Errorf("focused output took %v", d)
+	}
+	if d := took(other); d < 50*time.Millisecond {
+		t.Errorf("background output took %v", d)
 	}
 }

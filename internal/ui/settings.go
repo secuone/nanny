@@ -305,13 +305,13 @@ func (t *settingsTab) view(m *Model, w, h int) string {
 		foot = append(foot, s.Muted.Render("  "+l))
 	}
 	foot = append(foot, s.Muted.Render(trunc("  "+Tf("file: %s  ·  e opens it in $EDITOR", tilde(config.Path())), inner)))
-	room := max(3, h-2-len(foot))
+	room := max(3, bodyRows(h)-len(foot))
 	t.off = max(0, min(t.off, sel-1, len(ls)-room))
 	if sel >= t.off+room {
 		t.off = sel - room + 1
 	}
 	end := min(len(ls), t.off+room)
-	m.vs.listY0, m.vs.listRows = bodyY+1, rows[t.off:end]
+	m.vs.listY0, m.vs.listRows = bodyY+1+gapOf(h), rows[t.off:end]
 	ls = append(ls[t.off:end], foot...)
 	return s.panel(T("Settings"), strings.Join(ls, "\n"), w, h, true)
 }

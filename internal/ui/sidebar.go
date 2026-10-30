@@ -199,12 +199,16 @@ func (m Model) viewSidebar(h int) string {
 	w := sidebarW - 2
 	var ls []string
 	m.vs.sideRows = m.vs.sideRows[:0]
+	gap := gapOf(h)
 	// a section: its name, a rule to the count
 	head := func(t string, n int) {
 		name := s.Accent.Bold(true).Render(strings.ToUpper(t))
 		cnt := s.Muted.Render(fmt.Sprintf(" %d", n))
 		rule := s.Dim.Render(" " + strings.Repeat("─", max(1, w-2-lipgloss.Width(name)-lipgloss.Width(cnt))))
 		ls = append(ls, " "+name+rule+cnt)
+		if gap > 0 {
+			ls = append(ls, "")
+		}
 	}
 	// each half gets what it needs; when both overflow they share what is
 	// left (see sideRooms) and scroll on their own (wheel over it)
@@ -297,12 +301,16 @@ func (m Model) viewSidebar(h int) string {
 	}
 	spRows := rows
 	arows, first := m.agentRows(agents, quiet, true)
-	spRoom, agRoom := sideRooms(len(spRows), len(arows), inner-5, noAgents)
+	avail := inner - 5 - 2*gap
+	if noAgents {
+		avail = inner - 5 - gap
+	}
+	spRoom, agRoom := sideRooms(len(spRows), len(arows), avail, noAgents)
 	if len(arows) > agRoom { // no blank lines between agents when they overflow
 		arows, first = m.agentRows(agents, quiet, false)
-		spRoom, agRoom = sideRooms(len(spRows), len(arows), inner-5, noAgents)
+		spRoom, agRoom = sideRooms(len(spRows), len(arows), avail, noAgents)
 	}
-	m.vs.sideSplit = bodyY + spRoom + 4
+	m.vs.sideSplit = bodyY + spRoom + 4 + gap
 	if noAgents {
 		m.vs.sideSplit = bodyY + inner + 1
 	}
@@ -311,7 +319,7 @@ func (m Model) viewSidebar(h int) string {
 		follow, m.vs.sideFollowSpace = curRow, m.cur
 	}
 	m.vs.sideSpMax = m.sideWindow(&ls, spRows, spRoom, &m.vs.sideSpOff, follow)
-	for len(ls) < spRoom+2 {
+	for len(ls) < spRoom+2+gap {
 		ls = append(ls, "")
 	}
 	// pinned under the spaces, so a new space and the menu are one click away

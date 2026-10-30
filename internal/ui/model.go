@@ -1593,7 +1593,7 @@ func (m Model) dashboard(lw, rw, bh int) (left, right string) {
 
 // detailScroll applies the right-pane scroll offset to a list of lines.
 func (m Model) detailScroll(ls []string, h int) string {
-	inner := h - 2
+	inner := bodyRows(h)
 	off := min(m.detailOff, max(0, len(ls)-inner))
 	if off > 0 {
 		ls = ls[off:]
@@ -1604,7 +1604,7 @@ func (m Model) detailScroll(ls []string, h int) string {
 // detailTail keeps the header (ls[:headN]) and the newest part of the body when
 // everything doesn't fit, so live activity is always visible without scrolling.
 func (m Model) detailTail(ls []string, headN, h int) string {
-	room := h - 2
+	room := bodyRows(h)
 	if m.detailOff > 0 || len(ls) <= room || headN > room-6 {
 		return m.detailScroll(ls, h)
 	}

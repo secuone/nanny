@@ -489,7 +489,7 @@ func (t *liveTab) view(m *Model, w, h int) string {
 	if len(t.marks) > 0 {
 		title += " · " + Tf("%d picked", len(t.marks))
 	}
-	return s.panel(title, m.listBlocks(blocks, t.cur.idx, "live", h-2, bodyY+1), w, h, !m.focusR)
+	return s.panel(title, m.listBlocks(blocks, t.cur.idx, "live", bodyRows(h), bodyY+1+gapOf(h)), w, h, !m.focusR)
 }
 
 func countAgents(rows []liveRow) int {
@@ -692,8 +692,8 @@ func (t *liveTab) detail(m *Model, w, h int) string {
 		for _, l := range strings.Split(strings.TrimRight(r.local.pane.Text(h), "\n"), "\n") {
 			add(s.Text.Render(trunc(l, inner)))
 		}
-		if len(ls) > h-2 && m.detailOff == 0 {
-			ls = append(ls[:2], ls[len(ls)-(h-4):]...)
+		if len(ls) > bodyRows(h) && m.detailOff == 0 {
+			ls = append(ls[:2], ls[len(ls)-(bodyRows(h)-2):]...)
 		}
 		return s.panel(T("Screen"), m.detailScroll(ls, h), w, h, m.focusR)
 	}

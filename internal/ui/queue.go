@@ -525,7 +525,7 @@ func (m Model) viewQueue(w, h int) string {
 		auto = s.Green.Render("▶ "+T("auto on")) + s.Muted.Render(" · "+Tn(m.cfg.Queue.MaxParallel, "up to %d agent at once", "up to %d agents at once"))
 	}
 	heads := []string{fit(auto, inner), s.Dim.Render(strings.Repeat("─", inner))}
-	room := h - 2 - len(heads)
+	room := bodyRows(h) - len(heads)
 	lw := max(28, min(70, inner*45/100))
 	pw := inner - lw - 3
 
@@ -566,7 +566,7 @@ func (m Model) viewQueue(w, h int) string {
 	}
 	var left []string
 	if len(rows) > 0 {
-		left = strings.Split(m.listBlocks(blocks, cur, "queue", room, bodyY+1+len(heads)), "\n")
+		left = strings.Split(m.listBlocks(blocks, cur, "queue", room, bodyY+1+gapOf(h)+len(heads)), "\n")
 	} else {
 		left = strings.Split(s.emptyState(T("Nothing queued. Add tasks and nanny hands them to Claude agents, a few at a time."),
 			[][2]string{{"n", T("add a task")}, {"a", T("auto-dispatch on/off")}}, lw), "\n")

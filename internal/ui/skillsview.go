@@ -390,7 +390,7 @@ func (t *skillsTab) view(m *Model, w, h int) string {
 		}
 		blocks[i] = append(lines, row...)
 	}
-	list := m.listBlocks(blocks, t.cur.idx, "skills", h-2-len(head), bodyY+1+len(head))
+	list := m.listBlocks(blocks, t.cur.idx, "skills", bodyRows(h)-len(head), bodyY+1+gapOf(h)+len(head))
 	if len(t.rows) == 0 {
 		switch {
 		case len(t.all) == 0:

@@ -5,11 +5,22 @@ import (
 	"github.com/secuone/nanny/internal/claude"
 )
 
-// sideAgents are the sidebar's agents (top-level only): none while Live (the
-// same list) is on screen below full; in minimal only the ones busy or
-// waiting on you. quiet is the rest, one click from Live.
+// sideAgents are the sidebar's agents (top-level only) of the space you are
+// in, or all of them from home: none while Live (the same list) is on screen
+// below full; in minimal only the ones busy or waiting on you. quiet is the
+// rest, one click from Live.
 func (m Model) sideAgents() (agents, quiet []liveRow) {
-	for _, r := range m.live.allRows {
+	return m.splitAgents(m.inSideScope(m.live.allRows))
+}
+
+// walkAgents are the agents alt+↑/↓ steps through: those of every space.
+func (m Model) walkAgents() []liveRow {
+	agents, _ := m.splitAgents(m.live.allRows)
+	return agents
+}
+
+func (m Model) splitAgents(rows []liveRow) (agents, quiet []liveRow) {
+	for _, r := range rows {
 		if r.sub != nil {
 			continue
 		}
@@ -66,7 +77,7 @@ func (m Model) navFrom(ks, from string) (tea.Model, tea.Cmd, bool) {
 	if d == 0 {
 		return m, nil, false
 	}
-	agents, _ := m.sideAgents()
+	agents := m.walkAgents()
 	if len(agents) == 0 {
 		m.setStatus(T("no agents to go to"), false)
 		return m, nil, true

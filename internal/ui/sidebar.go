@@ -388,6 +388,14 @@ func (m Model) agentRows(agents, quiet []liveRow, spacers bool) ([]sbLine, map[s
 	first := map[string]int{}
 	var rows []sbLine
 	cur := m.curAgentKey()
+	if sp := m.sideScope(); sp != nil {
+		if n := m.waitingElsewhere(); n > 0 {
+			rows = append(rows, sbLine{" " + s.Red.Render("● "+trunc(Tf("%d waiting elsewhere", n), w-4)), &sideRow{space: -1, isSpace: true}})
+		}
+		if len(agents)+len(quiet) == 0 {
+			rows = append(rows, sbLine{" " + s.Muted.Render(trunc(Tf("No agents in %s", spaceLabel(sp)), w-2)), nil})
+		}
+	}
 	for i, r := range agents {
 		if i > 0 && spacers {
 			rows = append(rows, sbLine{text: ""})

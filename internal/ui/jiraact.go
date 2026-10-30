@@ -32,21 +32,32 @@ func (j *jiraView) key(m *Model, k tea.KeyPressMsg) tea.Cmd {
 	case "g", "home":
 		j.cur.idx = 0
 		j.settle(1)
-		return j.settleDev(m)
+		return j.settleSel(m)
 	case "G", "end":
 		j.cur.idx = len(j.rows) - 1
 		j.settle(-1)
-		return j.settleDev(m)
+		return j.settleSel(m)
 	case "/":
 		j.typed = true
 		j.search.Focus()
 		return textinput.Blink
 	case "f":
-		j.filter = (j.filter + 1) % 3
+		j.nextFilter()
 		j.rebuild(m)
+		return j.settleSel(m)
+	case "o":
+		j.sortBy = (j.sortBy + 1) % 3
+		j.rebuild(m)
+		return j.settleSel(m)
+	case "F":
+		j.clearAll(m)
+		return j.settleSel(m)
+	case "e":
+		return j.searchPrompt(m)
 	case "r":
 		j.at = j.at.Add(-jiraForceGap)
-		return j.due(m, true)
+		j.readAsk = map[string]bool{}
+		return tea.Batch(j.due(m, true), j.settleRead(m))
 	}
 	if is == nil {
 		return nil
@@ -87,7 +98,7 @@ func (j *jiraView) key(m *Model, k tea.KeyPressMsg) tea.Cmd {
 func (j *jiraView) step(m *Model, d int) tea.Cmd {
 	j.cur.idx = max(0, min(len(j.rows)-1, j.cur.idx+d))
 	j.settle(d)
-	return j.settleDev(m)
+	return j.settleSel(m)
 }
 
 func (j *jiraView) searchKey(m *Model, k tea.KeyPressMsg) tea.Cmd {
@@ -101,6 +112,9 @@ func (j *jiraView) searchKey(m *Model, k tea.KeyPressMsg) tea.Cmd {
 	case "enter":
 		j.search.Blur()
 		j.typed = false
+		if v := strings.TrimSpace(j.search.Value()); strings.HasPrefix(strings.ToLower(v), jira.JQLPrefix) {
+			return j.remoteSearch(m, v)
+		}
 		return nil
 	}
 	before := j.search.Value()
@@ -108,6 +122,7 @@ func (j *jiraView) searchKey(m *Model, k tea.KeyPressMsg) tea.Cmd {
 	j.search, cmd = j.search.Update(k)
 	if j.search.Value() != before {
 		j.rebuild(m)
+		return tea.Batch(cmd, j.settleSel(m))
 	}
 	return cmd
 }

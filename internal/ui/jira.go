@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -27,10 +28,13 @@ const (
 	jiraSecStatus = iota
 	jiraSecSprint
 	jiraSecDone
+	jiraSecSearch
 
 	jiraOffEvery  = 10 * time.Minute // fetching for the sidebar only
 	jiraForceGap  = 5 * time.Second  // opening the view again in a row doesn't ask again
 	jiraDevSettle = 500 * time.Millisecond
+	jiraDetSettle = 250 * time.Millisecond // the cursor rests this long before the issue is read
+	jiraDetCache  = 300                    // issues read kept in memory
 	jiraTimeout   = 25 * time.Second
 	jiraDoneDays  = 7
 )
@@ -79,6 +83,17 @@ type jiraUsersMsg struct {
 	err   error
 }
 type jiraDevWantMsg struct{ key string }
+type jiraDetWantMsg struct{ key string }
+type jiraDetailMsg struct {
+	key, ver string
+	d        jira.Detail
+	err      error
+}
+type jiraSearchMsg struct {
+	q      string
+	issues []jira.Issue
+	err    error
+}
 
 func (jiraIssuesMsg) bgMsg()  {}
 func (jiraTransMsg) bgMsg()   {}
@@ -86,6 +101,17 @@ func (jiraDevMsg) bgMsg()     {}
 func (jiraDoneMsg) bgMsg()    {}
 func (jiraUsersMsg) bgMsg()   {}
 func (jiraDevWantMsg) bgMsg() {}
+func (jiraDetWantMsg) bgMsg() {}
+func (jiraDetailMsg) bgMsg()  {}
+func (jiraSearchMsg) bgMsg()  {}
+
+// jiraRead is an issue as it was read: the version of the issue (its
+// updated stamp) it belongs to, and what Jira said or why it couldn't.
+type jiraRead struct {
+	ver string
+	d   jira.Detail
+	err string
+}
 
 type jiraRow struct {
 	head  string
@@ -95,7 +121,10 @@ type jiraRow struct {
 type jiraView struct {
 	featBase
 	section  int
-	filter   int // 0 all, 1 in progress, 2 to do
+	filter   string       // "" all; "cat:new|indeterminate|done"; "st:<status>"
+	sortBy   int          // jiraSortUpdated, jiraSortPriority, jiraSortStatus
+	remote   []jira.Issue // the answer of a search over all of Jira; nil = none
+	remoteQ  string
 	cur      cursor
 	search   textinput.Model
 	typed    bool // the search box has the keys
@@ -112,13 +141,17 @@ type jiraView struct {
 	devAsked map[string]bool
 	devOff   bool
 	wantKey  string
+	read     map[string]jiraRead // issues read, by key
+	readAsk  map[string]bool     // key@version asked already
+	readWant string
 }
 
 func newJiraView() *jiraView {
 	in := newInput()
 	in.Prompt = "/ "
 	in.Placeholder = "…"
-	return &jiraView{search: in, dev: map[string][]jira.DevPR{}, devAsked: map[string]bool{}}
+	return &jiraView{search: in, dev: map[string][]jira.DevPR{}, devAsked: map[string]bool{},
+		read: map[string]jiraRead{}, readAsk: map[string]bool{}}
 }
 
 func init() {
@@ -259,6 +292,13 @@ func (j *jiraView) update(m *Model, msg tea.Msg) (tea.Cmd, bool) {
 		return nil, true
 	case jiraDevWantMsg:
 		return j.devFetch(m, msg.key), true
+	case jiraDetWantMsg:
+		return j.readFetch(m, msg.key), true
+	case jiraDetailMsg:
+		j.readIn(msg)
+		return nil, true
+	case jiraSearchMsg:
+		return j.searchIn(m, msg), true
 	case jiraDoneMsg:
 		j.acting--
 		if msg.err != nil {
@@ -298,54 +338,156 @@ func (j *jiraView) issuesIn(m *Model, msg jiraIssuesMsg) tea.Cmd {
 	}
 	j.issues = msg.issues
 	j.rebuild(m)
-	return nil
+	return j.settleSel(m)
 }
 
 // ---------------------------------------------------------------- rows
 
 func (j *jiraView) hidden(is jira.Issue) bool {
-	if q := strings.TrimSpace(j.search.Value()); q != "" && !is.Matches(q) {
-		return true
+	q := strings.TrimSpace(j.search.Value())
+	if q == "" || strings.HasPrefix(strings.ToLower(q), jira.JQLPrefix) {
+		return false
 	}
-	return false
+	return !is.Matches(q)
+}
+
+const (
+	jiraSortUpdated = iota
+	jiraSortPriority
+	jiraSortStatus
+)
+
+const (
+	filterNew   = "cat:new"
+	filterDoing = "cat:indeterminate"
+	filterDone  = "cat:done"
+)
+
+// filters are the values `f` walks: all, the three categories, then every
+// status that the issues in hand are in.
+func (j *jiraView) filters() []string {
+	out := []string{"", filterNew, filterDoing, filterDone}
+	seen := map[string]bool{}
+	var sts []jira.Issue
+	for _, is := range append(append([]jira.Issue{}, j.issues...), j.remote...) {
+		if is.Status != "" && !seen[is.Status] {
+			seen[is.Status] = true
+			sts = append(sts, is)
+		}
+	}
+	sort.SliceStable(sts, func(a, b int) bool {
+		if ra, rb := catRank[sts[a].StatusCat], catRank[sts[b].StatusCat]; ra != rb {
+			return ra < rb
+		}
+		return sts[a].Status < sts[b].Status
+	})
+	for _, is := range sts {
+		out = append(out, "st:"+is.Status)
+	}
+	return out
+}
+
+func (j *jiraView) nextFilter() {
+	fs := j.filters()
+	for i, f := range fs {
+		if f == j.filter {
+			j.filter = fs[(i+1)%len(fs)]
+			return
+		}
+	}
+	j.filter = ""
+}
+
+func (j *jiraView) filterName() string {
+	switch j.filter {
+	case "":
+		return T("all")
+	case filterNew:
+		return T("to do")
+	case filterDoing:
+		return T("in progress")
+	case filterDone:
+		return T("done")
+	}
+	return strings.TrimPrefix(j.filter, "st:")
+}
+
+func (j *jiraView) sortName() string {
+	return [3]string{T("updated"), T("priority"), T("status")}[j.sortBy]
 }
 
 func (j *jiraView) shown(is jira.Issue) bool {
 	switch j.filter {
-	case 1:
-		return is.StatusCat == "indeterminate"
-	case 2:
+	case "":
+		return true
+	case filterNew:
 		return is.StatusCat == "new"
+	case filterDoing:
+		return is.StatusCat == "indeterminate"
+	case filterDone:
+		return is.StatusCat == "done"
 	}
-	return true
+	return "st:"+is.Status == j.filter
 }
 
 func doneRecently(is jira.Issue) bool {
 	return is.StatusCat == "done" && time.Since(closedAt(is)) < jiraDoneDays*24*time.Hour
 }
 
-// list is the issues of a section, filtered, newest first.
+var priorityRank = map[string]int{"highest": 0, "blocker": 0, "critical": 0, "high": 1, "major": 1, "medium": 2, "low": 3, "minor": 3, "lowest": 4, "trivial": 4}
+
+func prioRank(is jira.Issue) int {
+	if r, ok := priorityRank[strings.ToLower(is.Priority)]; ok {
+		return r
+	}
+	return 5
+}
+
+// list is the issues of a section, filtered and sorted (newest first unless told otherwise).
 func (j *jiraView) list(sec int) []jira.Issue {
+	pool := j.issues
+	if sec == jiraSecSearch {
+		pool = j.remote
+	}
 	var out []jira.Issue
-	for _, is := range j.issues {
+	for _, is := range pool {
 		if j.hidden(is) {
 			continue
 		}
 		switch {
+		case sec == jiraSecSearch && j.shown(is):
 		case sec == jiraSecDone && doneRecently(is):
-		case sec != jiraSecDone && is.StatusCat != "done" && j.shown(is):
+		case sec != jiraSecDone && sec != jiraSecSearch && j.shown(is) && (is.StatusCat != "done" || j.filter != ""):
 		default:
 			continue
 		}
 		out = append(out, is)
 	}
-	sort.SliceStable(out, func(a, b int) bool {
-		if sec == jiraSecDone {
-			return closedAt(out[a]).After(closedAt(out[b]))
-		}
-		return out[a].Updated.After(out[b].Updated)
-	})
+	sort.SliceStable(out, func(a, b int) bool { return j.before(sec, out[a], out[b]) })
 	return out
+}
+
+func (j *jiraView) before(sec int, a, b jira.Issue) bool {
+	newer := func() bool {
+		if sec == jiraSecDone {
+			return closedAt(a).After(closedAt(b))
+		}
+		return a.Updated.After(b.Updated)
+	}
+	switch j.sortBy {
+	case jiraSortPriority:
+		if ra, rb := prioRank(a), prioRank(b); ra != rb {
+			return ra < rb
+		}
+	case jiraSortStatus:
+		if ra, rb := catRank[a.StatusCat], catRank[b.StatusCat]; ra != rb {
+			return ra < rb
+		}
+		if a.Status != b.Status {
+			return a.Status < b.Status
+		}
+	}
+	return newer()
 }
 
 var catRank = map[string]int{"indeterminate": 0, "new": 1, "done": 3}
@@ -358,7 +500,7 @@ func (j *jiraView) rebuild(m *Model) {
 	}
 	j.rows = j.rows[:0]
 	list := j.list(j.section)
-	if j.section == jiraSecDone {
+	if j.section == jiraSecDone || j.section == jiraSecSearch {
 		for i := range list {
 			j.rows = append(j.rows, jiraRow{issue: &list[i]})
 		}
@@ -446,13 +588,14 @@ func (j *jiraView) selKey(m *Model) string {
 }
 
 func (j *jiraView) secs(m *Model) []secDef {
-	if !j.connected(m) || len(j.issues) == 0 {
+	if !j.connected(m) || len(j.issues) == 0 && j.remote == nil {
 		return nil
 	}
 	return []secDef{
 		{M("By status"), len(j.list(jiraSecStatus)), true},
 		{M("By sprint"), len(j.list(jiraSecSprint)), true},
 		{M("Done 7d"), len(j.list(jiraSecDone)), true},
+		{M("Search"), len(j.list(jiraSecSearch)), j.remote != nil},
 	}
 }
 
@@ -462,13 +605,13 @@ func (j *jiraView) setSec(m *Model, i int) tea.Cmd {
 	j.section = i
 	*m.off("jira") = 0
 	j.rebuild(m)
-	return nil
+	return j.settleSel(m)
 }
 
 func (j *jiraView) click(m *Model, row int) tea.Cmd {
 	if row >= 0 && row < len(j.rows) && j.rows[row].issue != nil {
 		j.cur.idx = row
-		return j.settleDev(m)
+		return j.settleSel(m)
 	}
 	return nil
 }
@@ -602,10 +745,6 @@ func (j *jiraView) catStyle(m *Model, cat string) func(...string) string {
 	return s.Muted.Render
 }
 
-func (j *jiraView) filterName() string {
-	return [3]string{T("all"), T("in progress"), T("to do")}[j.filter]
-}
-
 func (j *jiraView) view(m *Model, w, h int) string {
 	s := m.st
 	inner := w - 4
@@ -630,13 +769,15 @@ func (j *jiraView) view(m *Model, w, h int) string {
 		switch {
 		case j.loading && j.at.IsZero():
 			msg = spinGlyph + " " + T("asking Jira…")
+		case j.section == jiraSecSearch:
+			msg = T("Nothing found.")
 		case len(j.issues) == 0 && !j.at.IsZero():
 			msg = T("Nothing assigned to you.")
 		}
 		return s.panel(title, strings.Join(append(head, s.emptyState(msg, nil, inner)), "\n"), w, h, !m.focusR)
 	}
 	title += " · " + Tn(len(j.list(j.section)), "%d issue", "%d issues")
-	if j.filter > 0 {
+	if j.filter != "" {
 		title += " · " + j.filterName()
 	}
 	if j.loading {
@@ -691,6 +832,9 @@ func (j *jiraView) cells(m *Model, is jira.Issue) string {
 			parts = append(parts, s.Accent.Render("PR"))
 		}
 	}
+	if n := j.comments(is.Key); n > 0 {
+		parts = append(parts, s.Muted.Render("💬"+strconv.Itoa(n)))
+	}
 	parts = append(parts, j.catStyle(m, is.StatusCat)(trunc(is.Status, 14)))
 	return strings.Join(parts, " ")
 }
@@ -717,11 +861,20 @@ func (j *jiraView) detail(m *Model, w, h int) string {
 	if is.Priority != "" {
 		ls = append(ls, s.kv(T("priority"), is.Priority, inner))
 	}
+	if is.Assignee != "" {
+		ls = append(ls, s.kv(T("assignee"), is.Assignee, inner))
+	}
+	if is.Reporter != "" {
+		ls = append(ls, s.kv(T("reporter"), is.Reporter, inner))
+	}
 	if is.Sprint != "" {
 		ls = append(ls, s.kv(T("sprint"), is.Sprint+" · "+is.SprintState, inner))
 	}
 	if len(is.Labels) > 0 {
 		ls = append(ls, s.kv(T("labels"), strings.Join(is.Labels, ", "), inner))
+	}
+	if !is.Created.IsZero() {
+		ls = append(ls, s.kv(T("created"), ago(is.Created), inner))
 	}
 	if !is.Updated.IsZero() {
 		ls = append(ls, s.kv(T("updated"), ago(is.Updated), inner))
@@ -746,6 +899,7 @@ func (j *jiraView) detail(m *Model, w, h int) string {
 	} else {
 		ls = append(ls, "", s.Muted.Render(T("No agent yet · n starts one on it")))
 	}
+	ls = append(ls, j.readLines(m, *is, inner)...)
 	ls = append(ls, "", s.hintsFit(j.footer(m), inner))
 	return s.panel(T("Issue"), m.detailScroll(ls, h), w, h, m.focusR)
 }
@@ -754,18 +908,24 @@ func (j *jiraView) footer(m *Model) [][2]string {
 	if !j.connected(m) {
 		return [][2]string{{"⏎", T("Connect Jira")}}
 	}
-	return [][2]string{{"⏎", T("open")}, {"n", T("start work")}, {"t", T("transition")}, {"c", T("comment")}, {"a", T("assign")},
-		{"/", T("search")}, {"f", T("filter")}, {"y", T("copy")}, {"O", T("PR")}, {"s", T("agent")}}
+	hs := [][2]string{{"⏎", T("open")}, {"n", T("start work")}, {"t", T("transition")}, {"c", T("comment")}, {"a", T("assign")},
+		{"/", T("search")}, {"e", T("search Jira")}, {"f", T("filter")}, {"o", T("sort")}}
+	if j.filter != "" || j.remote != nil || strings.TrimSpace(j.search.Value()) != "" {
+		hs = append(hs, [2]string{"F", T("clear")})
+	}
+	return append(hs, [][2]string{{"y", T("copy")}, {"O", T("PR")}, {"s", T("agent")}}...)
 }
 
 func (j *jiraView) help() []helpSec {
 	return []helpSec{{T("Jira"), [][2]string{
-		{"E  ← →", T("your issues · by status, by sprint, done in the last 7 days")},
-		{"/  f", T("search · filter: all, in progress, to do")},
+		{"E  ← →", T("your issues · by status, by sprint, done in the last 7 days · what a search found")},
+		{"/  e", T("filter the list as you type · search all of Jira (words, or jql: and a query)")},
+		{"f  o  F", T("filter by status (all, to do, in progress, done, each status) · sort by updated, priority, status · clear")},
 		{"⏎  y Y", T("open in the browser · copy the key · copy the link")},
 		{"t  c  a", T("move to another status · comment · assign")},
 		{"n  b", T("start work: branch or worktree and a Claude task with the issue · only the branch")},
 		{"O  s  v", T("open its PR · go to its agent · read its conversation")},
+		{"l  j k", T("the detail pane: description, comments, subtasks and links · scroll it")},
 	}}}
 }
 

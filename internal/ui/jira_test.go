@@ -29,6 +29,10 @@ type fakeJiraAPI struct {
 	prs                                  []jira.DevPR
 	err                                  error
 	user                                 jira.User
+	jqls                                 []string
+	found                                []jira.Issue // what a search that isn't the default one brings
+	details                              map[string]jira.Detail
+	detailCalls                          []string
 }
 
 func (f *fakeJiraAPI) Myself(context.Context) (jira.User, error) {
@@ -38,10 +42,14 @@ func (f *fakeJiraAPI) Myself(context.Context) (jira.User, error) {
 	return f.user, f.err
 }
 
-func (f *fakeJiraAPI) Search(context.Context, string, string) ([]jira.Issue, error) {
+func (f *fakeJiraAPI) Search(_ context.Context, jql, _ string) ([]jira.Issue, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.searches++
+	f.jqls = append(f.jqls, jql)
+	if jql != jira.DefaultJQL && f.found != nil {
+		return f.found, f.err
+	}
 	return f.issues, f.err
 }
 
@@ -84,8 +92,11 @@ func (f *fakeJiraAPI) DevPRs(context.Context, string) ([]jira.DevPR, error) {
 	return f.prs, f.err
 }
 
-func (f *fakeJiraAPI) Detail(context.Context, string) (jira.Detail, error) {
-	return jira.Detail{}, f.err
+func (f *fakeJiraAPI) Detail(_ context.Context, key string) (jira.Detail, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.detailCalls = append(f.detailCalls, key)
+	return f.details[key], f.err
 }
 
 func (f *fakeJiraAPI) calls() int {
@@ -226,14 +237,14 @@ func TestJiraFilterAndSearch(t *testing.T) {
 	m = key(m, "E")
 	j := m.(Model).jira
 	m = key(m, "f")
-	if n := len(j.list(jiraSecStatus)); n != 2 {
-		t.Errorf("f → in progress: %d issues", n)
-	}
-	m = key(m, "f")
 	if n := len(j.list(jiraSecStatus)); n != 2 || j.list(jiraSecStatus)[0].StatusCat != "new" {
-		t.Errorf("f again → to do: %d issues", n)
+		t.Errorf("f → to do: %d issues", n)
 	}
 	m = key(m, "f")
+	if n := len(j.list(jiraSecStatus)); n != 2 || j.list(jiraSecStatus)[0].StatusCat != "indeterminate" {
+		t.Errorf("f again → in progress: %d issues", n)
+	}
+	m = key(m, "F")
 	m = key(m, "/")
 	if !j.typing() {
 		t.Fatal("/ should open the search box")
@@ -380,6 +391,7 @@ func TestJiraDevStatusFallbackAndSilentFailure(t *testing.T) {
 	mm := m.(Model)
 	j := mm.jira
 	f.prs = []jira.DevPR{{Name: "Fix refunds", URL: "https://github.com/o/r/pull/9", Branch: "x"}}
+	j.devAsked = map[string]bool{} // opening the view already asked once, before the PR existed
 	cmd := j.devFetch(&mm, "PAY-1")
 	m = drain(mm, cmd, 0)
 	if p, ok := j.prOf(&mm, "PAY-1"); !ok || p.URL != "https://github.com/o/r/pull/9" {
@@ -497,7 +509,7 @@ func TestJiraSidebarLineAndHooks(t *testing.T) {
 
 func TestJiraViewsFitInEveryLanguage(t *testing.T) {
 	for _, lang := range []string{"en", "es", "fr", "de"} {
-		f := &fakeJiraAPI{issues: sampleIssues()}
+		f := &fakeJiraAPI{issues: sampleIssues(), details: map[string]jira.Detail{"PAY-1": longDetail()}, found: sampleIssues()[2:4]}
 		old := newJiraClient
 		newJiraClient = func(string, string, string) jira.API { return f }
 		m := bootIn(t, lang, 100, 30)
@@ -505,7 +517,7 @@ func TestJiraViewsFitInEveryLanguage(t *testing.T) {
 		mm := m.(Model)
 		mm.cfg.Jira = config.Jira{URL: "https://acme.atlassian.net", Email: "me@acme.com"}
 		m = key(mm, "E")
-		for _, k := range []string{"right", "right", "left", "left", "/", "esc", "t", "esc"} {
+		for _, k := range []string{"right", "right", "left", "left", "/", "esc", "t", "esc", "f", "f", "f", "f", "o", "F", "e", "esc", "l", "j", "j", "esc"} {
 			fits(t, m, 100, 30, "jira "+lang+" "+k)
 			m = key(m, k)
 		}

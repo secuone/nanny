@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 256" width="760" height="256" role="img" aria-label="nanny">
+<rect x="12" y="12" width="232" height="232" rx="56" fill="#14151f" stroke="#a78bfa" stroke-width="8"/>
+<path d="M36 112Q128 24 220 112Q128 200 36 112Z" fill="#a78bfa"/>
+<circle cx="128" cy="112" r="34" fill="#14151f"/>
+<rect x="80" y="188" width="96" height="22" rx="11" fill="#a78bfa"/>
+<text x="296" y="172" font-family="Inter,'Segoe UI',Helvetica,Arial,sans-serif" font-size="140" font-weight="700" letter-spacing="-3" fill="#e6e8f2">nanny</text>
+</svg>

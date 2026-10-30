@@ -1,6 +1,12 @@
 <div align="center">
 
-# ◆ nanny
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-wordmark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="docs/assets/logo-wordmark-light.svg">
+  <img src="docs/assets/logo-wordmark-light.svg" alt="nanny" width="320">
+</picture>
+
+<h6>◆ nanny</h6>
 
 **A calm terminal console for Claude Code sessions, agents, subagents, panes and dev services.**
 
@@ -11,9 +17,7 @@
 
 [Features](#features) · [Install](#install) · [Keys](#keys) · [Docs](#docs)
 
-<!-- TODO: record docs/demo.gif (see docs/development.md#demo-gif), then uncomment:
 <img src="docs/demo.gif" alt="nanny showing spaces, agents and subagents" width="900">
--->
 
 </div>
 

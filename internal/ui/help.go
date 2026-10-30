@@ -40,6 +40,7 @@ func (m Model) helpSections() []helpSec {
 			{"=", T("customize: turn views, Monitor sources, sidebar and top bar bits on and off")},
 			{"T", T("theme picker, previews live")},
 			{"R  q", T("rescan everything · quit (panes keep running; reopen to reattach)")},
+			{"alt+↑ ↓", T("previous / next agent")},
 		}},
 		{T("Same key in every list"), [][2]string{
 			{"⏎", T("main action: go to · resume · edit · open")},
@@ -66,6 +67,9 @@ func (m Model) helpSections() []helpSec {
 			{"b w L", T("bots · only worktrees · only live")},
 			{"c  i", T("copy folder · session id")},
 		}},
+	}
+	if qk := m.cfg.QuitKeyName(); qk != "" {
+		home[0].rows = append(home[0].rows, [2]string{keyShort(qk), T("quit (asks first; panes keep running)")})
 	}
 	for _, f := range m.feats() { // Git, Jira and Insights bring their own
 		home = append(home, f.help()...)
@@ -98,6 +102,7 @@ func (m Model) helpSections() []helpSec {
 			{",  R", T("rename tab · rename space")},
 			{"r  f", T("resume this space's latest session · find its sessions")},
 			{"] [  0", T("next · previous space · home")},
+			{"G", T("this space's Git: branch, PR, worktrees")},
 			{"w N D", T("manage spaces · new space · discover")},
 			{"u d", T("scroll back · forward (or the wheel)")},
 			{"K :  T  ?", T("command palette · themes · this help")},
@@ -105,6 +110,7 @@ func (m Model) helpSections() []helpSec {
 			{"q  Q", T("quit, panes keep running · quit and stop them all")},
 			{px + " " + px, Tf("send %s to the program", px)},
 			{"alt+1-9", T("switch space without the prefix (alt+0 home)")},
+			{"alt+↑ ↓", T("previous / next agent")},
 		}},
 		{T("Conversation viewer"), [][2]string{
 			{"j k", T("scroll · pgup pgdn page · g top · G follow")},

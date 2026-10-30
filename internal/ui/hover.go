@@ -154,7 +154,7 @@ func viewDesc(t tab) string {
 	case tabSessions:
 		return T("every past conversation: search, read, resume or fork")
 	case tabGit:
-		return T("repos and git worktrees: changes, PRs, a new agent in one")
+		return T("your PRs, the reviews waiting for you, branches and worktrees (GitHub through gh)")
 	case tabTasks:
 		return T("a backlog handed to idle agents, one task at a time")
 	case tabPrompts:

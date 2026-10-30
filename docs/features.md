@@ -31,12 +31,13 @@ Every key mentioned here is listed in [keys.md](keys.md).
   Or create them by hand (`N`), add/remove folders, rename, reorder, delete (`W`).
 - **Detach / reattach**, like tmux: quitting nanny leaves every pane running in the
   background, so agents keep working. Reopen nanny and they come back where they are,
-  scrollback included. `prefix Q` (or `k` in the quit dialog) quits and stops them all.
+  scrollback included. `prefix Q` (or `k` in the quit dialog) quits and stops them all. `ctrl+q` (configurable with
+  `quit_key`, `"none"` turns it off) asks to quit from anywhere, inside a pane too.
 - **Restore**: panes that were stopped (reboot, `kill-server`) come back too: same spaces
   and tabs, every Claude pane reopened with `claude --resume <its session>`.
 - **Mouse selection**: drag to select text anywhere (inside a pane it stays in that pane) and let go to copy it.
 - Prefix key (default `ctrl+b`, configurable) for pane commands; `alt+1-9` jumps between
-  spaces without the prefix.
+  spaces without the prefix, and `alt+↑/↓` walks the agents of the sidebar.
 - **One view bar everywhere**: Live, Sessions, Git, Tasks, Prompts, Skills, Monitor and
   Settings (and `E` Jira, `I` Insights) are on top in "all spaces" (everything) and in every space (scoped to its folders). In a
   space `0 terminal` (or `esc`) goes back to its panes, whose tabs sit right over them with
@@ -84,7 +85,11 @@ Every key mentioned here is listed in [keys.md](keys.md).
 
 ## Git and worktrees
 
-- The Git view (tab `3`, formerly Worktrees) lists the worktrees of your repos: which are dirty,
+- **Git & PRs** (tab `3`) opens on **Overview** inside a space: the branch, its state and PR, and the space's
+  worktrees, from git alone (no GitHub needed). Reach it with prefix `G`, or click the `⎇ branch` in the terminal
+  strip or in the sidebar. At home it lists every space. Without `gh` signed in the section bar says
+  `gh: not signed in`, and My PRs offers to sign in (`l`) or open the setup wizard (`s`).
+- The Git & PRs view (tab `3`, formerly Worktrees) lists the worktrees of your repos: which are dirty,
   which have sessions, which can go. `C` changes · `n` new Claude · `a` add · `d` remove ·
   `p` prune.
 - Branches say how they are: `⎇ main ●3 ↑2 ↓1` (changed files, commits to push, commits to pull;
@@ -100,7 +105,7 @@ Every key mentioned here is listed in [keys.md](keys.md).
   (`gh`), `y` copies the branch.
 
 <!-- Git view -->
-- **Git view** (`3`): the PRs and branches you work with, from GitHub through the `gh` CLI (`gh auth login` once).
+- **Git & PRs view** (`3`): the PRs and branches you work with, from GitHub through the `gh` CLI (`gh auth login` once).
   Sections, `←→` or a click: **My PRs** (what is ready to merge, what has conflicts or failing checks; `⏎` open,
   `v` diff in a tab, `w` check it out in a worktree, `C` its changes, `X` merge: it asks, `s`/`m`/`b` pick squash,
   merge or rebase, and a PR that isn't ready is set to auto-merge, never forced), **Reviews** (the PRs waiting for

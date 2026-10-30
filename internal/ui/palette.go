@@ -95,8 +95,30 @@ func (m *Model) paletteEntries() []paletteEntry {
 		s := s
 		es = append(es, paletteEntry{M("live"), s.Title, project(s.Cwd) + " " + s.Worktree, func(m *Model) tea.Cmd { return m.resume(s, false) }})
 	}
+	for i, sp := range m.spaces {
+		i, sp := i, sp
+		es = append(es, paletteEntry{M("space"), Tf("Go to space %s", spaceLabel(sp)), tilde(sp.Dir()) + " ⎇ " + branchOf(spaceWhere(sp)), func(m *Model) tea.Cmd {
+			m.cur = i
+			m.layoutPanes()
+			return nil
+		}})
+	}
 	act(T("Welcome guide: what each view is, first steps"), "", func(m *Model) tea.Cmd { m.welcome = &welcome{}; return nil })
 	act(T("Setup wizard…"), "", func(m *Model) tea.Cmd { m.openSetup(setupIntro); return nil })
+	quitHint := "Q"
+	if qk := m.cfg.QuitKeyName(); qk != "" {
+		quitHint = keyShort(qk)
+	}
+	act(T("Quit nanny: panes keep running"), quitHint, func(m *Model) tea.Cmd {
+		mm, c := m.confirmQuit(false)
+		*m = mm.(Model)
+		return c
+	})
+	act(T("Quit and stop every pane"), "Q", func(m *Model) tea.Cmd {
+		mm, c := m.confirmQuit(true)
+		*m = mm.(Model)
+		return c
+	})
 	act(T("Next agent that needs you"), "!", func(m *Model) tea.Cmd { return m.nextAttention() })
 	act(T("New task… (folder, prompt, worktree)"), "n", func(m *Model) tea.Cmd { return m.openNewTask("") })
 	act(T("Search inside all conversations…"), "F", func(m *Model) tea.Cmd {
@@ -232,6 +254,7 @@ func (m Model) viewPalette() string {
 		"live":    func(t string) string { return s.Yellow.Render(t) },
 		"session": func(t string) string { return s.Blue.Render(t) },
 		"new":     func(t string) string { return s.Green.Render(t) },
+		"space":   func(t string) string { return s.Accent.Render(t) },
 		"shell":   func(t string) string { return s.Teal.Render(t) },
 		"action":  func(t string) string { return s.Pink.Render(t) },
 		"review":  func(t string) string { return s.Peach.Render(t) },

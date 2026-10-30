@@ -24,16 +24,17 @@ type Config struct {
 	Profiles      map[string]Profile `toml:"profiles,omitempty"` // your own screen profiles, by name
 	Language      string             `toml:"language"`           // en, es, fr, de; "" or "auto" follows $LANG
 	Launch        string             `toml:"launch"`
-	ClaudeArgs    string             `toml:"claude_args"`    // extra args appended to `claude --resume`
-	RefreshSecs   int                `toml:"refresh_secs"`   // live view refresh interval
-	MaxSessions   int                `toml:"max_sessions"`   // cap for the explorer (newest first)
-	HideBots      bool               `toml:"hide_bots"`      // hide non-interactive/bot sessions (pr-loop caches, -p runs)
-	HidePaths     []string           `toml:"hide_paths"`     // substrings of cwd to hide from the explorer
-	ExtraRepos    []string           `toml:"extra_repos"`    // repos to scan for worktrees besides those seen in sessions
-	Prefix        string             `toml:"prefix"`         // prefix key for pane commands (default ctrl+b)
-	Restore       bool               `toml:"restore"`        // reopen spaces/tabs on start, resuming Claude sessions
-	NoState       bool               `toml:"-"`              // demo/tests: never write the layout
-	DiscoverRoots []string           `toml:"discover_roots"` // folders scanned for git repos by Discover (default: ~/dev, ~/src, …)
+	ClaudeArgs    string             `toml:"claude_args"`        // extra args appended to `claude --resume`
+	RefreshSecs   int                `toml:"refresh_secs"`       // live view refresh interval
+	MaxSessions   int                `toml:"max_sessions"`       // cap for the explorer (newest first)
+	HideBots      bool               `toml:"hide_bots"`          // hide non-interactive/bot sessions (pr-loop caches, -p runs)
+	HidePaths     []string           `toml:"hide_paths"`         // substrings of cwd to hide from the explorer
+	ExtraRepos    []string           `toml:"extra_repos"`        // repos to scan for worktrees besides those seen in sessions
+	Prefix        string             `toml:"prefix"`             // prefix key for pane commands (default ctrl+b)
+	QuitKey       string             `toml:"quit_key,omitempty"` // key that asks to quit from anywhere (default ctrl+q; "none" turns it off)
+	Restore       bool               `toml:"restore"`            // reopen spaces/tabs on start, resuming Claude sessions
+	NoState       bool               `toml:"-"`                  // demo/tests: never write the layout
+	DiscoverRoots []string           `toml:"discover_roots"`     // folders scanned for git repos by Discover (default: ~/dev, ~/src, …)
 	Alerts        Alerts             `toml:"alerts"`
 	Queue         Queue              `toml:"queue"`
 	Sources       *Sources           `toml:"sources,omitempty"` // legacy: read once and folded into [screen] off
@@ -45,6 +46,17 @@ type Config struct {
 	Jira          Jira               `toml:"jira,omitempty"`
 	Git           Git                `toml:"git,omitempty"`
 	Insights      Insights           `toml:"insights,omitempty"`
+}
+
+// QuitKeyName is the key that asks to quit: ctrl+q unless set, "" when turned off with "none".
+func (c Config) QuitKeyName() string {
+	switch c.QuitKey {
+	case "":
+		return "ctrl+q"
+	case "none":
+		return ""
+	}
+	return c.QuitKey
 }
 
 // Price is USD per million tokens; zero fields keep the built-in price.

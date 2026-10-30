@@ -29,6 +29,7 @@ theme = "nanny"              # dark: catppuccin-mocha, tokyo-night, dracula, nor
                              # light: nanny-light, catppuccin-latte, one-light, solarized-light, github-light
 language = "auto"            # en, es, fr, de; auto follows $LC_ALL / $LC_MESSAGES / $LANG (English if unsupported)
 prefix = "ctrl+b"            # pane command prefix
+quit_key = "ctrl+q"          # asks to quit from anywhere, panes too; "none" turns it off (emacs, micro)
 restore = true               # reopen spaces & resume Claude panes on start
 claude_args = ""             # appended to every claude you start/resume, e.g. "--model opus"
 discover_roots = ["~/dev"]   # where Discover looks for git repos (default: ~/dev, ~/src, ~/code, …)

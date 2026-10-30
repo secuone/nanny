@@ -133,7 +133,7 @@ More in [docs/configuration.md](docs/configuration.md) and [docs/config.example.
 
 ## Performance
 
-nanny waits for changes instead of polling: an inotify watch on `~/.claude` says which transcripts changed, and only those are read. With nothing moving, nothing is drawn. Idle CPU is about 0.4–0.7% (about 1.5% with the Monitor on screen), and 2–3% with agents at work. Numbers are from one machine; see [docs/how-it-works.md](docs/how-it-works.md) for how they were measured.
+nanny waits for changes instead of polling: an inotify watch on `~/.claude` says which transcripts changed, and only those are read. With nothing moving, nothing is drawn. Idle CPU is about 0.4–0.7% (about 1.5% with the Monitor on screen), and 2–3% with agents at work; memory stays around 30–35 MiB. Numbers are from one machine; see [docs/how-it-works.md](docs/how-it-works.md) for how they were measured.
 
 ## Docs
 

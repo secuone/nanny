@@ -48,6 +48,7 @@ type API interface {
 	AssignableUsers(ctx context.Context, key, query string) ([]User, error)
 	SprintField(ctx context.Context) (string, error)
 	DevPRs(ctx context.Context, issueID string) ([]DevPR, error)
+	Detail(ctx context.Context, key string) (Detail, error)
 }
 
 // ErrUnauthorized is a 401: the token or the email is wrong or expired.

@@ -4,16 +4,43 @@ import (
 	"fmt"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
 
 const doubleClick = 400 * time.Millisecond
 
 var (
-	keyUp    = tea.KeyMsg{Type: tea.KeyUp}
-	keyDown  = tea.KeyMsg{Type: tea.KeyDown}
-	keyEnter = tea.KeyMsg{Type: tea.KeyEnter}
+	keyUp    = keyPress("up")
+	keyDown  = keyPress("down")
+	keyEnter = keyPress("enter")
 )
+
+type mouseAction int
+
+const (
+	mousePress mouseAction = iota
+	mouseRelease
+	mouseMotion
+)
+
+// mouseEv is a pointer event, 0-based like the screen.
+type mouseEv struct {
+	X, Y   int
+	Button tea.MouseButton
+	Action mouseAction
+}
+
+func toMouseEv(e tea.MouseMsg) mouseEv {
+	mo := e.Mouse()
+	a := mousePress
+	switch e.(type) {
+	case tea.MouseReleaseMsg:
+		a = mouseRelease
+	case tea.MouseMotionMsg:
+		a = mouseMotion
+	}
+	return mouseEv{X: mo.X, Y: mo.Y, Button: mo.Button, Action: a}
+}
 
 // double reports whether this click repeats the previous one on the same target.
 func (m Model) double(target string) bool {
@@ -27,15 +54,15 @@ func (m Model) double(target string) bool {
 
 // overlayMouse handles the mouse while a popup or the viewer is open; ok is
 // false when nothing is on top of the dashboards.
-func (m Model) overlayMouse(e tea.MouseMsg) (tea.Model, tea.Cmd, bool) {
+func (m Model) overlayMouse(e mouseEv) (tea.Model, tea.Cmd, bool) {
 	wheel := 0
 	switch e.Button {
-	case tea.MouseButtonWheelUp:
+	case tea.MouseWheelUp:
 		wheel = -1
-	case tea.MouseButtonWheelDown:
+	case tea.MouseWheelDown:
 		wheel = 1
 	}
-	step := func(fn func(tea.KeyMsg) (tea.Model, tea.Cmd)) (tea.Model, tea.Cmd, bool) {
+	step := func(fn func(tea.KeyPressMsg) (tea.Model, tea.Cmd)) (tea.Model, tea.Cmd, bool) {
 		k := keyDown
 		if wheel < 0 {
 			k = keyUp
@@ -55,7 +82,7 @@ func (m Model) overlayMouse(e tea.MouseMsg) (tea.Model, tea.Cmd, bool) {
 		if wheel != 0 {
 			return step(m.helpKey)
 		}
-		if e.Button == tea.MouseButtonLeft {
+		if e.Button == tea.MouseLeft {
 			m.help, m.helpOff = false, 0
 		}
 		return m, nil, true
@@ -70,7 +97,7 @@ func (m Model) overlayMouse(e tea.MouseMsg) (tea.Model, tea.Cmd, bool) {
 			return mm, cmd, true
 		}
 		i := e.Y - m.vs.modalY
-		if e.Button != tea.MouseButtonLeft || i < 0 || i >= m.vs.modalN {
+		if e.Button != tea.MouseLeft || i < 0 || i >= m.vs.modalN {
 			return m, nil, true
 		}
 		idx := m.vs.modalStart + i
@@ -85,7 +112,7 @@ func (m Model) overlayMouse(e tea.MouseMsg) (tea.Model, tea.Cmd, bool) {
 			m.mgr.cur = idx
 		case m.cust != nil: // a click switches it
 			m.cust.cur = idx
-			mm, cmd := m.key(tea.KeyMsg{Type: tea.KeySpace, Runes: []rune{' '}})
+			mm, cmd := m.key(keyPress("space"))
 			return mm, cmd, true
 		}
 		if m.double(fmt.Sprintf("modal/%d", idx)) {
@@ -102,7 +129,7 @@ func (m Model) overlayMouse(e tea.MouseMsg) (tea.Model, tea.Cmd, bool) {
 		if wheel != 0 {
 			return step(m.promptsKey)
 		}
-		if y := e.Y - m.vs.listY0; e.Button == tea.MouseButtonLeft && y >= 0 && y < len(m.vs.listRows) {
+		if y := e.Y - m.vs.listY0; e.Button == tea.MouseLeft && y >= 0 && y < len(m.vs.listRows) {
 			idx := m.vs.listRows[y]
 			m.lib.cur = idx
 			if m.double(fmt.Sprintf("prompt/%d", idx)) {
@@ -115,7 +142,7 @@ func (m Model) overlayMouse(e tea.MouseMsg) (tea.Model, tea.Cmd, bool) {
 		if wheel != 0 {
 			return step(m.queueKey)
 		}
-		if y := e.Y - m.vs.listY0; e.Button == tea.MouseButtonLeft && y >= 0 && y < len(m.vs.listRows) {
+		if y := e.Y - m.vs.listY0; e.Button == tea.MouseLeft && y >= 0 && y < len(m.vs.listRows) {
 			rows := m.tq.rows()
 			if idx := m.vs.listRows[y]; idx < len(rows) {
 				m.tq.sel = rows[idx].ID
@@ -141,7 +168,7 @@ func (m Model) overlayMouse(e tea.MouseMsg) (tea.Model, tea.Cmd, bool) {
 }
 
 // listClick selects the dashboard row under the pointer; a double click opens it.
-func (m Model) listClick(e tea.MouseMsg) (tea.Model, tea.Cmd) {
+func (m Model) listClick(e mouseEv) (tea.Model, tea.Cmd) {
 	if m.hasSecs() && e.Y == secY {
 		f := m.feat(m.tab)
 		var cmds []tea.Cmd

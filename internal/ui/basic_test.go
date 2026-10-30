@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/secuone/nanny/internal/config"
 )
@@ -26,7 +26,7 @@ func TestBasicProfile(t *testing.T) {
 		}
 	}
 	fits(t, m, 150, 42, "basic")
-	out := ansi.Strip(m.View())
+	out := ansi.Strip(viewOf(m))
 	lines := strings.Split(out, "\n")
 	for _, w := range []string{"1 Live", "2 Sessions", "Partial refunds", "↳2", "Basic"} {
 		if !strings.Contains(out, w) {
@@ -41,7 +41,7 @@ func TestBasicProfile(t *testing.T) {
 	if m.(Model).cfg.On("monitor.tilt") && m.(Model).cfg.On("view.monitor") {
 		t.Error("basic collects nothing of the Monitor")
 	}
-	if m = key(m, "8"); !strings.Contains(ansi.Strip(m.View()), "8 Settings") {
+	if m = key(m, "8"); !strings.Contains(ansi.Strip(viewOf(m)), "8 Settings") {
 		t.Error("Settings is always reachable by number")
 	}
 	if m = key(m, "M"); m.(Model).cfg.ActiveProfile() != config.ProfileFull || m.(Model).basic() {
@@ -49,7 +49,7 @@ func TestBasicProfile(t *testing.T) {
 	}
 	small := key(boot(t, 80, 24), "M")
 	fits(t, small, 80, 24, "basic small")
-	if out := ansi.Strip(small.View()); !strings.Contains(out, "Partial refunds") {
+	if out := ansi.Strip(viewOf(small)); !strings.Contains(out, "Partial refunds") {
 		t.Errorf("basic at 80x24 still lists the agents:\n%s", out)
 	}
 }
@@ -61,11 +61,11 @@ func TestLayoutExtras(t *testing.T) {
 	if m.full() || m.basic() {
 		t.Fatal("the tests' profile has Detail on and Extras off")
 	}
-	live := ansi.Strip(key(m, "1").View())
+	live := ansi.Strip(viewOf(key(m, "1")))
 	if strings.Contains(live, "AGENTS") {
 		t.Error("no extras: the sidebar leaves agents to Live")
 	}
-	sess := ansi.Strip(key(m, "2").View())
+	sess := ansi.Strip(viewOf(key(m, "2")))
 	if !strings.Contains(sess, "AGENTS") || !strings.Contains(sess, "Partial refunds") || !strings.Contains(sess, "Migrate checkout") {
 		t.Errorf("no extras: the sidebar lists the agents off Live:\n%s", sess)
 	}
@@ -74,7 +74,7 @@ func TestLayoutExtras(t *testing.T) {
 		t.Errorf("the views of the space left, the global ones apart on the right: %q", l)
 	}
 	m.cfg.SetOn(config.LayoutExtras, true)
-	if full := ansi.Strip(key(m, "1").View()); !strings.Contains(full, "AGENTS") || !strings.Contains(full, "opus-5-5") {
+	if full := ansi.Strip(viewOf(key(m, "1"))); !strings.Contains(full, "AGENTS") || !strings.Contains(full, "opus-5-5") {
 		t.Error("extras: everything, sidebar agents and model included")
 	}
 }
@@ -82,7 +82,7 @@ func TestLayoutExtras(t *testing.T) {
 // Settings → Screen: the Customize row says how much is off and opens it.
 func TestScreenSettings(t *testing.T) {
 	var m tea.Model = key(withAgents(t, 150, 42, demoIdle), "8")
-	if !strings.Contains(ansi.Strip(m.View()), "things off") {
+	if !strings.Contains(ansi.Strip(viewOf(m)), "things off") {
 		t.Error("the Customize row should say how much is off")
 	}
 	for i, it := range settingsList {
@@ -104,7 +104,7 @@ func TestSettingsScrolls(t *testing.T) {
 		m = key(m, "j")
 	}
 	lastName := settingsList[len(settingsList)-1].name
-	out := ansi.Strip(m.View())
+	out := ansi.Strip(viewOf(m))
 	if !strings.Contains(out, lastName) {
 		t.Fatalf("the last setting should scroll into view:\n%s", out)
 	}
@@ -127,14 +127,14 @@ func TestHomeSpaceNarrowsToItsRepos(t *testing.T) {
 	m.cur = m.indexOf(sp)
 	var mm tea.Model = key(m, "i")
 	mm = key(mm, "1")
-	out := ansi.Strip(mm.View())
+	out := ansi.Strip(viewOf(mm))
 	if !strings.Contains(out, "all of ~") || !strings.Contains(out, "Partial refunds") {
 		t.Fatalf("a home space shows everything and says so:\n%s", out)
 	}
 	sp.Focus = []string{filepath.Join(home, "dev", "web-checkout")}
 	mv := mm.(Model)
 	mv.rebuild()
-	out = ansi.Strip(mv.View())
+	out = ansi.Strip(viewOf(mv))
 	if strings.Contains(out, "Partial refunds for split") || !strings.Contains(out, "Migrate checkout") || !strings.Contains(out, "only web-checkout") {
 		t.Errorf("narrowed to the repo its shell is in:\n%s", out)
 	}
@@ -145,10 +145,10 @@ func TestHomeSpaceNarrowsToItsRepos(t *testing.T) {
 func TestAppMenu(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 	var m tea.Model = withAgents(t, 150, 42, demoIdle)
-	if bar := strings.Split(ansi.Strip(m.View()), "\n")[viewY]; strings.Contains(bar, "Settings") || strings.Contains(bar, "Nursery") {
+	if bar := strings.Split(ansi.Strip(viewOf(m)), "\n")[viewY]; strings.Contains(bar, "Settings") || strings.Contains(bar, "Nursery") {
 		t.Errorf("Settings belongs in the menu now, and the Nursery is gone: %q", bar)
 	}
-	if out := ansi.Strip(m.View()); !strings.Contains(out, "≡ menu") {
+	if out := ansi.Strip(viewOf(m)); !strings.Contains(out, "≡ menu") {
 		t.Error("the sidebar has no ≡ menu button")
 	}
 	m = key(m, "m")

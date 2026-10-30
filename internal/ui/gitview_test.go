@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/secuone/nanny/internal/gh"
 	"github.com/secuone/nanny/internal/i18n"
@@ -86,7 +86,7 @@ func useGH(t *testing.T) *ghFake {
 
 func gitOf(m tea.Model) *gitView { return m.(Model).gitv }
 
-func screen(m tea.Model) string { return ansi.Strip(m.View()) }
+func screen(m tea.Model) string { return ansi.Strip(viewOf(m)) }
 
 // bar is the sections bar of the view on screen.
 func bar(m tea.Model) string { return strings.Split(screen(m), "\n")[secY] }
@@ -213,7 +213,7 @@ func TestReviewsBadge(t *testing.T) {
 	if !strings.Contains(strings.Join(head, "\n"), "⚑ 3 reviews waiting") {
 		t.Errorf("the badge:\n%s", strings.Join(head, "\n"))
 	}
-	m.View()
+	viewOf(m)
 	var hit keyHit
 	for _, h := range m.(Model).vs.keyHits {
 		if h.key == secKey(tabGit, gsReviews) {
@@ -474,7 +474,7 @@ func TestGitSectionsFit(t *testing.T) {
 			m := bootIn(t, lang, size[0], size[1])
 			m = key(m, "3")
 			for i := range gitSecs {
-				m, _ = m.Update(tea.KeyMsg{Type: tea.KeyRight})
+				m, _ = m.Update(keyPress("right"))
 				fits(t, m, size[0], size[1], fmt.Sprintf("%s git section %d", lang, gitOf(m).cur))
 				m = drain(m, gitOf(m).due(ptr(m), true), 0)
 				fits(t, m, size[0], size[1], fmt.Sprintf("%s git section %d loaded", lang, gitOf(m).cur))

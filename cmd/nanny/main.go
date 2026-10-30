@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -10,11 +11,12 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"text/tabwriter"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/secuone/nanny/internal/claude"
 	"github.com/secuone/nanny/internal/config"
 	"github.com/secuone/nanny/internal/demo"
@@ -103,10 +105,46 @@ func runTUI() {
 	if n, err := strconv.Atoi(os.Getenv("NANNY_FPS")); err == nil {
 		fps = n
 	}
-	p := tea.NewProgram(ui.New(cfg), tea.WithAltScreen(), tea.WithMouseAllMotion(), tea.WithFPS(fps))
+	opts := []tea.ProgramOption{tea.WithFPS(fps)}
+	if f := os.Getenv("NANNY_OUTSTATS"); f != "" { // debugging: how much the screen writes
+		if out, err := os.Create(f); err == nil {
+			defer out.Close()
+			c := &countingTTY{File: os.Stdout}
+			go c.log(out)
+			opts = append(opts, tea.WithOutput(c))
+		}
+	}
+	p := tea.NewProgram(ui.New(cfg), opts...)
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintln(os.Stderr, "nanny:", err)
 		os.Exit(1)
+	}
+}
+
+// countingTTY is stdout that counts what the screen writes.
+type countingTTY struct {
+	*os.File
+	bytes, writes atomic.Int64
+}
+
+func (c *countingTTY) Write(b []byte) (int, error) {
+	c.bytes.Add(int64(len(b)))
+	c.writes.Add(1)
+	return c.File.Write(b)
+}
+
+func (c *countingTTY) log(out io.Writer) {
+	const every = 5 * time.Second
+	var lastB, lastW int64
+	for range time.Tick(every) {
+		b, w := c.bytes.Load(), c.writes.Load()
+		db, dw := b-lastB, w-lastW
+		lastB, lastW = b, w
+		per := 0.0
+		if dw > 0 {
+			per = float64(db) / float64(dw)
+		}
+		fmt.Fprintf(out, "bytes=%d writes=%d KiB/s=%.2f bytes/write=%.0f\n", db, dw, float64(db)/1024/every.Seconds(), per)
 	}
 }
 

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/secuone/nanny/internal/gitwt"
 )
@@ -127,7 +127,7 @@ func (m *Model) reviewUpdate(msg tea.Msg) (tea.Cmd, bool) {
 	return nil, false
 }
 
-func (m Model) reviewKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) reviewKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	r := m.rev
 	page := max(1, m.bodyHeight()-6)
 	pick := func(i int) tea.Cmd {
@@ -174,7 +174,7 @@ func (m Model) reviewKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		r.focusR = true
 	case "h", "left":
 		r.focusR = false
-	case "pgdown", "ctrl+d", " ":
+	case "pgdown", "ctrl+d", " ", "space":
 		scroll(page)
 	case "pgup", "ctrl+u", "b":
 		scroll(-page)

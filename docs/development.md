@@ -4,6 +4,7 @@
 
 - [Build and run](#build-and-run)
 - [Tests](#tests)
+- [Measuring the screen](#measuring-the-screen)
 - [Packages](#packages)
 - [Adding a Monitor source](#adding-a-monitor-source)
 - [Release](#release)
@@ -28,6 +29,16 @@ make install  # → ~/.local/bin/nanny
 `make test` runs `go test ./...` on a generated fixture home (`internal/demo`) and real ptys.
 `TestViewsFitTerminal` renders every view at 150×42, 100×30 and 80×24 and fails if any line
 overflows. CI (`.github/workflows/ci.yml`) runs `make lint`, `go test ./...` and `make build`.
+
+Building needs Go 1.26 (Bubble Tea v2). Key labels in code and tests go through `keyPress("ctrl+b")`,
+and `keyBytes` turns a key press into what a terminal would send to a pane (pinned by `TestKeyBytes`).
+
+## Measuring the screen
+
+`NANNY_OUTSTATS=<file> nanny` logs the bytes, writes, KiB/s and bytes per write that nanny sends to the
+terminal every 5 s. `NANNY_BYTES=1 go test ./internal/ui -run TestOutBytes -v` measures the same with
+10 panes and one printing, inside a real `tea.Program`. `NANNY_CPUPROFILE=<file>` writes a CPU profile
+(`NANNY_CPUPROFILE_AFTER=10s` leaves the start-up out). Run them against `nanny demo`, not your own state.
 
 ## Packages
 

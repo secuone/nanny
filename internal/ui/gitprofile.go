@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/secuone/nanny/internal/gh"
 )
 
@@ -43,7 +43,7 @@ func (g *gitView) fetchProfile() tea.Cmd {
 	}
 }
 
-func (g *gitView) keyProfile(m *Model, k tea.KeyMsg) tea.Cmd {
+func (g *gitView) keyProfile(m *Model, k tea.KeyPressMsg) tea.Cmd {
 	switch k.String() {
 	case "t":
 		g.month = !g.month

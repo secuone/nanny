@@ -5,15 +5,15 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
 	"github.com/secuone/nanny/internal/gitwt"
 	"github.com/secuone/nanny/internal/jira"
 )
 
 // The keys of the Jira view and what they ask Jira (or git) to do.
 
-func (j *jiraView) key(m *Model, k tea.KeyMsg) tea.Cmd {
+func (j *jiraView) key(m *Model, k tea.KeyPressMsg) tea.Cmd {
 	if j.typed {
 		return j.searchKey(m, k)
 	}
@@ -90,7 +90,7 @@ func (j *jiraView) step(m *Model, d int) tea.Cmd {
 	return j.settleDev(m)
 }
 
-func (j *jiraView) searchKey(m *Model, k tea.KeyMsg) tea.Cmd {
+func (j *jiraView) searchKey(m *Model, k tea.KeyPressMsg) tea.Cmd {
 	switch k.String() {
 	case "esc":
 		j.search.SetValue("")

@@ -5,9 +5,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/secuone/nanny/internal/config"
 	"github.com/secuone/nanny/internal/gitwt"
 	"github.com/secuone/nanny/internal/i18n"
@@ -175,10 +175,10 @@ type settingsTab struct {
 	off     int // lines scrolled off the top
 }
 
-func (t *settingsTab) key(m *Model, k tea.KeyMsg) tea.Cmd {
+func (t *settingsTab) key(m *Model, k tea.KeyPressMsg) tea.Cmd {
 	n := len(settingsList)
 	it := settingsList[t.cur.idx]
-	if it.open != nil && (k.String() == "enter" || k.String() == " " || k.String() == "right" || k.String() == "l") {
+	if it.open != nil && (k.String() == "enter" || k.String() == " " || k.String() == "space" || k.String() == "right" || k.String() == "l") {
 		return it.open(m)
 	}
 	change := func(d int) tea.Cmd {
@@ -197,7 +197,7 @@ func (t *settingsTab) key(m *Model, k tea.KeyMsg) tea.Cmd {
 		t.cur.idx = 0
 	case "G", "end":
 		t.cur.idx = n - 1
-	case "right", "l", " ":
+	case "right", "l", " ", "space":
 		return change(1)
 	case "left", "h":
 		return change(-1)
@@ -210,7 +210,7 @@ func (t *settingsTab) key(m *Model, k tea.KeyMsg) tea.Cmd {
 			return nil
 		}
 		if it.set != nil {
-			in := textinput.New()
+			in := newInput()
 			in.Prompt = "› "
 			in.SetValue(it.get(&m.cfg))
 			in.CursorEnd()
@@ -225,7 +225,7 @@ func (t *settingsTab) key(m *Model, k tea.KeyMsg) tea.Cmd {
 	return nil
 }
 
-func (t *settingsTab) editKey(m *Model, k tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (t *settingsTab) editKey(m *Model, k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch k.String() {
 	case "esc":
 		t.editing = nil
@@ -275,7 +275,7 @@ func (t *settingsTab) view(m *Model, w, h int) string {
 		var v string
 		switch {
 		case t.editing != nil && i == t.cur.idx:
-			t.editing.Width = inner - 29
+			t.editing.SetWidth(inner - 29)
 			v = t.editing.View()
 		case it.cycle != nil:
 			v = s.Muted.Render("‹ ") + s.Pink.Render(val) + s.Muted.Render(" ›")

@@ -31,7 +31,7 @@ func TestShellRoundTrip(t *testing.T) {
 	p.Resize(80, 20)
 	p.Write([]byte("tput cols\r"))
 	waitFor(t, p, "80")
-	if v := p.View(true); len(v) != 20 {
+	if v := p.View(); len(v) != 20 {
 		t.Errorf("view has %d lines, want 20", len(v))
 	}
 	p.Write([]byte("exit\r"))

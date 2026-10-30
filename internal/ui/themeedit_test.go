@@ -6,22 +6,22 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/secuone/nanny/internal/config"
 )
 
 func typeText(m tea.Model, s string) tea.Model {
 	for _, r := range s { // no key(): the cursor's blink would wait
-		m, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+		m, _ = m.Update(keyPress(string(r)))
 	}
 	return m
 }
 
 func backspaces(m tea.Model, n int) tea.Model {
 	for i := 0; i < n; i++ {
-		m, _ = m.Update(tea.KeyMsg{Type: tea.KeyBackspace})
+		m, _ = m.Update(keyPress("backspace"))
 	}
 	return m
 }
@@ -36,8 +36,8 @@ func TestThemeEditor(t *testing.T) {
 	base := m.(Model).cfg.Theme
 	m = key(m, "n")
 	ed := m.(Model).themes.ed
-	if ed == nil || !strings.Contains(ansi.Strip(m.View()), "New theme") {
-		t.Fatalf("n should open the editor:\n%s", ansi.Strip(m.View()))
+	if ed == nil || !strings.Contains(ansi.Strip(viewOf(m)), "New theme") {
+		t.Fatalf("n should open the editor:\n%s", ansi.Strip(viewOf(m)))
 	}
 	// accent is the 7th color: type one in
 	for i := 0; i < 6; i++ {
@@ -81,10 +81,10 @@ func TestThemeEditor(t *testing.T) {
 	m = backspaces(m, 6)
 	m = typeText(m, config.Themes[base].Surface[1:])
 	m = key(m, "enter")
-	if out := ansi.Strip(m.View()); !strings.Contains(out, "hard to read") || !strings.Contains(out, "text/surface") {
+	if out := ansi.Strip(viewOf(m)); !strings.Contains(out, "hard to read") || !strings.Contains(out, "text/surface") {
 		t.Errorf("low contrast should be pointed out:\n%s", out)
 	}
-	for i, l := range strings.Split(m.View(), "\n") {
+	for i, l := range strings.Split(viewOf(m), "\n") {
 		if w := lipgloss.Width(l); w > 120 {
 			t.Errorf("editor line %d is %d wide", i, w)
 		}
@@ -96,7 +96,7 @@ func TestThemeEditor(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(config.ThemesDir(), "sunset.toml")); err != nil {
 		t.Fatal("saved as a file:", err)
 	}
-	if !strings.Contains(ansi.Strip(m.View()), "yours") {
+	if !strings.Contains(ansi.Strip(viewOf(m)), "yours") {
 		t.Error("your themes are marked in the picker")
 	}
 	m = key(m, "enter")

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 	"github.com/secuone/nanny/internal/claude"
 	"github.com/secuone/nanny/internal/gitwt"
 	"github.com/secuone/nanny/internal/ws"

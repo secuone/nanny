@@ -5,9 +5,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/secuone/nanny/internal/config"
 )
@@ -45,7 +45,7 @@ var tokenInfo = map[string]string{
 // editTheme opens the editor on a copy of from; was is the user theme being
 // changed (it keeps its name unless you give it another), or "" for a new one.
 func (m *Model) editTheme(from, was string) {
-	in := textinput.New()
+	in := newInput()
 	in.Prompt = ""
 	in.CharLimit = 32
 	name := was
@@ -72,7 +72,7 @@ func (e *themeEditor) set(hex string) {
 	e.dirty, e.quit = true, false
 }
 
-func (m Model) themeEditKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) themeEditKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	t := m.themes
 	e := t.ed
 	n := len(config.Tokens) + 1
@@ -146,7 +146,7 @@ func (m Model) themeEditKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 			e.name.CursorEnd()
 			return m, e.name.Focus()
 		}
-		in := textinput.New()
+		in := newInput()
 		in.Prompt = "#"
 		in.CharLimit = 7
 		in.SetValue(strings.TrimPrefix(e.p.Get(e.token()), "#"))
@@ -324,7 +324,7 @@ func (m Model) viewThemeEditor() string {
 	key := func(k, d string) string { return s.Key.Render(k) + s.KeyDesc.Render(" "+d+"  ") }
 	b.WriteString(key("⏎", T("type a color")) + key("←→", T("other themes' colors")) + key("+-", T("lighter/darker")) + "\n" +
 		key("s", T("save")) + key("esc", T("cancel")))
-	return s.Modal.Width(w).Render(b.String())
+	return s.Modal.Width(w + 2).Render(b.String())
 }
 
 // themeSample is a bit of nanny in palette p, on its own background.

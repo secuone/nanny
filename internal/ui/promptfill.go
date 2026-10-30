@@ -3,8 +3,8 @@ package ui
 import (
 	"strings"
 
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
 	"github.com/secuone/nanny/internal/claude"
 	"github.com/secuone/nanny/internal/config"
 	"github.com/secuone/nanny/internal/prompts"

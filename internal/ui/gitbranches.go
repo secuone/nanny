@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/secuone/nanny/internal/gh"
 	"github.com/secuone/nanny/internal/gitwt"
 )
@@ -143,7 +143,7 @@ func readBranches(roots []string, sig, login string, withGH bool) tea.Msg {
 	return msg
 }
 
-func (g *gitView) keyBranch(m *Model, k tea.KeyMsg) tea.Cmd {
+func (g *gitView) keyBranch(m *Model, k tea.KeyPressMsg) tea.Cmd {
 	s := k.String()
 	if moveKey(&g.br.cur, len(g.br.rows), m.bodyHeight(), s) {
 		return nil

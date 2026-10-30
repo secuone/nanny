@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/secuone/nanny/internal/claude"
 )
@@ -13,10 +13,10 @@ import (
 // under it; a key clears it.
 func TestMouseSelectionCopies(t *testing.T) {
 	var m tea.Model = boot(t, 150, 42)
-	m.View()
-	m = mouseAt(m, 40, 6, tea.MouseButtonLeft, tea.MouseActionPress)
-	m = mouseAt(m, 60, 6, tea.MouseButtonLeft, tea.MouseActionMotion)
-	out := m.View()
+	viewOf(m)
+	m = mouseAt(m, 40, 6, tea.MouseLeft, mousePress)
+	m = mouseAt(m, 60, 6, tea.MouseLeft, mouseMotion)
+	out := viewOf(m)
 	if !strings.Contains(out, "\x1b[0;7m") {
 		t.Fatal("the selection should show")
 	}
@@ -24,7 +24,7 @@ func TestMouseSelectionCopies(t *testing.T) {
 	if got := m.(Model).selText(m.(Model).vs.frame); got != want || got == "" {
 		t.Errorf("selected %q, want %q", got, want)
 	}
-	m, cmd := m.Update(tea.MouseMsg{X: 60, Y: 6, Action: tea.MouseActionRelease, Button: tea.MouseButtonLeft})
+	m, cmd := m.Update(mouseMsg(60, 6, tea.MouseLeft, mouseRelease))
 	if cmd == nil {
 		t.Error("letting go should copy")
 	}
@@ -48,13 +48,13 @@ func TestMouseSelectionCopies(t *testing.T) {
 func TestSpinnerFramesReuse(t *testing.T) {
 	m := withAgents(t, 150, 42)
 	var mm tea.Model = m
-	first := mm.View()
+	first := viewOf(mm)
 	if strings.Contains(first, spinGlyph) || strings.Contains(first, blinkGlyph) {
 		t.Fatal("placeholders must never reach the screen")
 	}
 	mm, _ = mm.Update(frameMsg{})
 	raw := mm.(Model).vs.raw
-	next := mm.View()
+	next := viewOf(mm)
 	if mm.(Model).vs.raw != raw {
 		t.Error("an animation frame should not draw the view again")
 	}
@@ -70,26 +70,26 @@ func TestBackgroundRefreshesCoalesce(t *testing.T) {
 	defer func() { coalesce = false }()
 	m := withAgents(t, 150, 42)
 	var mm tea.Model = m
-	before := mm.View()
+	before := viewOf(mm)
 	ss := append([]*claude.Session(nil), m.sessions...)
 	renamed := *ss[0]
 	renamed.Title = "Renamed while you look"
 	ss[0] = &renamed
 	mm, cmd := mm.Update(sessionsMsg(ss))
-	if cmd == nil || mm.View() != before {
+	if cmd == nil || viewOf(mm) != before {
 		t.Fatal("a background refresh should wait for the flush")
 	}
 	mm, _ = mm.Update(subsMsg{path: "/nowhere"})
-	if mm.View() != before {
+	if viewOf(mm) != before {
 		t.Fatal("the next one waits too")
 	}
 	mm, _ = mm.Update(flushMsg{})
-	if !strings.Contains(ansi.Strip(mm.View()), "Renamed while you look") {
+	if !strings.Contains(ansi.Strip(viewOf(mm)), "Renamed while you look") {
 		t.Fatal("the flush draws them")
 	}
 	mm, _ = mm.Update(sessionsMsg(m.sessions))
-	mm, _ = mm.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("j")})
-	if strings.Contains(ansi.Strip(mm.View()), "Renamed while you look") {
+	mm, _ = mm.Update(keyPress("j"))
+	if strings.Contains(ansi.Strip(viewOf(mm)), "Renamed while you look") {
 		t.Error("a key draws at once, with what the refresh brought")
 	}
 }

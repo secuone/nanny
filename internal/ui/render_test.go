@@ -3,14 +3,15 @@ package ui
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/colorprofile"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/muesli/termenv"
 	"github.com/secuone/nanny/internal/claude"
 	"github.com/secuone/nanny/internal/config"
 	"github.com/secuone/nanny/internal/demo"
@@ -72,21 +73,7 @@ func bootIn(t testing.TB, lang string, w, h int) tea.Model {
 }
 
 func key(m tea.Model, k string) tea.Model {
-	var msg tea.KeyMsg
-	switch k {
-	case "ctrl+k":
-		msg = tea.KeyMsg{Type: tea.KeyCtrlK}
-	case "enter":
-		msg = tea.KeyMsg{Type: tea.KeyEnter}
-	case "esc":
-		msg = tea.KeyMsg{Type: tea.KeyEsc}
-	case "right":
-		msg = tea.KeyMsg{Type: tea.KeyRight}
-	case "left":
-		msg = tea.KeyMsg{Type: tea.KeyLeft}
-	default:
-		msg = tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(k)}
-	}
+	msg := keyPress(k)
 	m, c := m.Update(msg)
 	return drain(m, c, 0)
 }
@@ -99,7 +86,7 @@ func TestViewsFitTerminal(t *testing.T) {
 			m := bootIn(t, lang, size[0], size[1])
 			for _, tb := range []string{"1", "n", "A", "u", "2", "3", "4", "5", "6", "7", "8", "E", "I", "?", "ctrl+k", "T", "9"} {
 				m = key(m, tb)
-				out := m.View()
+				out := viewOf(m)
 				lines := strings.Split(out, "\n")
 				if len(lines) != size[1] {
 					t.Errorf("%s %dx%d tab %s: %d lines", lang, size[0], size[1], tb, len(lines))
@@ -108,6 +95,12 @@ func TestViewsFitTerminal(t *testing.T) {
 					if w := lipgloss.Width(l); w > size[0] {
 						t.Errorf("%s %dx%d tab %s line %d is %d wide: %q", lang, size[0], size[1], tb, i, w, ansi.Strip(l))
 					}
+					if wc, gr := ansi.StringWidthWc(l), ansi.StringWidth(l); wc != gr {
+						t.Errorf("%s %dx%d tab %s line %d: wcwidth %d, graphemes %d: %q", lang, size[0], size[1], tb, i, wc, gr, ansi.Strip(l))
+					}
+				}
+				if strings.Contains(out, keyMark) {
+					t.Errorf("%s %dx%d tab %s: a key marker reached the screen", lang, size[0], size[1], tb)
 				}
 				if popups[tb] {
 					m = key(m, "esc")
@@ -159,7 +152,7 @@ func TestLanguageSwitchesLive(t *testing.T) {
 		t.Fatalf("language = %q, want es", got)
 	}
 	m = key(m, "1")
-	if out := ansi.Strip(m.View()); !strings.Contains(out, "1 En vivo") || !strings.Contains(out, "Sesiones") { // Settings moved to the ≡ menu
+	if out := ansi.Strip(viewOf(m)); !strings.Contains(out, "1 En vivo") || !strings.Contains(out, "Sesiones") { // Settings moved to the ≡ menu
 		t.Errorf("tabs not in Spanish:\n%s", out)
 	}
 }
@@ -178,7 +171,7 @@ func TestLiveShowsSubagents(t *testing.T) {
 	if subs != 2 {
 		t.Errorf("want 2 running subagents listed, got %d", subs)
 	}
-	out := ansi.Strip(m.View())
+	out := ansi.Strip(viewOf(m))
 	for _, want := range []string{"Partial refunds for split payments", "Map payment adapters", "SPACES", "acme-api"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("live view lacks %q", want)
@@ -255,7 +248,7 @@ func TestAlertsOnTransitions(t *testing.T) {
 	if !found {
 		t.Error("unseen finished agent should show as done")
 	}
-	if !strings.Contains(ansi.Strip(m.View()), "finished") {
+	if !strings.Contains(ansi.Strip(viewOf(m)), "finished") {
 		t.Error("toast not rendered")
 	}
 	// looking at it clears the badge
@@ -286,12 +279,12 @@ func TestSpacesWithRealPanes(t *testing.T) {
 	for _, r := range "echo nanny-$((6*7))" {
 		mm = key(mm, string(r))
 	}
-	mm, _ = mm.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	mm, _ = mm.Update(keyPress("enter"))
 	deadline := time.Now().Add(4 * time.Second)
-	for time.Now().Before(deadline) && !strings.Contains(ansi.Strip(mm.View()), "nanny-42") {
+	for time.Now().Before(deadline) && !strings.Contains(ansi.Strip(viewOf(mm)), "nanny-42") {
 		time.Sleep(30 * time.Millisecond)
 	}
-	out := mm.View()
+	out := viewOf(mm)
 	if !strings.Contains(ansi.Strip(out), "nanny-42") {
 		t.Fatalf("typed command output not visible:\n%s", ansi.Strip(out))
 	}
@@ -301,7 +294,7 @@ func TestSpacesWithRealPanes(t *testing.T) {
 		}
 	}
 	// prefix + 0 goes home, prefix + ] comes back
-	mm, _ = mm.Update(tea.KeyMsg{Type: tea.KeyCtrlB})
+	mm, _ = mm.Update(keyPress("ctrl+b"))
 	mm = key(mm, "0")
 	if mm.(Model).inSpace() {
 		t.Error("prefix 0 should go home")
@@ -312,18 +305,25 @@ func TestSpacesWithRealPanes(t *testing.T) {
 	}
 }
 
+var emptySpan = regexp.MustCompile(`\x1b\[[0-9;]*m\x1b\[0?m`)
+
+// downsample is what a 256-color terminal gets of a truecolor frame.
+func downsample(s string) string {
+	var b strings.Builder
+	w := colorprofile.Writer{Forward: &b, Profile: colorprofile.ANSI256}
+	_, _ = w.WriteString(s)
+	return b.String()
+}
+
 // Ten side-by-side panes must not balloon the rows with escapes of cut-away text.
 func TestViewPanesManyPanesStaysLean(t *testing.T) {
-	prev := lipgloss.ColorProfile()
-	lipgloss.SetColorProfile(termenv.ANSI256)
-	t.Cleanup(func() { lipgloss.SetColorProfile(prev) })
 	m := manyPanes(t, 10)
 	tab := m.space().Tab()
 	if len(tab.Panes) != 10 {
 		t.Fatalf("got %d panes", len(tab.Panes))
 	}
 	w, h := m.vs.area.w, m.vs.area.h
-	rows := strings.Split(m.viewPanes(w, h), "\n")
+	rows := strings.Split(downsample(m.viewPanes(w, h)), "\n")
 	if len(rows) != h {
 		t.Fatalf("got %d rows, want %d", len(rows), h)
 	}
@@ -331,7 +331,7 @@ func TestViewPanesManyPanesStaysLean(t *testing.T) {
 		if len(row) > 8*w {
 			t.Errorf("row %d is %d bytes", y, len(row))
 		}
-		if strings.Contains(row, "\x1b[38;5;59m\x1b[0m") {
+		if emptySpan.MatchString(row) {
 			t.Errorf("row %d has an empty SGR span", y)
 		}
 		plain := []rune(ansi.Strip(row))
@@ -409,12 +409,12 @@ func TestViewerOpensSubagent(t *testing.T) {
 		}
 	}
 	var c tea.Cmd
-	m, c = tea.Model(mm).Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m, c = tea.Model(mm).Update(keyPress("enter"))
 	m = drain(m, c, 0)
 	if m.(Model).view == nil {
 		t.Fatal("enter on a subagent should open the viewer")
 	}
-	if out := ansi.Strip(m.View()); !strings.Contains(out, "Subagent") || !strings.Contains(out, "On it") {
+	if out := ansi.Strip(viewOf(m)); !strings.Contains(out, "Subagent") || !strings.Contains(out, "On it") {
 		t.Errorf("viewer missing content:\n%s", out)
 	}
 }
@@ -439,7 +439,7 @@ func TestThemePicker(t *testing.T) {
 	// every theme renders within bounds, light ones included
 	m = key(m, "T")
 	for range config.Themes {
-		for i, l := range strings.Split(m.View(), "\n") {
+		for i, l := range strings.Split(viewOf(m), "\n") {
 			if w := lipgloss.Width(l); w > 100 {
 				t.Errorf("%s line %d is %d wide", m.(Model).cfg.Theme, i, w)
 			}
@@ -461,9 +461,25 @@ func TestThemePicker(t *testing.T) {
 		t.Fatal("palette Theme… should open the picker")
 	}
 	m = key(m, "esc")
-	m, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlB})
+	m, _ = m.Update(keyPress("ctrl+b"))
 	m = key(m, "T")
 	if m.(Model).themes == nil {
 		t.Error("prefix T should open the picker")
+	}
+}
+
+func viewOf(m tea.Model) string { return m.View().Content }
+
+// A row highlight comes back after either spelling of a reset.
+func TestSelSurvivesShortResets(t *testing.T) {
+	s := NewStyles(config.Default().Resolve())
+	on, _, _ := strings.Cut(s.RowSel.UnsetPadding().Render("x"), "x")
+	if on == "" {
+		t.Skip("no colors")
+	}
+	for _, reset := range []string{"\x1b[0m", "\x1b[m"} {
+		if out := s.Sel(s.RowSel, "a\x1b[31mb"+reset+"c"); !strings.Contains(out, reset+on+"c") {
+			t.Errorf("highlight lost after %q: %q", reset, out)
+		}
 	}
 }

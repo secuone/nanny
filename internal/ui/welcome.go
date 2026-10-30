@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/secuone/nanny/internal/ws"
 )
 
@@ -35,12 +35,12 @@ func (m *Model) closeWelcome() {
 	m.maybeSetup()
 }
 
-func (m Model) welcomeKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) welcomeKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	w := m.welcome
 	switch k.String() {
 	case "esc", "q", "ctrl+c":
 		m.closeWelcome()
-	case "right", "l", "n", "enter", " ", "tab":
+	case "right", "l", "n", "enter", " ", "space", "tab":
 		if w.page++; w.page >= welcomePages {
 			m.closeWelcome()
 		}
@@ -53,8 +53,8 @@ func (m Model) welcomeKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m Model) welcomeMouse(e tea.MouseMsg) (tea.Model, tea.Cmd) {
-	if e.Button == tea.MouseButtonLeft {
+func (m Model) welcomeMouse(e mouseEv) (tea.Model, tea.Cmd) {
+	if e.Button == tea.MouseLeft {
 		if mm, cmd, ok := m.keyClick(e.X, e.Y); ok {
 			return mm, cmd
 		}
@@ -166,5 +166,5 @@ func (m Model) viewWelcome() string {
 	}
 	nav += clickable("n", s.Key.Render(next)) + s.Dim.Render(" · ") + clickable("esc", s.Key.Render("esc")+" "+s.KeyDesc.Render(T("close")))
 	b.WriteString("\n" + fit(dots, inner-lipgloss.Width(nav)) + nav)
-	return s.Modal.Width(w).Render(b.String())
+	return s.Modal.Width(w + 2).Render(b.String())
 }

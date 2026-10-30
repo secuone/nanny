@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/secuone/nanny/internal/discover"
 	"github.com/secuone/nanny/internal/ws"
 )
@@ -107,7 +107,7 @@ func (m *Model) existing(path string) bool {
 	return false
 }
 
-func (m Model) managerKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) managerKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	g := m.mgr
 	n := len(m.spaces)
 	var sp *ws.Space
@@ -239,10 +239,10 @@ func (m Model) viewManager() string {
 		b.WriteString(line + "\n")
 	}
 	b.WriteString("\n" + s.hintsFit([][2]string{{"⏎", T("open")}, {"n", T("new")}, {"D", T("discover")}, {"r", T("rename")}, {"a/x", T("add/drop folder")}, {"d", T("delete")}, {"J/K", T("move")}, {"esc", T("close")}}, inner))
-	return s.Modal.Width(w).Render(b.String())
+	return s.Modal.Width(w + 2).Render(b.String())
 }
 
-func (m Model) discoveryKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) discoveryKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	d := m.disc
 	n := len(d.places)
 	switch k.String() {
@@ -256,7 +256,7 @@ func (m Model) discoveryKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		d.cur = 0
 	case "G", "end":
 		d.cur = max(0, n-1)
-	case " ", "x":
+	case " ", "space", "x":
 		if d.cur < n && !m.existing(d.places[d.cur].Path) {
 			d.picked[d.cur] = !d.picked[d.cur]
 		}
@@ -343,5 +343,5 @@ func (m Model) viewDiscovery() string {
 	}
 	count := s.Muted.Render(Tf("%d found", len(d.places)) + " · " + Tf("%d picked", picked) + "   ")
 	b.WriteString("\n" + count + s.hintsFit([][2]string{{"space", T("pick")}, {"a", T("with agents")}, {"A", T("all")}, {"u", T("none")}, {"⏎", T("add")}, {"esc", T("close")}}, inner-lipglossW(count)))
-	return s.Modal.Width(w).Render(b.String())
+	return s.Modal.Width(w + 2).Render(b.String())
 }

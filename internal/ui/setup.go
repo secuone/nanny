@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/secuone/nanny/internal/config"
 	"github.com/secuone/nanny/internal/jira"
 	"github.com/secuone/nanny/internal/secret"
@@ -78,7 +78,7 @@ func (m *Model) finishSetup() {
 
 func (m *Model) openSetup(step int) {
 	mk := func(prompt, ph, v string) textinput.Model {
-		in := textinput.New()
+		in := newInput()
 		in.Prompt, in.Placeholder = prompt, ph
 		in.SetValue(v)
 		in.CharLimit = 300
@@ -220,7 +220,7 @@ func (m *Model) jiraTested(msg setupJiraMsg) tea.Cmd {
 	return j.due(m, true)
 }
 
-func (m Model) setupKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) setupKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	w := m.setup
 	ks := k.String()
 	if ks == "esc" || ks == "ctrl+c" {
@@ -232,7 +232,7 @@ func (m Model) setupKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		switch ks {
 		case "s":
 			m.finishSetup()
-		case "enter", "right", "n", " ", "tab":
+		case "enter", "right", "n", " ", "space", "tab":
 			return m, m.setupGo(setupJira)
 		}
 		return m, nil
@@ -271,7 +271,7 @@ func (m *Model) setupGo(step int) tea.Cmd {
 	return m.setup.enter(m)
 }
 
-func (m Model) setupJiraKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) setupJiraKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	w := m.setup
 	switch k.String() {
 	case "ctrl+o":
@@ -388,5 +388,5 @@ func (m Model) viewSetup() string {
 		nav = clickable("enter", s.Key.Render("⏎")+" "+s.KeyDesc.Render(T("start")))
 	}
 	b.WriteString(nav)
-	return s.Modal.Width(width).Render(b.String())
+	return s.Modal.Width(width + 2).Render(b.String())
 }

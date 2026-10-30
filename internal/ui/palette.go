@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
 	"github.com/sahilm/fuzzy"
 	"github.com/secuone/nanny/internal/config"
 )
@@ -32,7 +32,7 @@ func (p paletteSrc) String(i int) string { return T(p[i].kind) + " " + p[i].labe
 func (p paletteSrc) Len() int            { return len(p) }
 
 func (m *Model) openPalette(prefill string) tea.Cmd {
-	in := textinput.New()
+	in := newInput()
 	in.Prompt = "❯ "
 	in.Placeholder = T("jump to anything — sessions, agents, worktrees, actions…")
 	in.SetValue(prefill)
@@ -101,7 +101,7 @@ func (m *Model) paletteEntries() []paletteEntry {
 	act(T("New task… (folder, prompt, worktree)"), "n", func(m *Model) tea.Cmd { return m.openNewTask("") })
 	act(T("Search inside all conversations…"), "F", func(m *Model) tea.Cmd {
 		m.show(tabSessions)
-		return m.sess.key(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'F'}})
+		return m.sess.key(m, keyPress("F"))
 	})
 	act(T("Customize: what shows and what runs…"), "=", func(m *Model) tea.Cmd { m.openCustomize(); return nil })
 	for i, n := range tabNames {
@@ -120,7 +120,7 @@ func (m *Model) paletteEntries() []paletteEntry {
 	}
 	act(T("Classroom in 3D (browser)"), "9", func(m *Model) tea.Cmd { return m.openClassroom() })
 	act(T("Rescan everything"), "R", func(m *Model) tea.Cmd {
-		mm, c := m.key(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'R'}})
+		mm, c := m.key(keyPress("R"))
 		*m = mm.(Model)
 		return c
 	})
@@ -186,7 +186,7 @@ func (m *Model) paletteEntries() []paletteEntry {
 	return es
 }
 
-func (m Model) paletteKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) paletteKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	p := m.pal
 	switch k.String() {
 	case "esc", "ctrl+c", "ctrl+k":
@@ -219,7 +219,7 @@ func (m Model) viewPalette() string {
 	p := m.pal
 	w := min(96, m.w-6)
 	inner := w - 6
-	p.input.Width = inner - 4
+	p.input.SetWidth(inner - 4)
 	var b strings.Builder
 	b.WriteString(p.input.View() + "\n" + s.Dim.Render(strings.Repeat("─", inner)) + "\n")
 	rows := min(14, m.h-10)
@@ -254,7 +254,7 @@ func (m Model) viewPalette() string {
 	}
 	count := s.Muted.Render(Tn(len(p.shown), "%d result", "%d results") + "   ")
 	b.WriteString(count + s.hintsFit([][2]string{{"↑↓", T("move")}, {"⏎", T("run")}, {"esc", T("close")}}, inner-lipglossW(count)))
-	return s.Modal.Width(w).Render(b.String())
+	return s.Modal.Width(w + 2).Render(b.String())
 }
 
 // nextAttention jumps the Live view to the next agent that is blocked, then done, then working.

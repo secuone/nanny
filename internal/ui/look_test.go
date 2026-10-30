@@ -8,7 +8,7 @@ import (
 	"testing"
 	"unicode"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/secuone/nanny/internal/classroom"
 	"github.com/secuone/nanny/internal/config"
@@ -81,12 +81,12 @@ func TestLookEditor(t *testing.T) {
 	mm := m.(Model)
 	mm.openLook(true)
 	m = mm
-	if out := ansi.Strip(m.View()); !strings.Contains(out, "Appearance") || !strings.Contains(out, "terminal's") {
+	if out := ansi.Strip(viewOf(m)); !strings.Contains(out, "Appearance") || !strings.Contains(out, "terminal's") {
 		t.Fatalf("the appearance editor:\n%s", out)
 	}
 	m = key(m, "j") // borders
 	m = key(m, "right")
-	if m.(Model).cfg.Look.Borders != "square" || !strings.Contains(m.View(), "┌") {
+	if m.(Model).cfg.Look.Borders != "square" || !strings.Contains(viewOf(m), "┌") {
 		t.Fatalf("→ shows square borders at once: %q", m.(Model).cfg.Look.Borders)
 	}
 	m = key(m, "esc")

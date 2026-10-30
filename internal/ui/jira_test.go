@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/secuone/nanny/internal/claude"
 	"github.com/secuone/nanny/internal/config"
@@ -132,7 +132,7 @@ func jiraBoot(t *testing.T) (tea.Model, *fakeJiraAPI) {
 
 const tokVal = "tok-s3cret-9"
 
-func plain(m tea.Model) string { return ansi.Strip(m.View()) }
+func plain(m tea.Model) string { return ansi.Strip(viewOf(m)) }
 
 func TestJiraUnconfiguredMakesNoCalls(t *testing.T) {
 	f := &fakeJiraAPI{}

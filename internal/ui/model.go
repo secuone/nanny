@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/secuone/nanny/internal/claude"
 	"github.com/secuone/nanny/internal/config"
@@ -181,23 +181,25 @@ type viewState struct {
 	clickAt    time.Time
 	clickKey   string
 	// hover, drag and the right-click menu
-	hover    hoverAt
-	drag     dragFrom
-	menuHits []menuHit
-	menuBox  rect
-	reuse    bool      // nothing on screen changed: View returns frame again
-	noop     bool      // the last update changed nothing (a refresh that came back the same)
-	pending  bool      // an update changed something since frame was drawn
-	wait     bool      // a background refresh changed it: drawn at the flush
-	flushing bool      // a flush is on its way
-	frame    string    // the last frame drawn
-	raw      string    // the last frame with its spinners as placeholders
-	anim     bool      // only the spinners moved since it was drawn
-	press    pressAt   // where the left button went down, while it is down
-	sel      selection // text being selected with the mouse
-	frameOn  bool      // a frame is on its way (none while nothing moves)
-	drawnMin int64     // the minute the last frame was drawn in (clock, "3m ago")
-	monWas   bool      // the Monitor was on screen after the last update
+	hover      hoverAt
+	drag       dragFrom
+	menuHits   []menuHit
+	menuBox    rect
+	reuse      bool        // nothing on screen changed: View returns frame again
+	noop       bool        // the last update changed nothing (a refresh that came back the same)
+	pending    bool        // an update changed something since frame was drawn
+	wait       bool        // a background refresh changed it: drawn at the flush
+	flushing   bool        // a flush is on its way
+	frame      string      // the last frame drawn
+	cursor     *tea.Cursor // the real cursor of that frame: the focused pane's
+	paneCursor *tea.Cursor // what viewPanes drew it at, before popups cover it
+	raw        string      // the last frame with its spinners as placeholders
+	anim       bool        // only the spinners moved since it was drawn
+	press      pressAt     // where the left button went down, while it is down
+	sel        selection   // text being selected with the mouse
+	frameOn    bool        // a frame is on its way (none while nothing moves)
+	drawnMin   int64       // the minute the last frame was drawn in (clock, "3m ago")
+	monWas     bool        // the Monitor was on screen after the last update
 }
 
 type modal struct {
@@ -238,7 +240,7 @@ func New(cfg config.Config) Model {
 		tq:     loadQueue(),
 		paneCh: make(chan struct{}, 1),
 	}
-	m.sess.filter = textinput.New()
+	m.sess.filter = newInput()
 	m.sess.filter.Prompt = "  "
 	m.sess.filter.Placeholder = T("type to filter — title, repo, branch, prompt, id…")
 	m.sess.hideBots = cfg.HideBots
@@ -249,7 +251,7 @@ func New(cfg config.Config) Model {
 		m.welcome = &welcome{}
 	}
 	m.tab = m.homeTab()
-	m.skills.filter = textinput.New()
+	m.skills.filter = newInput()
 	m.skills.filter.Prompt = "  "
 	m.skills.filter.Placeholder = T("filter skills, commands, agents…")
 	if st, err := ws.Load(); err == nil {
@@ -263,7 +265,7 @@ func New(cfg config.Config) Model {
 
 func (m Model) Init() tea.Cmd {
 	m.vs.frameOn = true
-	return tea.Batch(m.firstScanCmd(), m.sourcesCmd(), tick(m.cfg), frame(), tea.SetWindowTitle("nanny"), m.waitPane(), watchCmd())
+	return tea.Batch(m.firstScanCmd(), m.sourcesCmd(), tick(m.cfg), frame(), m.waitPane(), watchCmd())
 }
 
 func tick(c config.Config) tea.Cmd {
@@ -697,9 +699,12 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(m.scanCmd())
 
 	case tea.MouseMsg:
-		return m.mouse(msg)
+		return m.mouse(toMouseEv(msg))
 
-	case tea.KeyMsg:
+	case tea.PasteMsg:
+		return m.paste(msg.Content)
+
+	case tea.KeyPressMsg:
 		return m.key(msg)
 
 	case taskReadyMsg:
@@ -801,7 +806,30 @@ func sameSessions(a, b []*claude.Session) bool {
 
 func (m Model) bodyHeight() int { return max(3, m.h-bodyY-1) }
 
-func (m Model) key(k tea.KeyMsg) (tea.Model, tea.Cmd) {
+// popupOpen is true while a popup, menu or full-screen overlay has the keys.
+func (m Model) popupOpen() bool {
+	return m.menu != nil || m.modal != nil || m.task != nil || m.answer != nil || m.pal != nil || m.themes != nil ||
+		m.showInbox || m.help || m.welcome != nil || m.setup != nil || m.view != nil || m.rev != nil ||
+		m.disc != nil || m.mgr != nil || m.cust != nil
+}
+
+// paste goes to the terminal that has the keys, bracketed, or to the text box that has them; anywhere else it is dropped.
+func (m Model) paste(s string) (tea.Model, tea.Cmd) {
+	if m.inSpace() && !m.dash && !m.popupOpen() && !m.prefix {
+		if t := m.space().Tab(); t != nil && t.Pane() != nil {
+			if p := t.Pane(); !p.Exited() && !p.ReadOnly {
+				p.Write([]byte("\x1b[200~" + s + "\x1b[201~"))
+			}
+		}
+		return m, nil
+	}
+	if m.popupOpen() || m.typing() {
+		return m.key(tea.KeyPressMsg{Code: tea.KeyExtended, Text: s})
+	}
+	return m, nil
+}
+
+func (m Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	m.vs.hover = hoverAt{} // typing hides the tooltip until the mouse moves
 	m.vs.sel = selection{} // and the selection
 	if m.menu != nil {
@@ -1086,7 +1114,7 @@ func (m Model) switchTab(t tab) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m Model) mouse(e tea.MouseMsg) (tea.Model, tea.Cmd) {
+func (m Model) mouse(e mouseEv) (tea.Model, tea.Cmd) {
 	if mm, cmd, ok := m.selectMouse(e); ok {
 		return mm, cmd
 	}
@@ -1094,9 +1122,9 @@ func (m Model) mouse(e tea.MouseMsg) (tea.Model, tea.Cmd) {
 		return m.menuMouse(e)
 	}
 	switch e.Action {
-	case tea.MouseActionMotion:
+	case mouseMotion:
 		return m.hoverMove(e)
-	case tea.MouseActionRelease:
+	case mouseRelease:
 		return m.dropTab(e)
 	}
 	m.vs.hover = hoverAt{}
@@ -1104,24 +1132,24 @@ func (m Model) mouse(e tea.MouseMsg) (tea.Model, tea.Cmd) {
 		return m.welcomeMouse(e)
 	}
 	switch e.Button {
-	case tea.MouseButtonRight:
+	case tea.MouseRight:
 		return m.rightClick(e)
-	case tea.MouseButtonMiddle:
+	case tea.MouseMiddle:
 		return m.middleClose(e)
 	}
-	if e.Button == tea.MouseButtonLeft {
+	if e.Button == tea.MouseLeft {
 		if mm, cmd, ok := m.keyClick(e.X, e.Y); ok {
 			return mm, cmd
 		}
 	}
-	if d := map[tea.MouseButton]int{tea.MouseButtonWheelDown: 1, tea.MouseButtonWheelUp: -1}[e.Button]; d != 0 && m.onProfileChip(e.X, e.Y) {
+	if d := map[tea.MouseButton]int{tea.MouseWheelDown: 1, tea.MouseWheelUp: -1}[e.Button]; d != 0 && m.onProfileChip(e.X, e.Y) {
 		return m, m.cycleProfile(d)
 	}
 	if mm, cmd, ok := m.overlayMouse(e); ok {
 		return mm, cmd
 	}
 	leftW := m.sideW() + m.leftWidth()
-	if e.Button == tea.MouseButtonLeft && (e.Y == 0 || e.Y == viewY) {
+	if e.Button == tea.MouseLeft && (e.Y == 0 || e.Y == viewY) {
 		hits := m.vs.spaceHits
 		if e.Y == viewY {
 			hits = m.vs.tabHits
@@ -1156,7 +1184,7 @@ func (m Model) mouse(e tea.MouseMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	}
-	if e.Button == tea.MouseButtonLeft && e.Y == termY && m.inSpace() && !m.dash {
+	if e.Button == tea.MouseLeft && e.Y == termY && m.inSpace() && !m.dash {
 		sp := m.space()
 		for _, h := range m.vs.termHits {
 			if e.X < h.x0 || e.X >= h.x1 {
@@ -1187,20 +1215,20 @@ func (m Model) mouse(e tea.MouseMsg) (tea.Model, tea.Cmd) {
 		for i, r := range m.vs.rects {
 			if e.X >= r.x && e.X < r.x+r.w && e.Y >= r.y && e.Y < r.y+r.h {
 				switch e.Button {
-				case tea.MouseButtonWheelUp:
+				case tea.MouseWheelUp:
 					t.Panes[i].Scroll(3)
-				case tea.MouseButtonWheelDown:
+				case tea.MouseWheelDown:
 					t.Panes[i].Scroll(-3)
-				case tea.MouseButtonLeft:
+				case tea.MouseLeft:
 					t.Focus = i
 				}
 			}
 		}
 		return m, nil
 	}
-	if e.X < m.sideW() && e.Y >= bodyY && (e.Button == tea.MouseButtonWheelUp || e.Button == tea.MouseButtonWheelDown) {
+	if e.X < m.sideW() && e.Y >= bodyY && (e.Button == tea.MouseWheelUp || e.Button == tea.MouseWheelDown) {
 		d := 3
-		if e.Button == tea.MouseButtonWheelUp {
+		if e.Button == tea.MouseWheelUp {
 			d = -3
 		}
 		if e.Y < m.vs.sideSplit { // each half scrolls on its own
@@ -1210,7 +1238,7 @@ func (m Model) mouse(e tea.MouseMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	}
-	if e.X < m.sideW() && e.Y >= bodyY && e.Button == tea.MouseButtonLeft {
+	if e.X < m.sideW() && e.Y >= bodyY && e.Button == tea.MouseLeft {
 		r, ok := m.sidebarHit(e.Y)
 		switch {
 		case !ok:
@@ -1248,22 +1276,22 @@ func (m Model) mouse(e tea.MouseMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	switch e.Button {
-	case tea.MouseButtonWheelUp, tea.MouseButtonWheelDown:
+	case tea.MouseWheelUp, tea.MouseWheelDown:
 		d := 1
-		if e.Button == tea.MouseButtonWheelUp {
+		if e.Button == tea.MouseWheelUp {
 			d = -1
 		}
 		if e.X >= leftW {
 			m.detailOff = max(0, m.detailOff+d*3)
 			return m, nil
 		}
-		key := tea.KeyMsg{Type: tea.KeyDown}
+		key := keyPress("down")
 		if d < 0 {
-			key = tea.KeyMsg{Type: tea.KeyUp}
+			key = keyPress("up")
 		}
 		m.focusR = false
 		return m.key(key)
-	case tea.MouseButtonLeft:
+	case tea.MouseLeft:
 		if m.hasSecs() && e.Y == secY { // the sections span both panes
 			return m.listClick(e)
 		}
@@ -1275,7 +1303,7 @@ func (m Model) mouse(e tea.MouseMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m Model) modalKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) modalKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	md := m.modal
 	if md.fill != nil && md.input != nil && m.fillKey(md.fill, k.String(), md.input) {
 		return m, nil
@@ -1322,7 +1350,7 @@ func (m *Model) ask(title, body string, fn func(m *Model, v string) tea.Cmd) {
 }
 
 func (m *Model) prompt(title, body, placeholder string, fn func(m *Model, v string) tea.Cmd) {
-	in := textinput.New()
+	in := newInput()
 	in.Placeholder = placeholder
 	in.Prompt = "› "
 	in.Focus()
@@ -1349,7 +1377,16 @@ func (m Model) leftWidth() int {
 	return max(min(lw, 90), min(44, mw))
 }
 
-func (m Model) View() string {
+func (m Model) View() tea.View {
+	v := tea.NewView(m.render())
+	v.Cursor = m.vs.cursor
+	v.AltScreen = true
+	v.MouseMode = tea.MouseModeAllMotion
+	v.WindowTitle = "nanny"
+	return v
+}
+
+func (m Model) render() string {
 	if m.w == 0 {
 		return ""
 	}
@@ -1364,6 +1401,7 @@ func (m Model) View() string {
 		return m.vs.frame
 	}
 	m.vs.reuse, m.vs.noop, m.vs.pending, m.vs.anim = false, false, false, false
+	m.vs.paneCursor = nil
 	m.vs.drawnMin = time.Now().Unix() / 60
 	header := m.viewHeader() + "\n\n" + fit(m.viewTabBar(), m.w) + "\n" // blank rows around the views bar
 	footer := m.viewFooter()
@@ -1399,6 +1437,7 @@ func (m Model) View() string {
 	out := lipgloss.JoinVertical(lipgloss.Left, header, body, footer)
 	m.vs.modalN = 0
 	var box string
+	tipShown := false
 	switch {
 	case m.help:
 		box = m.viewHelp()
@@ -1443,6 +1482,7 @@ func (m Model) View() string {
 	} else if box == "" && m.vs.hover.kind != "" {
 		if tip, x, y := m.viewTooltip(); tip != "" {
 			out = m.overlayAt(out, tip, x, y)
+			tipShown = true
 		}
 	}
 	out, m.vs.keyHits = harvestKeys(m.st.App.Width(m.w).Height(m.h).MaxHeight(m.h).Render(out))
@@ -1453,6 +1493,10 @@ func (m Model) View() string {
 	m.vs.raw = out
 	out = m.vs.sel.paint(m.animate(out))
 	m.vs.frame = out
+	m.vs.cursor = m.vs.paneCursor
+	if box != "" || m.menu != nil || m.help || m.view != nil || m.rev != nil || m.vs.sel.on || tipShown {
+		m.vs.cursor = nil
+	}
 	return out
 }
 
@@ -1750,7 +1794,7 @@ func (m Model) viewModal() string {
 		b.WriteString(s.Text.Render(l) + "\n")
 	}
 	if md.input != nil {
-		md.input.Width = w - 10
+		md.input.SetWidth(w - 10)
 		hs := [][2]string{{"⏎", T("confirm")}}
 		if md.fill != nil {
 			hs = append(hs, [2]string{"alt+1-9", T("saved")}, [2]string{"^r", T("most used")})
@@ -1763,7 +1807,7 @@ func (m Model) viewModal() string {
 		}
 		b.WriteString("\n" + s.hints(append(hs, [2]string{"n/esc", T("no")})))
 	}
-	return s.Modal.Width(w).Render(b.String())
+	return s.Modal.Width(w + 2).Render(b.String())
 }
 
 // sameSubs reports whether two subagent trees show the same.

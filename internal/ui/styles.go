@@ -1,9 +1,10 @@
 package ui
 
 import (
+	"image/color"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 	"github.com/secuone/nanny/internal/config"
 )
 
@@ -22,7 +23,7 @@ type Styles struct {
 }
 
 func NewStyles(p config.Palette) Styles {
-	c := func(h string) lipgloss.Color { return lipgloss.Color(h) }
+	c := func(h string) color.Color { return lipgloss.Color(h) }
 	fg := func(h string) lipgloss.Style { return lipgloss.NewStyle().Foreground(c(h)) }
 	s := Styles{P: p}
 	s.App = lipgloss.NewStyle() // keep the terminal background; themes color the content
@@ -78,7 +79,7 @@ func (s Styles) BadgeColor(bg string) lipgloss.Style {
 // resets of inner styled segments so the highlight doesn't stop at the first one.
 func (s Styles) Sel(st lipgloss.Style, line string) string {
 	if on, _, ok := strings.Cut(st.UnsetPadding().Render("x"), "x"); ok && on != "" {
-		line = strings.ReplaceAll(line, "\x1b[0m", "\x1b[0m"+on)
+		line = strings.ReplaceAll(strings.ReplaceAll(line, "\x1b[0m", "\x1b[0m"+on), "\x1b[m", "\x1b[m"+on)
 	}
 	return st.Render(line)
 }

@@ -3,8 +3,7 @@ package ui
 import (
 	"fmt"
 
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/secuone/nanny/internal/config"
 )
 
@@ -80,7 +79,7 @@ func (m *Model) custNewName() { m.custAsk(false, "") }
 // custAsk opens the name line of the customize screen: a new profile, or a
 // new name for the one in use.
 func (m *Model) custAsk(rename bool, value string) {
-	in := textinput.New()
+	in := newInput()
 	in.Prompt = "› "
 	in.CharLimit = 24
 	in.SetValue(value)
@@ -90,7 +89,7 @@ func (m *Model) custAsk(rename bool, value string) {
 }
 
 // custName handles the name line: ⏎ makes or renames, esc drops it.
-func (m Model) custName(k tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) custName(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	c := m.cust
 	switch k.String() {
 	case "esc":

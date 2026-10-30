@@ -2,14 +2,15 @@ package ui
 
 import (
 	"fmt"
+	"image/color"
 	"os"
 	"os/exec"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/textarea"
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/textarea"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/sahilm/fuzzy"
 	"github.com/secuone/nanny/internal/claude"
 	"github.com/secuone/nanny/internal/config"
@@ -79,7 +80,7 @@ func historyCmd() tea.Cmd {
 }
 
 func (m *Model) openPrompts() tea.Cmd {
-	in := textinput.New()
+	in := newInput()
 	in.Prompt = "/ "
 	in.Placeholder = T("filter prompts, tags, projects…")
 	m.lib = &promptLib{filter: in, saved: config.LoadSnippets()}
@@ -184,7 +185,7 @@ func (l *promptLib) nSaved() int {
 	return n
 }
 
-func (m Model) promptsKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) promptsKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	l := m.lib
 	if l.ed != nil {
 		return m.editorKey(k)
@@ -414,18 +415,19 @@ func (m *Model) usePrompt(name, text string) tea.Cmd {
 // editPrompt opens the editor on a saved prompt, or a new one prefilled with text.
 func (m *Model) editPrompt(s *config.Snippet, text string) tea.Cmd {
 	p := m.st.P
-	c := func(h string) lipgloss.Color { return lipgloss.Color(h) }
+	c := func(h string) color.Color { return lipgloss.Color(h) }
 	e := &promptEditor{}
-	e.name = textinput.New()
+	e.name = newInput()
 	e.name.Prompt, e.name.Placeholder = "› ", T("short name, e.g. tests")
-	e.tags = textinput.New()
+	e.tags = newInput()
 	e.tags.Prompt, e.tags.Placeholder = "› ", T("optional, comma separated")
 	e.text = textarea.New()
 	e.text.ShowLineNumbers = false
 	e.text.Prompt = "│ "
 	e.text.Placeholder = T("the prompt · {name} asks for a value when inserted")
-	fs, bs := textarea.DefaultStyles()
-	for _, st := range []*textarea.Style{&fs, &bs} {
+	ts := textarea.DefaultStyles(true)
+	fs, bs := ts.Focused, ts.Blurred
+	for _, st := range []*textarea.StyleState{&fs, &bs} {
 		st.Text = lipgloss.NewStyle().Foreground(c(p.Text))
 		st.Placeholder = lipgloss.NewStyle().Foreground(c(p.Muted))
 		st.Prompt = lipgloss.NewStyle().Foreground(c(p.Overlay))
@@ -434,7 +436,8 @@ func (m *Model) editPrompt(s *config.Snippet, text string) tea.Cmd {
 	}
 	fs.CursorLine = lipgloss.NewStyle().Foreground(c(p.Text)).Background(c(p.Surface))
 	fs.Prompt = lipgloss.NewStyle().Foreground(c(p.Accent2))
-	e.text.FocusedStyle, e.text.BlurredStyle = fs, bs
+	ts.Focused, ts.Blurred = fs, bs
+	e.text.SetStyles(ts)
 	e.text.SetValue(text)
 	e.field = 0
 	if s != nil {
@@ -462,7 +465,7 @@ func (e *promptEditor) focus() {
 	}
 }
 
-func (m Model) editorKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) editorKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	e := m.lib.ed
 	switch k.String() {
 	case "esc":
@@ -559,7 +562,8 @@ func (m Model) viewPromptEditor() string {
 	e := m.lib.ed
 	w := min(84, m.w-4)
 	inner := w - 6
-	e.name.Width, e.tags.Width = inner-4, inner-4
+	e.name.SetWidth(inner - 4)
+	e.tags.SetWidth(inner - 4)
 	e.text.SetWidth(inner)
 	e.text.SetHeight(max(3, min(12, m.h-17)))
 	title := T("New prompt")
@@ -578,7 +582,7 @@ func (m Model) viewPromptEditor() string {
 	b.WriteString(label(1, T("Tags")) + "\n" + e.tags.View() + "\n")
 	b.WriteString(label(2, T("Text")) + s.Muted.Render("  "+T("{name} asks for a value on insert")) + "\n" + e.text.View() + "\n\n")
 	b.WriteString(s.hintsFit([][2]string{{"ctrl+s", T("save")}, {"tab", T("field")}, {"ctrl+e", "$EDITOR"}, {"esc", T("cancel")}}, inner))
-	return s.Modal.Width(w).Render(b.String())
+	return s.Modal.Width(w + 2).Render(b.String())
 }
 
 // ---------------------------------------------------------------- view
@@ -590,7 +594,7 @@ func (m Model) viewPrompts(w, h int) string {
 	// filter line: the box when in use, else what's in the library
 	var head string
 	if l.filter.Focused() || l.filter.Value() != "" {
-		l.filter.Width = inner - 4
+		l.filter.SetWidth(inner - 4)
 		head = l.filter.View()
 	} else {
 		head = s.Muted.Render(Tf("%d saved · %d most used", len(l.saved), len(l.used)))

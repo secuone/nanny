@@ -7,8 +7,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
 	"github.com/secuone/nanny/internal/skills"
 )
 
@@ -95,7 +95,7 @@ func (t *skillsTab) sel() *skills.Item {
 
 var skillNameRe = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{1,62}$`)
 
-func (t *skillsTab) filterKey(m *Model, k tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (t *skillsTab) filterKey(m *Model, k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch k.String() {
 	case "esc":
 		t.filter.Blur()
@@ -122,7 +122,7 @@ func (t *skillsTab) filterKey(m *Model, k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return *m, cmd
 }
 
-func (t *skillsTab) key(m *Model, k tea.KeyMsg) tea.Cmd {
+func (t *skillsTab) key(m *Model, k tea.KeyPressMsg) tea.Cmd {
 	n := len(t.rows)
 	h := m.bodyHeight() / 2
 	it := t.sel()
@@ -184,7 +184,7 @@ func (t *skillsTab) key(m *Model, k tea.KeyMsg) tea.Cmd {
 			}
 			return m.shell(dir)
 		}
-	case " ":
+	case " ", "space":
 		if it == nil {
 			return nil
 		}
@@ -327,7 +327,7 @@ const harnessKind skills.Kind = "harness"
 func (t *skillsTab) view(m *Model, w, h int) string {
 	s := m.st
 	inner := w - 4
-	t.filter.Width = inner - 24
+	t.filter.SetWidth(inner - 24)
 	fl := t.filter.View()
 	if !t.filter.Focused() && t.filter.Value() == "" {
 		fl = s.Muted.Render("  " + T("/ to filter"))

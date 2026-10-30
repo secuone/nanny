@@ -4,7 +4,7 @@ import (
 	"github.com/secuone/nanny/internal/classroom"
 	"github.com/secuone/nanny/internal/claude"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
 
 // The 3D classroom: your agents as teachers and their subagents as kids, in a

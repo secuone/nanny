@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/secuone/nanny/internal/claude"
 	"github.com/secuone/nanny/internal/config"
 	"github.com/secuone/nanny/internal/insights"
@@ -192,7 +192,7 @@ func (v *insightsView) palette(m *Model) []paletteEntry {
 	}
 }
 
-func (v *insightsView) key(m *Model, k tea.KeyMsg) tea.Cmd {
+func (v *insightsView) key(m *Model, k tea.KeyPressMsg) tea.Cmd {
 	p := v.page(m, 60)
 	n, h := len(p.rows), m.bodyHeight()/2
 	switch k.String() {

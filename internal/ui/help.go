@@ -3,7 +3,7 @@ package ui
 import (
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/secuone/nanny/internal/config"
 )
 
@@ -150,7 +150,7 @@ func (m Model) helpSections() []helpSec {
 	return append(home, spaces...)
 }
 
-func (m Model) helpKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) helpKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	body, _ := m.helpBody()
 	maxOff := max(0, len(body)-m.helpRoom())
 	switch k.String() {
@@ -158,7 +158,7 @@ func (m Model) helpKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.helpOff++
 	case "k", "up":
 		m.helpOff--
-	case "pgdown", "ctrl+d", " ":
+	case "pgdown", "ctrl+d", " ", "space":
 		m.helpOff += max(1, m.helpRoom()-2)
 	case "pgup", "ctrl+u":
 		m.helpOff -= max(1, m.helpRoom()-2)
@@ -245,5 +245,5 @@ func (m Model) viewHelp() string {
 	}
 	foot += s.Muted.Render("   " + T("config") + " " + tilde(config.Path()))
 	head := s.Logo.Render("◆ nanny") + s.Muted.Render("  "+T("keys"))
-	return s.Modal.Width(w).Render(head + "\n\n" + strings.Join(body, "\n") + "\n\n" + fit(foot, w-4))
+	return s.Modal.Width(w + 2).Render(head + "\n\n" + strings.Join(body, "\n") + "\n\n" + fit(foot, w-4))
 }

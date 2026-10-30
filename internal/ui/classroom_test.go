@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/secuone/nanny/internal/classroom"
 	"github.com/secuone/nanny/internal/claude"
@@ -56,7 +55,7 @@ func TestLiveFoldsFinishedSubagents(t *testing.T) {
 	if !strings.Contains(ks, "sub:run") || strings.Contains(ks, "sub:o1") || !strings.Contains(ks, "fold:"+sess.ID) {
 		t.Fatalf("running shown, old ones folded: %s", ks)
 	}
-	if out := ansi.Strip(m.View()); !strings.Contains(out, "2 finished subagents") || !strings.Contains(out, "Old plan") {
+	if out := ansi.Strip(viewOf(m)); !strings.Contains(out, "2 finished subagents") || !strings.Contains(out, "Old plan") {
 		t.Errorf("the fold says how many and the last one:\n%s", out)
 	}
 	for _, r := range m.live.allRows {
@@ -70,7 +69,7 @@ func TestLiveFoldsFinishedSubagents(t *testing.T) {
 			m.live.cur.idx = i
 		}
 	}
-	enter := tea.KeyMsg{Type: tea.KeyEnter}
+	enter := keyPress("enter")
 	m.live.key(&m, enter) // its commands would reload the demo's own subagents
 	if ks := liveKeys(m); !strings.Contains(ks, "sub:o1") || !strings.Contains(ks, "sub:o2") || !strings.Contains(ks, "fold:"+sess.ID) {
 		t.Fatalf("⏎ unfolds them, the fold stays to fold them back: %s", ks)

@@ -6,8 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/secuone/nanny/internal/i18n"
 	"github.com/secuone/nanny/internal/queue"
 )
@@ -237,7 +235,7 @@ func TestDispatchCap(t *testing.T) {
 // alt+1-9 types a saved prompt into a prompt box, ctrl+r cycles the folder's most used ones.
 func TestPromptFill(t *testing.T) {
 	m := boot(t, 150, 42).(Model)
-	in := textinput.New()
+	in := newInput()
 	f := &promptFill{dir: filepath.Join(home, "dev", "infra")}
 	if !m.fillKey(f, "ctrl+r", &in) || !strings.HasPrefix(in.Value(), "Check the CI logs") {
 		t.Errorf("ctrl+r should bring the folder's most used prompt: %q", in.Value())
@@ -264,7 +262,7 @@ func TestPromptFill(t *testing.T) {
 		t.Error("plain keys aren't shortcuts")
 	}
 	// the p box on a Live agent has them, and shows them
-	mm, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'.'}})
+	mm, _ := m.Update(keyPress("."))
 	m = mm.(Model)
 	if m.modal == nil && !strings.Contains(m.status, "outside nanny") && !strings.Contains(m.status, "no prompt") {
 		t.Errorf(". should ask to repeat the last prompt or say why not: %q", m.status)

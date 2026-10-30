@@ -84,6 +84,10 @@ func (f *fakeJiraAPI) DevPRs(context.Context, string) ([]jira.DevPR, error) {
 	return f.prs, f.err
 }
 
+func (f *fakeJiraAPI) Detail(context.Context, string) (jira.Detail, error) {
+	return jira.Detail{}, f.err
+}
+
 func (f *fakeJiraAPI) calls() int {
 	f.mu.Lock()
 	defer f.mu.Unlock()

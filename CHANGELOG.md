@@ -3,6 +3,7 @@
 ## Unreleased
 
 <!-- Git view -->
+- **Git view**: sections My PRs, Reviews, Worktrees, Branches and Profile, with `gh` (needs `gh auth login`). Merge asks first and never uses `--admin`; a PR that isn't ready gets auto-merge. `c` in Reviews starts a Claude on the PR in a worktree; the top bar counts the reviews waiting (`header.reviews`); Branches finds the ones merged, squashes included, and deletes them after asking. `[git]` in the config and Settings → Git: `merge_method`, `reviews`, `review_mins`, `review_prompt`.
 
 - **Jira view (`E`) and a first-run setup wizard.** Your issues by status, by sprint and done in the last 7 days, linked to their PR and their agent, with search, filter, transition, comment, assign, copy and open in the browser. `n` starts work on an issue (worktree `{key}-{slug}` plus a Claude task with the issue in the prompt), `b` only the branch. The sidebar shows `KEY · status` under a branch that has an issue key (`sidebar.jira`). The wizard opens once after the welcome (and from Settings → Connections, the `≡` menu and the palette) to connect Jira and check `gh`. The token is kept in the keyring or a `0600` file, never in `config.toml`; `NANNY_JIRA_TOKEN` takes priority. New `[jira]` table: `url`, `email`, `jql`, `sprint_field`, `branch_template`, `refresh_mins`.
 

@@ -1,0 +1,57 @@
+{
+ "data": {
+  "viewer": {
+   "contributionsCollection": {
+    "totalCommitContributions": 9,
+    "totalPullRequestContributions": 5,
+    "totalPullRequestReviewContributions": 11,
+    "commitContributionsByRepository": [
+     {
+      "repository": {
+       "nameWithOwner": "o/a"
+      },
+      "contributions": {
+       "totalCount": 2
+      }
+     },
+     {
+      "repository": {
+       "nameWithOwner": "o/b"
+      },
+      "contributions": {
+       "totalCount": 7
+      }
+     }
+    ],
+    "pullRequestContributionsByRepository": [
+     {
+      "repository": {
+       "nameWithOwner": "o/a"
+      },
+      "contributions": {
+       "totalCount": 5
+      }
+     }
+    ],
+    "pullRequestReviewContributionsByRepository": [
+     {
+      "repository": {
+       "nameWithOwner": "o/c"
+      },
+      "contributions": {
+       "totalCount": 11
+      }
+     },
+     {
+      "repository": {
+       "nameWithOwner": "o/z"
+      },
+      "contributions": {
+       "totalCount": 0
+      }
+     }
+    ]
+   }
+  }
+ }
+}

@@ -134,3 +134,22 @@ func TestWorktreesBecameGit(t *testing.T) {
 		}
 	}
 }
+
+// [git] reads back, and anything unset or unknown falls on the default.
+func TestGitDefaultsAndRoundTrip(t *testing.T) {
+	var g Git
+	if g.Method() != MergeSquash || g.ReviewMode() != ReviewsAll || g.ReviewEvery() != 5 || g.Prompt() != DefaultReviewPrompt {
+		t.Errorf("defaults: %+v", g)
+	}
+	var c Config
+	src := "[git]\nmerge_method = \"Rebase\"\nreviews = \"direct\"\nreview_mins = 90\nreview_prompt = \"look at {url}\"\n"
+	if _, err := toml.Decode(src, &c); err != nil {
+		t.Fatal(err)
+	}
+	if c.Git.Method() != MergeRebase || c.Git.ReviewMode() != ReviewsDirect || c.Git.ReviewEvery() != 60 || c.Git.Prompt() != "look at {url}" {
+		t.Errorf("read: %+v", c.Git)
+	}
+	if (Git{MergeMethod: "force"}).Method() != MergeSquash {
+		t.Error("an unknown method is a squash")
+	}
+}

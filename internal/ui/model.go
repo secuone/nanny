@@ -206,7 +206,8 @@ type modal struct {
 	// optional second answer for yes/no questions
 	altKey, altLabel string
 	alt              func(m *Model) tea.Cmd
-	fill             *promptFill // a prompt for an agent: alt+1-9, ctrl+r
+	keys             map[string]func(m *Model) tea.Cmd // more answers, by key: a choice that changes the question
+	fill             *promptFill                       // a prompt for an agent: alt+1-9, ctrl+r
 }
 
 func New(cfg config.Config) Model {
@@ -228,7 +229,7 @@ func New(cfg config.Config) Model {
 		vs:          &viewState{},
 		alerts:      newAlertState(),
 		cur:         -1,
-		gitv:        &gitView{},
+		gitv:        newGitView(),
 		jira:        newJiraView(),
 		ins:         &insightsView{},
 
@@ -1280,6 +1281,9 @@ func (m Model) modalKey(k tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if md.alt != nil && md.input == nil && k.String() == md.altKey {
 		m.modal = nil
 		return m, md.alt(&m)
+	}
+	if f, ok := md.keys[k.String()]; ok && md.input == nil {
+		return m, f(&m)
 	}
 	switch k.String() {
 	case "esc", "ctrl+c":

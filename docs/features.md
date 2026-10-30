@@ -100,6 +100,18 @@ Every key mentioned here is listed in [keys.md](keys.md).
   (`gh`), `y` copies the branch.
 
 <!-- Git view -->
+- **Git view** (`3`): the PRs and branches you work with, from GitHub through the `gh` CLI (`gh auth login` once).
+  Sections, `←→` or a click: **My PRs** (what is ready to merge, what has conflicts or failing checks; `⏎` open,
+  `v` diff in a tab, `w` check it out in a worktree, `C` its changes, `X` merge: it asks, `s`/`m`/`b` pick squash,
+  merge or rebase, and a PR that isn't ready is set to auto-merge, never forced), **Reviews** (the PRs waiting for
+  you, the oldest first; `c` starts a Claude that reviews it in a worktree of the PR and posts nothing), **Worktrees**
+  (what the Worktrees view was), **Branches** (local branches with no worktree: merged ones, or merged by a squash,
+  `d` deletes one, `x` all of them, after asking; `p` pushes, `w` makes a worktree) and **Profile** (your week or
+  month: PRs, reviews, time to merge; `t` switches). The top bar shows `⚑ 2 reviews waiting` (red after 24 h) from any
+  view. Each section is asked only while it shows (the reviews badge every `review_mins`), and each can be turned off
+  in Customize (`git.prs`, `git.reviews`, `git.worktrees`, `git.branches`, `git.profile`, `header.reviews`). Without
+  `gh` or a login the view says so and asks nothing more until `r`. Settings → Git: merge method, which reviews,
+  how often, and the prompt the review agent gets.
 
 ## Monitor
 

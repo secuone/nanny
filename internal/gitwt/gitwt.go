@@ -164,13 +164,39 @@ func enrich(w *Worktree) {
 
 // Add creates a new worktree with a new branch next to the repo under .worktrees/<name>.
 func Add(root, name, base string) (string, error) {
-	path := filepath.Join(filepath.Dir(root), filepath.Base(root)+".worktrees", name)
+	path := worktreePath(root, name)
 	args := []string{"worktree", "add", "-b", name, path}
 	if base != "" {
 		args = append(args, base)
 	}
 	cmd := exec.Command("git", append([]string{"-C", root}, args...)...)
 	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", &CmdErr{strings.TrimSpace(string(out))}
+	}
+	return path, nil
+}
+
+// worktreePath is where a worktree named name goes: next to the repo.
+func worktreePath(root, name string) string {
+	return filepath.Join(filepath.Dir(root), filepath.Base(root)+".worktrees", name)
+}
+
+// AddExisting checks out a branch that exists in a new worktree next to the repo.
+func AddExisting(root, branch string) (string, error) {
+	path := worktreePath(root, branch)
+	out, err := exec.Command("git", "-C", root, "worktree", "add", path, branch).CombinedOutput()
+	if err != nil {
+		return "", &CmdErr{strings.TrimSpace(string(out))}
+	}
+	return path, nil
+}
+
+// AddDetached makes a worktree on the repo's HEAD with no branch, for gh to
+// put a pull request in.
+func AddDetached(root, name string) (string, error) {
+	path := worktreePath(root, name)
+	out, err := exec.Command("git", "-C", root, "worktree", "add", "--detach", path).CombinedOutput()
 	if err != nil {
 		return "", &CmdErr{strings.TrimSpace(string(out))}
 	}

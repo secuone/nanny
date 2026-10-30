@@ -1313,11 +1313,13 @@ func (m Model) confirmQuit(kill bool) (tea.Model, tea.Cmd) {
 		m.ask(T("Quit nanny and stop every pane?"), Tn(n, "%d pane is running and will be stopped. Your layout is saved: next start reopens your spaces and resumes every Claude session.",
 			"%d panes are running and will be stopped. Your layout is saved: next start reopens your spaces and resumes every Claude session."),
 			func(m *Model, _ string) tea.Cmd { return m.quit(true) })
+		m.modal.quit = true
 		return m, nil
 	}
 	m.ask(T("Quit nanny?"), Tn(n, "%d pane keeps running in the background; reopen nanny to reattach. Press k to quit and stop it instead.",
 		"%d panes keep running in the background; reopen nanny to reattach. Press k to quit and stop them instead."),
 		func(m *Model, _ string) tea.Cmd { return m.quit(false) })
+	m.modal.quit = true
 	m.modal.altKey, m.modal.altLabel = "k", T("quit & stop panes")
 	m.modal.alt = func(m *Model) tea.Cmd { return m.quit(true) }
 	return m, nil

@@ -224,6 +224,7 @@ type modal struct {
 	alt              func(m *Model) tea.Cmd
 	keys             map[string]func(m *Model) tea.Cmd // more answers, by key: a choice that changes the question
 	fill             *promptFill                       // a prompt for an agent: alt+1-9, ctrl+r
+	quit             bool                              // the quit question: the quit key again answers yes
 }
 
 func New(cfg config.Config) Model {
@@ -847,6 +848,14 @@ func (m Model) paste(s string) (tea.Model, tea.Cmd) {
 func (m Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	m.vs.hover = hoverAt{} // typing hides the tooltip until the mouse moves
 	m.vs.sel = selection{} // and the selection
+	if qk := m.cfg.QuitKeyName(); qk != "" && k.String() == qk && !m.holdsText() {
+		if md := m.modal; md != nil && md.quit {
+			m.modal = nil
+			return m, md.confirm(&m, "")
+		}
+		m.menu, m.pal, m.help, m.prefix = nil, nil, false, false
+		return m.confirmQuit(false)
+	}
 	if m.menu != nil {
 		return m.menuKey(k)
 	}
@@ -1771,9 +1780,19 @@ func (m Model) viewFooter() string {
 			lead = " " + s.BadgeColor(s.P.Accent).Render(px) + " "
 		}
 	}
-	right := ""
+	note := ""
 	if m.inSpace() && !m.dash && m.view == nil {
-		right = s.Muted.Render("alt+1-9 " + T("space") + " · " + T("wheel scroll") + " ")
+		note = "alt+1-9 " + T("space") + " · " + T("wheel scroll")
+	}
+	if qk := m.cfg.QuitKeyName(); qk != "" {
+		if note != "" {
+			note += " · "
+		}
+		note += keyShort(qk) + " " + T("quit")
+	}
+	right := ""
+	if note != "" {
+		right = s.Muted.Render(note + " ")
 	}
 	if m.status != "" && time.Since(m.statusAt) < 8*time.Second {
 		st := s.Status
@@ -1877,4 +1896,20 @@ func (m *Model) rescan() tea.Cmd {
 	m.loading["repos"] = true
 	m.scanner = claude.NewScanner()
 	return tea.Batch(m.scanCmd(), m.sourcesCmd(), m.reposCmd(), m.featDue(true))
+}
+
+// keyShort writes a key the way footers do: ctrl+q is ^q.
+func keyShort(k string) string {
+	if c, ok := strings.CutPrefix(k, "ctrl+"); ok && len(c) == 1 {
+		return "^" + c
+	}
+	return k
+}
+
+// holdsText is true while something on screen is taking typed text, so the quit key is left to it.
+func (m Model) holdsText() bool {
+	if m.task != nil || m.setup != nil || ((m.dash || !m.inSpace()) && m.typing()) {
+		return true
+	}
+	return m.modal != nil && m.modal.input != nil
 }

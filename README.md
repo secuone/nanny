@@ -107,7 +107,8 @@ Pane commands start with the prefix, `ctrl+b` by default. The essentials:
 | `⏎` | main action in any list: go to · resume · open |
 | `v` | read a conversation full screen |
 | `/` | filter |
-| `q` | quit, panes keep running |
+| `ctrl+q` | quit from anywhere (asks first), panes keep running |
+| `q` | quit from a view, panes keep running |
 | `?` | full key list for the screen you are on |
 
 All keys: [docs/keys.md](docs/keys.md).

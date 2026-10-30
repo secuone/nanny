@@ -67,6 +67,10 @@ func (m Model) viewWelcome() string {
 	w := min(84, m.w-4)
 	inner := w - 6
 	px := m.prefixLabel()
+	quitKey := m.cfg.QuitKeyName()
+	if quitKey == "" {
+		quitKey = px + " q"
+	}
 	var title string
 	var rows [][2]string
 	var intro, outro []string
@@ -79,7 +83,7 @@ func (m Model) viewWelcome() string {
 			{"◆ " + T("spaces"), T("a project with its own terminal tabs (Claude and shells), like tmux")},
 			{T("views"), T("the bar on top (Live, Sessions…): at home it shows everything, in a space only that space")},
 			{T("alerts"), T("a sound and a badge when an agent finishes or needs you")},
-			{"q", T("quitting leaves the panes running; open nanny again to get them back")},
+			{quitKey, T("quitting leaves the panes running; open nanny again to get them back")},
 		}
 		outro = []string{T("One minute and you know your way around.")}
 	case 1:
@@ -100,6 +104,8 @@ func (m Model) viewWelcome() string {
 			{px + " x  ·  X", T("close the pane · close the tab")},
 			{px + " ,", T("rename the tab (or double-click it)")},
 			{px + " i  ·  0", T("this space's views · back to the terminal")},
+			{px + " G", T("this space's Git: branch, PR, worktrees")},
+			{"alt+↑ ↓", T("previous / next agent")},
 			{"alt+1-9", T("switch space · alt+0 all spaces")},
 		}
 	case 3:

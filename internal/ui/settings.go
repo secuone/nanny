@@ -100,6 +100,16 @@ var settingsList = []setting{
 		func(c *config.Config, d int) {
 			c.Prefix = cycleStr([]string{"ctrl+b", "ctrl+a", "ctrl+g", "ctrl+space", "ctrl+\\"}, c.Prefix, d)
 		}, nil, nil},
+	{M("Behaviour"), M("Quit key"), M("Asks to quit nanny from anywhere, panes included. Turn it off if a program in your panes needs it (emacs, micro)."),
+		func(c *config.Config) string {
+			if k := c.QuitKeyName(); k != "" {
+				return k
+			}
+			return "none"
+		},
+		func(c *config.Config, d int) {
+			c.QuitKey = cycleStr([]string{"ctrl+q", "none"}, c.QuitKey, d)
+		}, nil, nil},
 	{M("Behaviour"), M("Restore on start"), M("Reopen your spaces and tabs; Claude panes resume their session."),
 		func(c *config.Config) string { return boolS(c.Restore) },
 		func(c *config.Config, d int) { c.Restore = !c.Restore }, nil, nil},

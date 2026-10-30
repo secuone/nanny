@@ -49,6 +49,7 @@ func (m *Model) appMenu(x, y int) {
 		{T("Edit config file"), "e", func(m *Model) tea.Cmd { return m.editConfig() }},
 		{T("Reload config"), "r", func(m *Model) tea.Cmd { return func() tea.Msg { return configEditedMsg{} } }},
 		{T("Welcome guide: what each view is, first steps"), "g", func(m *Model) tea.Cmd { m.welcome = &welcome{}; return nil }},
+		{T("Setup wizard…"), "", func(m *Model) tea.Cmd { m.openSetup(setupIntro); return nil }},
 		sep,
 		{T("Detach: quit, panes keep running"), "d", model(func(m Model) (tea.Model, tea.Cmd) { return m.confirmQuit(false) })},
 		{T("Quit and stop every pane"), "Q", model(func(m Model) (tea.Model, tea.Cmd) { return m.confirmQuit(true) })},

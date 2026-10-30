@@ -1,0 +1,4 @@
+{"data":{"search":{"nodes":[
+ {"number":5,"url":"https://github.com/o/r/pull/5","isCrossRepository":false,"headRefOid":"old999","mergedAt":"2026-10-20T10:00:00Z","headRefName":"feat/old","baseRefName":"main","repository":{"nameWithOwner":"o/r"}},
+ {"number":8,"url":"https://github.com/o/r/pull/8","isCrossRepository":false,"headRefOid":"abc123","mergedAt":"2026-10-29T10:00:00Z","headRefName":"feat/done","baseRefName":"main","repository":{"nameWithOwner":"o/r"}}
+]}}}

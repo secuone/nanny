@@ -9,6 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/secuone/nanny/internal/config"
+	"github.com/secuone/nanny/internal/gitwt"
 	"github.com/secuone/nanny/internal/i18n"
 )
 
@@ -147,6 +148,22 @@ var settingsList = []setting{
 	{M("Explorer"), M("Extra repos"), M("Comma-separated repo paths to show in Worktrees even if no session ran there."),
 		func(c *config.Config) string { return csv(c.ExtraRepos) }, nil,
 		func(c *config.Config, v string) error { c.ExtraRepos = splitCSV(v); return nil }, nil},
+	{M("Connections"), M("Jira"), M("Your Jira site and token. ⏎ opens the setup for it; the token is kept in your keyring or a private file, never here. Details under [jira] in the config."),
+		func(c *config.Config) string {
+			if h := c.Jira.Host(); h != "" {
+				return h
+			}
+			return T("not connected")
+		}, nil, nil, func(m *Model) tea.Cmd { m.openSetup(setupJira); return nil }},
+	{M("Connections"), M("GitHub"), M("Pull requests and reviews come from gh. ⏎ checks that it is logged in."),
+		func(c *config.Config) string {
+			if gitwt.HasGH() {
+				return "gh"
+			}
+			return T("gh not found")
+		}, nil, nil, func(m *Model) tea.Cmd { m.openSetup(setupGitHub); return nil }},
+	{M("Connections"), M("Setup wizard"), M("The first-run guide that connects Jira and GitHub. ⏎ runs it again."),
+		func(c *config.Config) string { return "⏎" }, nil, nil, func(m *Model) tea.Cmd { m.openSetup(setupIntro); return nil }},
 }
 
 // customizeRow is the Settings row that opens Customize.

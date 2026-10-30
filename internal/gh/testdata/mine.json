@@ -1,0 +1,183 @@
+{
+ "data": {
+  "search": {
+   "nodes": [
+    {
+     "number": 1,
+     "title": "ready one",
+     "url": "https://github.com/o/ready/pull/1",
+     "isDraft": false,
+     "createdAt": "2026-10-01T10:00:00Z",
+     "updatedAt": "2026-10-28T10:00:00Z",
+     "headRefName": "feat/ready",
+     "baseRefName": "main",
+     "additions": 10,
+     "deletions": 2,
+     "changedFiles": 3,
+     "repository": {
+      "nameWithOwner": "o/ready"
+     },
+     "author": {
+      "login": "me"
+     },
+     "mergeable": "MERGEABLE",
+     "mergeStateStatus": "CLEAN",
+     "reviewDecision": "APPROVED",
+     "latestReviews": {
+      "nodes": [
+       {
+        "state": "APPROVED",
+        "author": {
+         "login": "ana"
+        }
+       }
+      ]
+     },
+     "reviewRequests": {
+      "nodes": []
+     },
+     "commits": {
+      "nodes": [
+       {
+        "commit": {
+         "statusCheckRollup": {
+          "state": "SUCCESS"
+         }
+        }
+       }
+      ]
+     }
+    },
+    {
+     "number": 2,
+     "title": "conflicted one",
+     "url": "https://github.com/o/conf/pull/2",
+     "isDraft": false,
+     "createdAt": "2026-10-02T10:00:00Z",
+     "updatedAt": "2026-10-30T10:00:00Z",
+     "headRefName": "feat/conflicted",
+     "baseRefName": "main",
+     "additions": 10,
+     "deletions": 2,
+     "changedFiles": 3,
+     "repository": {
+      "nameWithOwner": "o/conf"
+     },
+     "author": {
+      "login": "me"
+     },
+     "mergeable": "CONFLICTING",
+     "mergeStateStatus": "DIRTY",
+     "reviewDecision": "REVIEW_REQUIRED",
+     "latestReviews": {
+      "nodes": []
+     },
+     "reviewRequests": {
+      "nodes": []
+     },
+     "commits": {
+      "nodes": [
+       {
+        "commit": {
+         "statusCheckRollup": {
+          "state": "SUCCESS"
+         }
+        }
+       }
+      ]
+     }
+    },
+    {
+     "number": 3,
+     "title": "red checks",
+     "url": "https://github.com/o/red/pull/3",
+     "isDraft": false,
+     "createdAt": "2026-10-03T10:00:00Z",
+     "updatedAt": "2026-10-29T10:00:00Z",
+     "headRefName": "feat/red",
+     "baseRefName": "main",
+     "additions": 10,
+     "deletions": 2,
+     "changedFiles": 3,
+     "repository": {
+      "nameWithOwner": "o/red"
+     },
+     "author": {
+      "login": "me"
+     },
+     "mergeable": "MERGEABLE",
+     "mergeStateStatus": "UNSTABLE",
+     "reviewDecision": "",
+     "latestReviews": {
+      "nodes": []
+     },
+     "reviewRequests": {
+      "nodes": [
+       {
+        "requestedReviewer": {
+         "__typename": "User",
+         "login": "bob"
+        }
+       },
+       {
+        "requestedReviewer": {
+         "__typename": "Team",
+         "name": "FLOW"
+        }
+       }
+      ]
+     },
+     "commits": {
+      "nodes": [
+       {
+        "commit": {
+         "statusCheckRollup": {
+          "state": "FAILURE"
+         }
+        }
+       }
+      ]
+     }
+    },
+    {
+     "number": 4,
+     "title": "pending calc",
+     "url": "https://github.com/o/new/pull/4",
+     "isDraft": true,
+     "createdAt": "2026-10-04T10:00:00Z",
+     "updatedAt": "2026-10-27T10:00:00Z",
+     "headRefName": "feat/pending",
+     "baseRefName": "main",
+     "additions": 10,
+     "deletions": 2,
+     "changedFiles": 3,
+     "repository": {
+      "nameWithOwner": "o/new"
+     },
+     "author": {
+      "login": "me"
+     },
+     "mergeable": "UNKNOWN",
+     "mergeStateStatus": "UNKNOWN",
+     "reviewDecision": "REVIEW_REQUIRED",
+     "latestReviews": {
+      "nodes": []
+     },
+     "reviewRequests": {
+      "nodes": []
+     },
+     "commits": {
+      "nodes": [
+       {
+        "commit": {
+         "statusCheckRollup": null
+        }
+       }
+      ]
+     }
+    },
+    {}
+   ]
+  }
+ }
+}

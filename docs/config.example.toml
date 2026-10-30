@@ -82,7 +82,24 @@ off = ["view.prompts", "view.skills", "monitor.machine", "monitor.ports", "monit
                          # the old density, basic and [screen] off are read once into a profile "mine"
 
 # [git] — the Git view
+# [git]
+# merge_method  = "squash"   # what X uses to merge a PR: squash, merge or rebase (it asks first, never forces)
+# reviews       = "all"      # all: asked of you and your teams; direct: asked of you only
+# review_mins   = 5          # minutes between looks for reviews while Git isn't on screen
+# review_prompt = ""         # what the review agent is told; {url} {number} {repo} are filled in (empty = built in)
 
-# [jira] — the Jira view
+# [jira] — the Jira view (E) and the first-run wizard; the API token is NOT here: it lives in the
+# keyring (secret-tool) or in ~/.config/nanny/secrets/jira-<host> (0600); $NANNY_JIRA_TOKEN beats both
+# [jira]
+# url             = "https://your-company.atlassian.net"
+# email           = "you@your-company.com"
+# jql             = ""                # "" = assignee = currentUser() AND (statusCategory != Done OR resolved >= -7d)
+# sprint_field    = ""                # customfield_NNNNN; found by itself when empty
+# branch_template = "{key}-{slug}"    # the branch `n` and `b` make for an issue
+# refresh_mins    = 2                 # while the view is on screen
 
 # [insights] — the Insights view
+# [insights]
+# days          = 90      # how many days of transcripts are read (and kept in the cache)
+# expensive_usd = 20.0    # a session that costs more is listed under Friction
+# export_dir    = ""      # where x writes nanny-insights-<week>.json; empty = your home

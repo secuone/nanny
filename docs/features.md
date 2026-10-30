@@ -100,6 +100,18 @@ Every key mentioned here is listed in [keys.md](keys.md).
   (`gh`), `y` copies the branch.
 
 <!-- Git view -->
+- **Git view** (`3`): the PRs and branches you work with, from GitHub through the `gh` CLI (`gh auth login` once).
+  Sections, `←→` or a click: **My PRs** (what is ready to merge, what has conflicts or failing checks; `⏎` open,
+  `v` diff in a tab, `w` check it out in a worktree, `C` its changes, `X` merge: it asks, `s`/`m`/`b` pick squash,
+  merge or rebase, and a PR that isn't ready is set to auto-merge, never forced), **Reviews** (the PRs waiting for
+  you, the oldest first; `c` starts a Claude that reviews it in a worktree of the PR and posts nothing), **Worktrees**
+  (what the Worktrees view was), **Branches** (local branches with no worktree: merged ones, or merged by a squash,
+  `d` deletes one, `x` all of them, after asking; `p` pushes, `w` makes a worktree) and **Profile** (your week or
+  month: PRs, reviews, time to merge; `t` switches). The top bar shows `⚑ 2 reviews waiting` (red after 24 h) from any
+  view. Each section is asked only while it shows (the reviews badge every `review_mins`), and each can be turned off
+  in Customize (`git.prs`, `git.reviews`, `git.worktrees`, `git.branches`, `git.profile`, `header.reviews`). Without
+  `gh` or a login the view says so and asks nothing more until `r`. Settings → Git: merge method, which reviews,
+  how often, and the prompt the review agent gets.
 
 ## Monitor
 
@@ -215,8 +227,20 @@ English, Spanish, French and German. It follows your locale (`$LC_ALL`,
 ## Jira and Insights
 
 <!-- Jira view and setup wizard -->
+- **Jira** (`E`): your issues by status, by sprint and what you closed in the last 7 days, each one linked to its PR and its agent (`●` when alive). `←→` sections, `/` search, `f` filter (all, in progress, to do), `⏎` open in the browser, `t` move to another status, `c` comment, `a` assign (to me, nobody, search), `y`/`Y` copy the key/link, `O` its PR, `s` its agent, `v` its conversation. `n` starts work: a worktree named `{key}-{slug}` and a Claude task with the issue in its prompt; `b` makes only the branch. With `sidebar.jira` on, a space on a branch like `PAY-412-fix` shows `PAY-412 · In Progress` under it.
+  Set it up in the first-run wizard, in Settings → Connections or from the `≡` menu and the palette: your site URL, your email and an [API token](https://id.atlassian.com/manage-profile/security/api-tokens). The token never goes to `config.toml`: it is kept in the keyring (`secret-tool`) or in a file only you can read (`~/.config/nanny/secrets/`), and `NANNY_JIRA_TOKEN` beats both. Nothing is asked of Jira while `view.jira` is off or there is no URL and token; the view on screen refreshes every `refresh_mins`, and every 10 minutes off screen only for the sidebar line.
 
 <!-- Insights view -->
+- **Insights** (`I`): what your Claude usage costs and does, read from the local transcripts, with nothing sent
+  anywhere and nothing read while the view is off or not on screen. Sections (`←→`): Summary, Cost (per day),
+  Projects, Models, Tools (calls, failures, speed), Permissions (by rules, asked, accepted, rejected, blocked),
+  Edits (accepted, rejected, lines), Friction (API retries, interruptions, compactions, error loops, and the
+  sessions that cost more than `expensive_usd`: `⏎` reads one) and Week. `t` walks 7 days · 30 days · 90 days ·
+  today, `[ ]` scope to a project like everywhere, `,` `.` move through weeks, `x` writes the week as
+  `nanny-insights-2026-W44.json` (keys in order, numbers rounded) and `y` copies it, `r` reads everything again.
+  The first run reads every transcript of the last `days` (a few seconds for a year of use); after that only the
+  new bytes are read, and the tally is kept in `~/.local/state/nanny/insights/v1.gob`.
+  `nanny insights [--week 2026-W44] [--json]` prints the same week without the TUI.
 
 ## CLI
 

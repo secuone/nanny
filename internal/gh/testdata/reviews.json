@@ -1,0 +1,125 @@
+{
+ "data": {
+  "search": {
+   "nodes": [
+    {
+     "number": 30,
+     "title": "newest",
+     "url": "https://github.com/o/a/pull/30",
+     "isDraft": false,
+     "createdAt": "2026-10-29T10:00:00Z",
+     "updatedAt": "2026-10-29T10:00:00Z",
+     "headRefName": "feat/newest",
+     "baseRefName": "main",
+     "additions": 10,
+     "deletions": 2,
+     "changedFiles": 3,
+     "repository": {
+      "nameWithOwner": "o/a"
+     },
+     "author": {
+      "login": "ana"
+     },
+     "mergeable": "MERGEABLE",
+     "mergeStateStatus": "CLEAN",
+     "reviewDecision": "REVIEW_REQUIRED",
+     "latestReviews": {
+      "nodes": []
+     },
+     "reviewRequests": {
+      "nodes": []
+     },
+     "commits": {
+      "nodes": [
+       {
+        "commit": {
+         "statusCheckRollup": {
+          "state": "SUCCESS"
+         }
+        }
+       }
+      ]
+     }
+    },
+    {
+     "number": 10,
+     "title": "oldest",
+     "url": "https://github.com/o/b/pull/10",
+     "isDraft": false,
+     "createdAt": "2026-10-20T10:00:00Z",
+     "updatedAt": "2026-10-29T10:00:00Z",
+     "headRefName": "feat/oldest",
+     "baseRefName": "main",
+     "additions": 10,
+     "deletions": 2,
+     "changedFiles": 3,
+     "repository": {
+      "nameWithOwner": "o/b"
+     },
+     "author": {
+      "login": "bob"
+     },
+     "mergeable": "MERGEABLE",
+     "mergeStateStatus": "CLEAN",
+     "reviewDecision": "REVIEW_REQUIRED",
+     "latestReviews": {
+      "nodes": []
+     },
+     "reviewRequests": {
+      "nodes": []
+     },
+     "commits": {
+      "nodes": [
+       {
+        "commit": {
+         "statusCheckRollup": {
+          "state": "SUCCESS"
+         }
+        }
+       }
+      ]
+     }
+    },
+    {
+     "number": 20,
+     "title": "middle",
+     "url": "https://github.com/o/c/pull/20",
+     "isDraft": false,
+     "createdAt": "2026-10-25T10:00:00Z",
+     "updatedAt": "2026-10-29T10:00:00Z",
+     "headRefName": "feat/middle",
+     "baseRefName": "main",
+     "additions": 10,
+     "deletions": 2,
+     "changedFiles": 3,
+     "repository": {
+      "nameWithOwner": "o/c"
+     },
+     "author": {
+      "login": "cy"
+     },
+     "mergeable": "MERGEABLE",
+     "mergeStateStatus": "CLEAN",
+     "reviewDecision": "REVIEW_REQUIRED",
+     "latestReviews": {
+      "nodes": []
+     },
+     "reviewRequests": {
+      "nodes": []
+     },
+     "commits": {
+      "nodes": [
+       {
+        "commit": {
+         "statusCheckRollup": {
+          "state": "SUCCESS"
+         }
+        }
+       }
+      ]
+     }
+    }
+   ]
+  }
+ }
+}

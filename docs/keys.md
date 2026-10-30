@@ -72,14 +72,9 @@ Everywhere (all spaces, or a space after prefix `i`):
 | `W` / `N` / `D` | manage spaces / new space / discover places |
 | `R` | rescan everything |
 | `?` | the full list |
-| `ctrl+q` | quit (asks first; panes keep running) |
+| `q` | quit (panes keep running) |
+| `ctrl+q` | quit from anywhere (asks first; panes keep running) |
 | `alt+↑/↓` | previous / next agent |
-
-<!-- Git view -->
-
-<!-- Jira view and setup wizard -->
-
-<!-- Insights view -->
 
 ## Same key in every list
 
@@ -105,6 +100,8 @@ Everywhere (all spaces, or a space after prefix `i`):
   `w` new worktree · `y` copy the branch · `r` refresh. **Worktrees**: `C` changes · `n` new Claude · `a` add ·
   `d` remove · `p` prune. Without `gh` signed in, the empty state offers `i` sign in (`gh auth login` in a tab) ·
   `s` setup wizard · `r` try again · `o` open cli.github.com when `gh` is missing.
+- **Jira** (`E`): sections `←→` · `/` search · `f` filter · `⏎` open in the browser · `t` transition · `c` comment · `a` assign · `y`/`Y` copy key/link · `O` its PR · `s` its agent · `v` its conversation · `n` start work (worktree and agent) · `b` only the branch.
+- **Insights** (`I`): sections `←→` · `t` 7 / 30 / 90 days / today · `[` `]` scope to a project · `,` `.` move through weeks · `x` write the week as JSON · `y` copy it · `r` read everything again · `⏎` read an expensive session.
 - **Skills**: `space` on/off · `n` new (skill, command or subagent; global or in a repo) ·
   `t` type, including the harness (hooks, MCP, plugins, CLAUDE.md, settings) ·
   `c` copy to a project · `H` hide disabled.

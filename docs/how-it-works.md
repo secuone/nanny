@@ -19,7 +19,7 @@ answers on are cleaned up.
 
 ## What nanny reads
 
-nanny renders each pane with an in-memory VT emulator, and *reads* what your tools
+nanny runs on Linux (it reads `/proc` and uses inotify). It renders each pane with an in-memory VT emulator, and *reads* what your tools
 already write:
 
 | Source | What |
@@ -33,7 +33,9 @@ already write:
 | `~/.claude/history.jsonl` | most used prompts and skill usage, cached by size and mtime |
 | `~/.claude/jobs`, `~/.hermes`, crontab, systemd timers, /proc | Monitor |
 | the Docker socket, Tilt's API (`~/.tilt-dev/config`) | Monitor: containers and Tilt resources, asked directly (`docker ps` / `tilt get` only when there is no socket or config) |
-| `git worktree list` | worktrees |
+| `git worktree list`, `git status` | worktrees and branches |
+| `gh` | your PRs, reviews and checks (only while the view or badge needs them) |
+| the Jira REST API | the Jira view and the sidebar's issue line, only with a URL and token |
 
 ## Refresh: event-driven
 
@@ -63,4 +65,4 @@ On a real machine (72 projects, 326 sessions, 824 MB of transcripts):
 
 ## Privacy
 
-Nothing is sent anywhere.
+nanny has no telemetry and no daemon of its own. The only network calls are the ones you turn on: `gh` talks to GitHub and the Jira view to your Jira site. Transcripts are read locally and never leave the machine.

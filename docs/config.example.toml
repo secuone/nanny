@@ -5,6 +5,7 @@ theme = "nanny"              # T opens a live-preview picker
                              # light: nanny-light, catppuccin-latte, one-light, solarized-light, github-light
 language = "auto"            # en, es, fr, de · auto follows $LC_ALL / $LC_MESSAGES / $LANG, English if unsupported
 prefix = "ctrl+b"            # prefix for pane commands (try ctrl+a or ctrl+g if ctrl+b is taken)
+quit_key = "ctrl+q"          # asks to quit from anywhere, panes too; "none" gives the key back to the panes (emacs, micro)
 restore = true               # reopen spaces & tabs on start; Claude panes resume their session
 launch = "auto"              # auto: resume/new open as nanny tabs · inline: suspend nanny and run here
 claude_args = ""             # appended to every claude nanny starts, e.g. "--model opus --permission-mode auto"
@@ -14,7 +15,7 @@ hide_bots = true             # hide headless/automated sessions (b toggles in Se
 profile = "full"             # screen profile: basic (bare minimum) · full (everything) · one of yours
                              # ([profiles.<name>] below; made in Customize =, walked with M)
 hide_paths = ["/tmp/"]       # hide sessions whose folder contains any of these
-extra_repos = []             # repos to list in Worktrees even without sessions
+extra_repos = []             # repos to list in Git & PRs even without sessions
 discover_roots = []          # where Discover looks for git repos; default ~/dev ~/src ~/code ~/projects ~/work ~/repos ~/git ~/Desktop ~/Documents
 
 [alerts]
@@ -55,7 +56,7 @@ no_italic = false
 no_underline = false
 web_font = ""                # CSS font-family of the 3D page; "" keeps its own
 
-[[watch]]                    # custom Radar entries: exit code = status, first output line = summary
+[[watch]]                    # custom Monitor entries: exit code = status, first output line = summary
 name = "staging health"
 command = "curl -fsS -o /dev/null -w '%{http_code} in %{time_total}s' https://staging.example.com/health"
 open = "xdg-open https://grafana.example.com"   # run on ⏎
@@ -75,17 +76,18 @@ off = ["view.prompts", "view.skills", "monitor.machine", "monitor.ports", "monit
                          # what the profile turns off, by id:
                          #   layout:  layout.detail (off: one line per agent) layout.extras (model, gauge always, no-repeat off)
                          #   views:   view.live view.sessions view.git view.tasks view.prompts view.skills view.monitor view.jira view.insights
+                         #   Git & PRs sections: git.here (Overview) git.prs git.reviews git.worktrees git.branches git.profile
                          #   Monitor: monitor.machine monitor.ports monitor.containers monitor.tilt
                          #            monitor.jobs monitor.cron monitor.hermes monitor.watchers (off = not collected)
                          #   sidebar: sidebar.branch sidebar.pr sidebar.worktrees sidebar.agents sidebar.hermes sidebar.jira
                          #   top bar: header.counts header.queue header.cost header.sound header.clock header.reviews
                          # the old density, basic and [screen] off are read once into a profile "mine"
 
-# [git] — the Git view
+# [git] — the Git & PRs view
 # [git]
 # merge_method  = "squash"   # what X uses to merge a PR: squash, merge or rebase (it asks first, never forces)
 # reviews       = "all"      # all: asked of you and your teams; direct: asked of you only
-# review_mins   = 5          # minutes between looks for reviews while Git isn't on screen
+# review_mins   = 5          # minutes between looks for reviews while Git & PRs isn't on screen
 # review_prompt = ""         # what the review agent is told; {url} {number} {repo} are filled in (empty = built in)
 
 # [jira] — the Jira view (E) and the first-run wizard; the API token is NOT here: it lives in the

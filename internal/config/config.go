@@ -67,7 +67,7 @@ type Price struct {
 	CacheRead  float64 `toml:"cache_read,omitempty"`
 }
 
-// Watch is a user-defined Radar entry: a command whose exit code is the status
+// Watch is a user-defined Monitor entry: a command whose exit code is the status
 // and whose first output line is the summary. Optional log file to tail.
 type Watch struct {
 	Name    string `toml:"name"`
@@ -181,7 +181,7 @@ func Save(c Config) error {
 	defer f.Close()
 	_, _ = f.WriteString("# nanny config — edit here or from the Settings tab (key: 5)\n")
 	_, _ = f.WriteString("# themes: " + joinThemes() + "\n")
-	_, _ = f.WriteString("# custom Radar entries:\n#   [[watch]]\n#   name = \"docker\"\n#   command = \"docker ps --format '{{.Names}}' | wc -l | xargs printf '%s containers'\"\n#   log = \"~/some/app.log\"\n\n")
+	_, _ = f.WriteString("# your own Monitor entries:\n#   [[watch]]\n#   name = \"docker\"\n#   command = \"docker ps --format '{{.Names}}' | wc -l | xargs printf '%s containers'\"\n#   log = \"~/some/app.log\"\n\n")
 	return toml.NewEncoder(f).Encode(c)
 }
 

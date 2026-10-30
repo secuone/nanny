@@ -5,7 +5,7 @@
 - [Spaces, tabs and panes](#spaces-tabs-and-panes)
 - [Live agents and subagents](#live-agents-and-subagents)
 - [Sessions](#sessions)
-- [Git and worktrees](#git-and-worktrees)
+- [Git & PRs and worktrees](#git-and-worktrees)
 - [Monitor](#monitor)
 - [Skills and prompts](#skills-and-prompts)
 - [Tasks](#tasks)
@@ -38,7 +38,7 @@ Every key mentioned here is listed in [keys.md](keys.md).
 - **Mouse selection**: drag to select text anywhere (inside a pane it stays in that pane) and let go to copy it.
 - Prefix key (default `ctrl+b`, configurable) for pane commands; `alt+1-9` jumps between
   spaces without the prefix, and `alt+↑/↓` walks the agents of the sidebar.
-- **One view bar everywhere**: Live, Sessions, Git, Tasks, Prompts, Skills, Monitor and
+- **One view bar everywhere**: Live, Sessions, Git & PRs, Tasks, Prompts, Skills, Monitor and
   Settings (and `E` Jira, `I` Insights) are on top in "all spaces" (everything) and in every space (scoped to its folders). In a
   space `0 terminal` (or `esc`) goes back to its panes, whose tabs sit right over them with
   `+ claude` / `+ shell` buttons, the folder and the branch.
@@ -89,9 +89,6 @@ Every key mentioned here is listed in [keys.md](keys.md).
   worktrees, from git alone (no GitHub needed). Reach it with prefix `G`, or click the `⎇ branch` in the terminal
   strip or in the sidebar. At home it lists every space. Without `gh` signed in the section bar says
   `gh: not signed in`, and My PRs offers to sign in (`i`) or open the setup wizard (`s`).
-- The Git & PRs view (tab `3`, formerly Worktrees) lists the worktrees of your repos: which are dirty,
-  which have sessions, which can go. `C` changes · `n` new Claude · `a` add · `d` remove ·
-  `p` prune.
 - Branches say how they are: `⎇ main ●3 ↑2 ↓1` (changed files, commits to push, commits to pull;
   `✓` when there is nothing to do) under each space, on Live rows (only when there is something)
   and in details. Read from git, no network.
@@ -103,14 +100,11 @@ Every key mentioned here is listed in [keys.md](keys.md).
 - **Changes view** (`C` in Live, prefix `g` in a pane): the diff of an agent's folder. `t` switches
   uncommitted vs HEAD and whole branch vs its base, `c` asks the agent to commit, `w` opens the PR
   (`gh`), `y` copies the branch.
-
-<!-- Git view -->
-- **Git & PRs view** (`3`): the PRs and branches you work with, from GitHub through the `gh` CLI (`gh auth login` once).
-  Sections, `←→` or a click: **My PRs** (what is ready to merge, what has conflicts or failing checks; `⏎` open,
+- **The other sections** of Git & PRs (`←→` or a click) work with the PRs and branches you work with, from GitHub through the `gh` CLI (`gh auth login` once): **My PRs** (what is ready to merge, what has conflicts or failing checks; `⏎` open,
   `v` diff in a tab, `w` check it out in a worktree, `C` its changes, `X` merge: it asks, `s`/`m`/`b` pick squash,
   merge or rebase, and a PR that isn't ready is set to auto-merge, never forced), **Reviews** (the PRs waiting for
   you, the oldest first; `c` starts a Claude that reviews it in a worktree of the PR and posts nothing), **Worktrees**
-  (what the Worktrees view was), **Branches** (local branches with no worktree: merged ones, or merged by a squash,
+  (your repos' worktrees: which are dirty, which have sessions, which can go; `C` changes · `n` new Claude · `a` add · `d` remove · `p` prune), **Branches** (local branches with no worktree: merged ones, or merged by a squash,
   `d` deletes one, `x` all of them, after asking; `p` pushes, `w` makes a worktree) and **Profile** (your week or
   month: PRs, reviews, time to merge; `t` switches). The top bar shows `⚑ 2 reviews waiting` (red after 24 h) from any
   view. Each section is asked only while it shows (the reviews badge every `review_mins`), and each can be turned off
@@ -231,11 +225,9 @@ English, Spanish, French and German. It follows your locale (`$LC_ALL`,
 
 ## Jira and Insights
 
-<!-- Jira view and setup wizard -->
 - **Jira** (`E`): your issues by status, by sprint and what you closed in the last 7 days, each one linked to its PR and its agent (`●` when alive). `←→` sections, `/` search, `f` filter (all, in progress, to do), `⏎` open in the browser, `t` move to another status, `c` comment, `a` assign (to me, nobody, search), `y`/`Y` copy the key/link, `O` its PR, `s` its agent, `v` its conversation. `n` starts work: a worktree named `{key}-{slug}` and a Claude task with the issue in its prompt; `b` makes only the branch. With `sidebar.jira` on, a space on a branch like `PAY-412-fix` shows `PAY-412 · In Progress` under it.
   Set it up in the first-run wizard, in Settings → Connections or from the `≡` menu and the palette: your site URL, your email and an [API token](https://id.atlassian.com/manage-profile/security/api-tokens). The token never goes to `config.toml`: it is kept in the keyring (`secret-tool`) or in a file only you can read (`~/.config/nanny/secrets/`), and `NANNY_JIRA_TOKEN` beats both. Nothing is asked of Jira while `view.jira` is off or there is no URL and token; the view on screen refreshes every `refresh_mins`, and every 10 minutes off screen only for the sidebar line.
 
-<!-- Insights view -->
 - **Insights** (`I`): what your Claude usage costs and does, read from the local transcripts, with nothing sent
   anywhere and nothing read while the view is off or not on screen. Sections (`←→`): Summary, Cost (per day),
   Projects, Models, Tools (calls, failures, speed), Permissions (by rules, asked, accepted, rejected, blocked),
@@ -243,7 +235,7 @@ English, Spanish, French and German. It follows your locale (`$LC_ALL`,
   sessions that cost more than `expensive_usd`: `⏎` reads one) and Week. `t` walks 7 days · 30 days · 90 days ·
   today, `[ ]` scope to a project like everywhere, `,` `.` move through weeks, `x` writes the week as
   `nanny-insights-2026-W44.json` (keys in order, numbers rounded) and `y` copies it, `r` reads everything again.
-  The first run reads every transcript of the last `days` (a few seconds for a year of use); after that only the
+  The first run reads every transcript of the last `days` (`[insights]`, default 90) (a few seconds for a year of use); after that only the
   new bytes are read, and the tally is kept in `~/.local/state/nanny/insights/v1.gob`.
   `nanny insights [--week 2026-W44] [--json]` prints the same week without the TUI.
 
@@ -258,6 +250,9 @@ nanny live                     # running agents with subagent counts
 nanny ps                       # panes running in the background
 nanny kill-server              # stop every background pane
 nanny new -w fix-login "Fix the login redirect"   # new worktree + branch, claude with that first prompt
+nanny insights --week 2026-W44 # what Claude cost and did that week (--json for the export)
+nanny config                   # print the config file path
+nanny version
 eval "$(nanny shell-init zsh)" # adds: sp <query> (cd to a session's folder), spr <query>
 ```
 

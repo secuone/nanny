@@ -21,6 +21,7 @@ Prefix (`ctrl+b`, configurable with `prefix` in the config) then:
 | --- | --- |
 | `c` / `s` | new Claude tab / new shell tab |
 | `C` / `g` | new task (folder, prompt, worktree) / review this pane's changes |
+| `G` | this space's Git & PRs: branch, PR and worktrees (the Overview section) |
 | `i` / `0` | this space's views (Live, Sessions, Tasks… scoped to it) / back to the terminal |
 | `P` / `U` | prompt library / task queue of this space |
 | `a` | the 3D classroom, in the browser |
@@ -38,9 +39,15 @@ Prefix (`ctrl+b`, configurable with `prefix` in the config) then:
 | `T` | theme picker |
 | `m` | the ≡ menu |
 | `q` / `Q` | quit, panes keep running (reattach on next start) / quit and stop every pane |
+| `ctrl+q` | the same as `q`, without the prefix (see below) |
 | `ctrl+b` `ctrl+b` | send the prefix key to the program |
 
-`alt+1-9`, `alt+←/→` and `alt+0` switch spaces without the prefix.
+`alt+1-9`, `alt+←/→` and `alt+0` switch spaces without the prefix. `alt+↑/↓` goes to the
+previous / next agent in the sidebar.
+
+`ctrl+q` quits from anywhere, inside a pane too: it asks first (panes keep running; `k` quits and stops
+them), and `ctrl+q` again answers yes. It is shown as `^q quit` in the footer. A program in a pane that
+needs `ctrl+q` (emacs, micro) can have it back with `quit_key = "none"` in the config.
 
 ## Views
 
@@ -48,7 +55,7 @@ Everywhere (all spaces, or a space after prefix `i`):
 
 | Key | Action |
 | --- | --- |
-| `1-8` | Live · Sessions · Git · Tasks · Prompts · Skills · Monitor · Settings |
+| `1-8` | Live · Sessions · Git & PRs · Tasks · Prompts · Skills · Monitor · Settings |
 | `E` / `I` | Jira / Insights |
 | `9` | the 3D classroom |
 | `tab` | next view |
@@ -65,6 +72,8 @@ Everywhere (all spaces, or a space after prefix `i`):
 | `W` / `N` / `D` | manage spaces / new space / discover places |
 | `R` | rescan everything |
 | `?` | the full list |
+| `ctrl+q` | quit (asks first; panes keep running) |
+| `alt+↑/↓` | previous / next agent |
 
 <!-- Git view -->
 
@@ -91,7 +100,11 @@ Everywhere (all spaces, or a space after prefix `i`):
   `n` new task · `+` queue a task in its folder · `.` repeat its last prompt · `C` changes ·
   `s` screen mirror · `a` finished subagents · `O` open its PR.
 - **Sessions**: `F` full-text search · `b` / `w` / `L` bots, worktrees, live.
-- **Git (Worktrees)**: `C` changes · `n` new Claude · `a` add · `d` remove · `p` prune.
+- **Git & PRs**: sections `←→`. **Overview** (the default inside a space): branch, state and PR of the space and
+  its worktrees; `⏎` go to it · `O` open its PR · `C` changes · `P` pull · `F` fetch · `n` new Claude in it ·
+  `w` new worktree · `y` copy the branch · `r` refresh. **Worktrees**: `C` changes · `n` new Claude · `a` add ·
+  `d` remove · `p` prune. Without `gh` signed in, the empty state offers `i` sign in (`gh auth login` in a tab) ·
+  `s` setup wizard · `r` try again · `o` open cli.github.com when `gh` is missing.
 - **Skills**: `space` on/off · `n` new (skill, command or subagent; global or in a repo) ·
   `t` type, including the harness (hooks, MCP, plugins, CLAUDE.md, settings) ·
   `c` copy to a project · `H` hide disabled.

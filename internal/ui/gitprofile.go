@@ -50,6 +50,10 @@ func (g *gitView) keyProfile(m *Model, k tea.KeyPressMsg) tea.Cmd {
 		return g.due(m, true)
 	case "r":
 		return g.refresh(m)
+	case "i", "s", "o":
+		if cmd, ok := g.keyNoSess(m, k.String()); ok {
+			return cmd
+		}
 	case "y":
 		if p := g.profNow(); p.loaded {
 			return m.copy(g.summary(m, p.p), T("summary"))
@@ -110,7 +114,7 @@ func (g *gitView) viewProfile(m *Model, w, h int) string {
 	p := g.profNow()
 	switch {
 	case g.noSess:
-		return s.panel(title, s.emptyState(T("gh: sign in (gh auth login)"), [][2]string{{"r", T("try again")}}, inner), w, h, !m.focusR)
+		return s.panel(title, g.noSessState(m, inner), w, h, !m.focusR)
 	case !p.loaded && p.err != nil:
 		return s.panel(title, s.emptyState(trunc(p.err.Error(), inner), [][2]string{{"r", T("try again")}}, inner), w, h, !m.focusR)
 	case !p.loaded:

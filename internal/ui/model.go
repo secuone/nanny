@@ -36,7 +36,7 @@ const (
 	tabInsights
 )
 
-var tabNames = []string{M("Live"), M("Sessions"), M("Git"), M("Tasks"), M("Prompts"), M("Skills"), M("Monitor"), M("Settings"), M("Jira"), M("Insights")}
+var tabNames = []string{M("Live"), M("Sessions"), M("Git & PRs"), M("Tasks"), M("Prompts"), M("Skills"), M("Monitor"), M("Settings"), M("Jira"), M("Insights")}
 
 // ---------------------------------------------------------------- messages
 
@@ -119,8 +119,6 @@ type Model struct {
 	themes    *themePicker
 	look      *lookPass // icons, borders and text weights picked in the config
 	sidebar   bool
-	sideOff   int                // agents scrolled off the top of the sidebar
-	sideSpOff int                // spaces scrolled off the top of the sidebar
 	wtOpen    map[*ws.Space]bool // worktrees opened under a space; folded by default
 	spaceWT   spaceWTMsg         // each space's git worktrees, by its folder
 	spaceWTAt time.Time
@@ -161,17 +159,25 @@ type viewState struct {
 	sideMax   int // how far the sidebar's agents scroll
 	sideSpMax int // how far its spaces scroll
 	sideSplit int // screen row where its agents half starts
-	area      rect
-	rects     []rect
-	paneLines map[*term.Pane]paneLines // what each pane of the open tab drew last
-	bySession map[string]paneRef
-	byPid     map[int]paneRef
-	dirty     bool
-	spaceHits []hit
-	tabHits   []hit
-	termHits  []hit // the terminal tabs strip of a space (row 2)
-	secHits   []hit // the Monitor's sections (row 3)
-	keyHits   []keyHit
+	sideOff   int // agents scrolled off the top of the sidebar
+	sideSpOff int // spaces scrolled off the top of the sidebar
+	// what the sidebar last scrolled into view, so the wheel doesn't fight it
+	sideFollowSpace int
+	sideFollowAgent string
+	sideCurKey      string // the agent last walked to
+	spaceLo         int    // first space chip drawn in the top bar
+	spaceHi         int    // last one
+	area            rect
+	rects           []rect
+	paneLines       map[*term.Pane]paneLines // what each pane of the open tab drew last
+	bySession       map[string]paneRef
+	byPid           map[int]paneRef
+	dirty           bool
+	spaceHits       []hit
+	tabHits         []hit
+	termHits        []hit // the terminal tabs strip of a space (row 2)
+	secHits         []hit // the Monitor's sections (row 3)
+	keyHits         []keyHit
 	// mouse targets recorded while rendering
 	listY0     int   // screen row of the dashboard list's first line
 	listRows   []int // row index shown on each list line
@@ -218,6 +224,7 @@ type modal struct {
 	alt              func(m *Model) tea.Cmd
 	keys             map[string]func(m *Model) tea.Cmd // more answers, by key: a choice that changes the question
 	fill             *promptFill                       // a prompt for an agent: alt+1-9, ctrl+r
+	quit             bool                              // the quit question: the quit key again answers yes
 }
 
 func New(cfg config.Config) Model {
@@ -841,6 +848,14 @@ func (m Model) paste(s string) (tea.Model, tea.Cmd) {
 func (m Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	m.vs.hover = hoverAt{} // typing hides the tooltip until the mouse moves
 	m.vs.sel = selection{} // and the selection
+	if qk := m.cfg.QuitKeyName(); qk != "" && k.String() == qk && !m.holdsText() {
+		if md := m.modal; md != nil && md.quit {
+			m.modal = nil
+			return m, md.confirm(&m, "")
+		}
+		m.menu, m.pal, m.help, m.prefix = nil, nil, false, false
+		return m.confirmQuit(false)
+	}
 	if m.menu != nil {
 		return m.menuKey(k)
 	}
@@ -898,6 +913,9 @@ func (m Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.prefix = false
 		m.openThemes()
 		return m, nil
+	}
+	if mm, cmd, ok := m.navKey(k.String()); ok {
+		return mm, cmd
 	}
 	if m.inSpace() && !m.dash {
 		return m.paneKey(k)
@@ -1173,6 +1191,9 @@ func (m Model) mouse(e mouseEv) (tea.Model, tea.Cmd) {
 			case e.Y == 0 && h.idx == -3:
 				m.appMenu(0, 1)
 				return m, nil
+			case e.Y == 0 && (h.idx == -4 || h.idx == -5):
+				m.hiddenSpacesMenu(h.idx == -4, h.x0)
+				return m, nil
 			case e.Y == 0 && h.idx == m.cur && m.inSpace(): // the space you are in: its terminals
 				m.back()
 				return m, nil
@@ -1241,9 +1262,9 @@ func (m Model) mouse(e mouseEv) (tea.Model, tea.Cmd) {
 			d = -3
 		}
 		if e.Y < m.vs.sideSplit { // each half scrolls on its own
-			m.sideSpOff = max(0, min(m.sideSpOff+d, m.vs.sideSpMax))
+			m.vs.sideSpOff = max(0, min(m.vs.sideSpOff+d, m.vs.sideSpMax))
 		} else {
-			m.sideOff = max(0, min(m.sideOff+d, m.vs.sideMax))
+			m.vs.sideOff = max(0, min(m.vs.sideOff+d, m.vs.sideMax))
 		}
 		return m, nil
 	}
@@ -1266,21 +1287,15 @@ func (m Model) mouse(e mouseEv) (tea.Model, tea.Cmd) {
 			m.cur = r.space
 			m.layoutPanes()
 			return m, m.refreshDetail()
-		case r.sub != nil:
-			return m, m.openViewer(r.sub.Path, true, r.sub.Description, r.sess, r.sub)
-		case r.local != nil:
-			m.focusRef(*r.local)
+		case r.scroll != 0:
+			if e.Y < m.vs.sideSplit {
+				m.vs.sideSpOff = max(0, min(m.vs.sideSpOff+r.scroll, m.vs.sideSpMax))
+			} else {
+				m.vs.sideOff = max(0, min(m.vs.sideOff+r.scroll, m.vs.sideMax))
+			}
+			return m, nil
 		case r.sess != nil:
-			m.cur = -1
-			if !m.toLive() {
-				return m, nil
-			}
-			for i, lr := range m.live.rows {
-				if lr.sess == r.sess && lr.agent() {
-					m.live.cur.idx = i
-				}
-			}
-			return m, m.refreshDetail()
+			return m, m.openAgent(r.sess, r.sub, r.local)
 		}
 		return m, nil
 	}
@@ -1532,7 +1547,12 @@ func (m Model) featDashboard(lw, rw, bh int) (left, right string) {
 		}
 		return left, right
 	}
-	bar := " " + m.sectionBar(secs, f.sec(), m.sideW()+1, lw+rw-2)
+	bar := " " + m.st.Muted.Render("←→ ") + m.sectionBar(secs, f.sec(), m.sideW()+4, lw+rw-5)
+	if n := f.barNote(&m); n != "" {
+		if gap := lw + rw - lipgloss.Width(bar) - lipgloss.Width(n) - 2; gap >= 1 {
+			bar += strings.Repeat(" ", gap) + n
+		}
+	}
 	left = f.view(&m, lw, bh-1)
 	if rw > 0 {
 		left = lipgloss.JoinHorizontal(lipgloss.Top, left, f.detail(&m, rw, bh-1))
@@ -1595,7 +1615,7 @@ func (m Model) detailTail(ls []string, headN, h int) string {
 
 func (m Model) viewHeader() string {
 	s := m.st
-	left := m.viewSpaceTabs()
+	left := m.viewSpaceTabs(m.w - 45) // the right side takes about that
 	// fleet summary: what needs you first, then what's moving
 	busy, idle, blocked, done, subsRunning := 0, 0, 0, 0, 0
 	for _, r := range m.live.allRows {
@@ -1680,6 +1700,9 @@ func (m Model) viewHeader() string {
 			right = withSpend
 		}
 	}
+	if lipgloss.Width(left)+lipgloss.Width(right) >= m.w { // more on the right than guessed
+		left = m.viewSpaceTabs(m.w - lipgloss.Width(right) - 1)
+	}
 	return m.headerLine(left, right, clock)
 }
 
@@ -1757,9 +1780,19 @@ func (m Model) viewFooter() string {
 			lead = " " + s.BadgeColor(s.P.Accent).Render(px) + " "
 		}
 	}
-	right := ""
+	note := ""
 	if m.inSpace() && !m.dash && m.view == nil {
-		right = s.Muted.Render("alt+1-9 " + T("space") + " · " + T("wheel scroll") + " ")
+		note = "alt+1-9 " + T("space") + " · " + T("wheel scroll")
+	}
+	if qk := m.cfg.QuitKeyName(); qk != "" {
+		if note != "" {
+			note += " · "
+		}
+		note += keyShort(qk) + " " + T("quit")
+	}
+	right := ""
+	if note != "" {
+		right = s.Muted.Render(note + " ")
 	}
 	if m.status != "" && time.Since(m.statusAt) < 8*time.Second {
 		st := s.Status
@@ -1863,4 +1896,20 @@ func (m *Model) rescan() tea.Cmd {
 	m.loading["repos"] = true
 	m.scanner = claude.NewScanner()
 	return tea.Batch(m.scanCmd(), m.sourcesCmd(), m.reposCmd(), m.featDue(true))
+}
+
+// keyShort writes a key the way footers do: ctrl+q is ^q.
+func keyShort(k string) string {
+	if c, ok := strings.CutPrefix(k, "ctrl+"); ok && len(c) == 1 {
+		return "^" + c
+	}
+	return k
+}
+
+// holdsText is true while something on screen is taking typed text, so the quit key is left to it.
+func (m Model) holdsText() bool {
+	if m.task != nil || m.setup != nil || ((m.dash || !m.inSpace()) && m.typing()) {
+		return true
+	}
+	return m.modal != nil && m.modal.input != nil
 }

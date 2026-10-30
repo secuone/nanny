@@ -154,7 +154,7 @@ func viewDesc(t tab) string {
 	case tabSessions:
 		return T("every past conversation: search, read, resume or fork")
 	case tabGit:
-		return T("repos and git worktrees: changes, PRs, a new agent in one")
+		return T("your PRs, the reviews waiting for you, branches and worktrees (GitHub through gh)")
 	case tabTasks:
 		return T("a backlog handed to idle agents, one task at a time")
 	case tabPrompts:
@@ -606,6 +606,14 @@ func (m Model) rightClick(e mouseEv) (tea.Model, tea.Cmd) {
 			m.worktreeMenu(m.spaces[r.space], *r.wt, e.X, e.Y+1)
 		} else if ok && r.isSpace && r.space >= 0 {
 			m.spaceMenu(r.space, e.X, e.Y+1)
+		} else if ok && r.sess != nil && r.sub == nil && m.toLive() {
+			m.cur = -1
+			for i, lr := range m.live.rows {
+				if lr.sess == r.sess && lr.agent() {
+					m.live.cur.idx = i
+				}
+			}
+			m.listMenu(e.X, e.Y+1)
 		}
 		return m, nil
 	case m.inSpace() && !m.dash:

@@ -130,6 +130,7 @@ type sideRow struct {
 	wt      *gitwt.Worktree // a worktree listed under its space
 	toggle  *ws.Space       // shows or hides the worktrees of this space
 	url     string          // a PR: a click opens it
+	scroll  int             // a "more" line: a click pages its half by this many rows
 }
 
 func (m Model) spaceGlyph(st string) string {
@@ -148,26 +149,34 @@ type sbLine struct {
 	hit  *sideRow
 }
 
-// sideWindow adds rows from off within room lines, with "more" lines when
-// they don't fit, and returns how far they can scroll.
-func (m Model) sideWindow(ls *[]string, rows []sbLine, room, off int) int {
+// sideWindow adds rows from *off within room lines, with "more" lines (that
+// page) when they don't fit, and returns how far they can scroll. follow, when
+// not -1, is a row to bring into view.
+func (m Model) sideWindow(ls *[]string, rows []sbLine, room int, off *int, follow int) int {
 	s := m.st
 	fits := len(rows) <= room
+	page := room
 	if fits {
-		room, off = len(rows), 0
+		room, *off = len(rows), 0
 	} else {
 		room = max(1, room-2) // the "more above / below" lines
 	}
 	maxOff := max(0, len(rows)-room)
-	off = min(off, maxOff)
+	if follow >= 0 {
+		*off = max(min(*off, follow), follow-room+1)
+	}
+	*off = max(0, min(*off, maxOff))
 	if !fits {
 		up := ""
-		if off > 0 {
-			up = Tf("↑ %d more", off)
+		var hit *sideRow
+		if *off > 0 {
+			up = Tf("↑ %d more", *off)
+			hit = &sideRow{y: len(*ls) + bodyY, space: -1, scroll: -page}
+			m.vs.sideRows = append(m.vs.sideRows, *hit)
 		}
 		*ls = append(*ls, s.Dim.Render("   "+up))
 	}
-	for i := off; i < len(rows) && i < off+room; i++ {
+	for i := *off; i < len(rows) && i < *off+room; i++ {
 		if r := rows[i].hit; r != nil {
 			r.y = len(*ls) + bodyY
 			m.vs.sideRows = append(m.vs.sideRows, *r)
@@ -176,8 +185,9 @@ func (m Model) sideWindow(ls *[]string, rows []sbLine, room, off int) int {
 	}
 	if !fits {
 		down := ""
-		if rest := len(rows) - off - room; rest > 0 {
+		if rest := len(rows) - *off - room; rest > 0 {
 			down = Tf("↓ %d more · wheel", rest)
+			m.vs.sideRows = append(m.vs.sideRows, sideRow{y: len(*ls) + bodyY, space: -1, scroll: page})
 		}
 		*ls = append(*ls, s.Dim.Render("   "+down))
 	}
@@ -196,36 +206,23 @@ func (m Model) viewSidebar(h int) string {
 		rule := s.Dim.Render(" " + strings.Repeat("─", max(1, w-2-lipgloss.Width(name)-lipgloss.Width(cnt))))
 		ls = append(ls, " "+name+rule+cnt)
 	}
-	// the spaces take the top half and the agents the bottom one, each
-	// scrolling on its own (wheel over it)
+	// each half gets what it needs; when both overflow they share what is
+	// left (see sideRooms) and scroll on their own (wheel over it)
 	inner := h - 2 // above the connection footer
-	split := inner / 2
-	// agents (live, top-level only): none while Live (the same list) is on
-	// screen below full; in minimal only the ones busy or waiting on you
-	var agents, quiet []liveRow
-	for _, r := range m.live.allRows {
-		if r.sub != nil {
-			continue
-		}
-		all := !m.basic() || m.cfg.Screen.SidebarAgents == "all"
-		if st := r.state(); all || st == "blocked" || st == "working" || r.run > 0 || r.prompt() != nil {
-			agents = append(agents, r)
-		} else {
-			quiet = append(quiet, r)
-		}
-	}
+	agents, quiet := m.sideAgents()
 	noAgents := !m.cfg.On("sidebar.agents") || m.cfg.Screen.SidebarAgents != "all" && !m.full() && m.onTab(tabLive)
 	if noAgents {
-		split = inner + 1
+		agents, quiet = nil, nil
 	}
-	m.vs.sideSplit = bodyY + split
 
 	// spaces: home + the user's workspaces with their rolled-up state
 	head(T("spaces"), len(m.spaces))
 	var rows []sbLine
+	curRow := 0
 	srow := func(idx int, line string, sel bool) {
 		if sel {
 			line = s.Sel(s.RowSel, fit(line, w))
+			curRow = len(rows)
 		}
 		rows = append(rows, sbLine{line, &sideRow{space: idx, isSpace: true}})
 	}
@@ -262,7 +259,7 @@ func (m Model) viewSidebar(h int) string {
 				bits = " " + m.branchBits(c)
 			}
 			info := s.Blue.Render("⎇ " + trunc(br, w-6-lipgloss.Width(bits)))
-			rows = append(rows, sbLine{"    " + info + bits, nil})
+			rows = append(rows, sbLine{"    " + clickable("@githere:"+fmt.Sprint(i), info) + bits, nil})
 		}
 		if p, ok := m.prOf(where); ok && m.cfg.On("sidebar.pr") {
 			rows = append(rows, sbLine{"    " + m.prBadge(p) + " " + s.Muted.Render(trunc(p.Title, w-8-lipgloss.Width(m.prBadge(p)))),
@@ -298,73 +295,39 @@ func (m Model) viewSidebar(h int) string {
 				&sideRow{space: i, isSpace: true, wt: &wt}})
 		}
 	}
-	m.vs.sideSpMax = m.sideWindow(&ls, rows, split-4, m.sideSpOff)
-	for len(ls) < split-2 {
+	spRows := rows
+	arows, first := m.agentRows(agents, quiet, true)
+	spRoom, agRoom := sideRooms(len(spRows), len(arows), inner-5, noAgents)
+	if len(arows) > agRoom { // no blank lines between agents when they overflow
+		arows, first = m.agentRows(agents, quiet, false)
+		spRoom, agRoom = sideRooms(len(spRows), len(arows), inner-5, noAgents)
+	}
+	m.vs.sideSplit = bodyY + spRoom + 4
+	if noAgents {
+		m.vs.sideSplit = bodyY + inner + 1
+	}
+	follow := -1
+	if m.cur != m.vs.sideFollowSpace {
+		follow, m.vs.sideFollowSpace = curRow, m.cur
+	}
+	m.vs.sideSpMax = m.sideWindow(&ls, spRows, spRoom, &m.vs.sideSpOff, follow)
+	for len(ls) < spRoom+2 {
 		ls = append(ls, "")
 	}
 	// pinned under the spaces, so a new space and the menu are one click away
 	ls = append(ls, " "+m.sideActions(w-1), "")
 
-	if noAgents {
-		agents, quiet = nil, nil
-	} else {
+	if !noAgents {
 		head(T("agents"), len(agents)+len(quiet))
-	}
-	rows = nil
-	for i, r := range agents {
-		if i > 0 {
-			rows = append(rows, sbLine{text: ""})
-		}
-		title, cwd := r.titleCwd()
-		st := r.state()
-		glyph := m.stateGlyph(st)
-		if st == "idle" && r.run > 0 {
-			glyph = s.Teal.Render(spinGlyph)
-		}
-		subs := ""
-		if r.run > 0 {
-			subs = s.Muted.Render(fmt.Sprintf("↳%d", r.run))
-		}
-		line := " " + glyph + " " + s.Text.Render(trunc(title, w-4-lipgloss.Width(subs)))
-		line = fit(line, w-lipgloss.Width(subs)) + subs
-		if st == "blocked" {
-			line = s.Red.Render("▌") + line[1:]
-		}
-		rows = append(rows, sbLine{line, &sideRow{sess: r.sess, local: r.local}})
-		where := project(cwd)
-		if r.local != nil {
-			where = "◆ " + r.local.space.Name
-		}
-		if p := r.prompt(); p != nil {
-			rows = append(rows, sbLine{text: "   " + s.Yellow.Render(trunc("⚠ "+promptSummary(p), w-3))})
-		} else {
-			rows = append(rows, sbLine{text: "   " + s.Muted.Render(trunc(where, w-3))})
-		}
-		// running subagents nested under their agent
-		if r.sess != nil && r.run > 0 {
-			shown := 0
-			for _, f := range claude.Flatten(m.subs[r.sess.Path]) {
-				if !f.Running {
-					continue
-				}
-				if shown == 3 {
-					rows = append(rows, sbLine{text: s.Dim.Render("   └ " + Tf("+%d more", r.run-shown))})
-					break
-				}
-				shown++
-				f := f
-				rows = append(rows, sbLine{s.Dim.Render("   ├ ") + m.stateGlyph("running") + " " + s.Text.Render(trunc(f.Type, 8)) + " " + s.Muted.Render(trunc(f.Description, w-16)),
-					&sideRow{sess: r.sess, sub: f.Subagent}})
+		follow = -1
+		if k := m.curAgentKey(); k != m.vs.sideFollowAgent {
+			m.vs.sideFollowAgent = k
+			if i, ok := first[k]; ok {
+				follow = i
 			}
 		}
+		m.vs.sideMax = m.sideWindow(&ls, arows, agRoom, &m.vs.sideOff, follow)
 	}
-	if len(quiet) > 0 { // the rest, one click from Live
-		if len(rows) > 0 {
-			rows = append(rows, sbLine{text: ""})
-		}
-		rows = append(rows, sbLine{"   " + clickable("1", s.Muted.Render(Tn(len(quiet), "○ %d more idle", "○ %d more idle")+" · 1 "+T("Live"))), nil})
-	}
-	m.vs.sideMax = m.sideWindow(&ls, rows, inner-len(ls), m.sideOff)
 
 	// connection footer
 	for len(ls) < h-2 {
@@ -397,6 +360,93 @@ func (m Model) viewSidebar(h int) string {
 		out[i] = " " + l + sep
 	}
 	return strings.Join(out, "\n")
+}
+
+// sideRooms shares the lines left for the two halves: each gets what it
+// needs when it is no more than half, else they split it evenly.
+func sideRooms(sp, ag, avail int, noAgents bool) (int, int) {
+	if noAgents {
+		return avail + 2, 0
+	}
+	avail = max(avail, 2)
+	switch {
+	case sp+ag <= avail:
+		return sp, avail - sp
+	case sp <= avail/2:
+		return sp, avail - sp
+	case ag <= avail/2:
+		return avail - ag, ag
+	}
+	return avail / 2, avail - avail/2
+}
+
+// agentRows are the agents of the sidebar: three lines each, their subagents
+// under them, and where each one's block starts. Every line of a block opens it.
+func (m Model) agentRows(agents, quiet []liveRow, spacers bool) ([]sbLine, map[string]int) {
+	s := m.st
+	w := sidebarW - 2
+	first := map[string]int{}
+	var rows []sbLine
+	cur := m.curAgentKey()
+	for i, r := range agents {
+		if i > 0 && spacers {
+			rows = append(rows, sbLine{text: ""})
+		}
+		first[r.key()] = len(rows)
+		hit := func() *sideRow { return &sideRow{space: -1, sess: r.sess, local: r.local} }
+		title, cwd := r.titleCwd()
+		st := r.state()
+		glyph := m.stateGlyph(st)
+		if st == "idle" && r.run > 0 {
+			glyph = s.Teal.Render(spinGlyph)
+		}
+		subs := ""
+		if r.run > 0 {
+			subs = s.Muted.Render(fmt.Sprintf("↳%d", r.run))
+		}
+		line := " " + glyph + " " + s.Text.Render(trunc(title, w-4-lipgloss.Width(subs)))
+		line = fit(line, w-lipgloss.Width(subs)) + subs
+		if st == "blocked" {
+			line = s.Red.Render("▌") + line[1:]
+		}
+		if r.key() == cur {
+			line = s.Sel(s.RowSel, fit(line, w))
+		}
+		rows = append(rows, sbLine{line, hit()})
+		where := project(cwd)
+		if r.local != nil {
+			where = "◆ " + r.local.space.Name
+		}
+		if p := r.prompt(); p != nil {
+			rows = append(rows, sbLine{"   " + s.Yellow.Render(trunc("⚠ "+promptSummary(p), w-3)), hit()})
+		} else {
+			rows = append(rows, sbLine{"   " + s.Muted.Render(trunc(where, w-3)), hit()})
+		}
+		// running subagents nested under their agent
+		if r.sess != nil && r.run > 0 {
+			shown := 0
+			for _, f := range claude.Flatten(m.subs[r.sess.Path]) {
+				if !f.Running {
+					continue
+				}
+				if shown == 3 {
+					rows = append(rows, sbLine{s.Dim.Render("   └ " + Tf("+%d more", r.run-shown)), hit()})
+					break
+				}
+				shown++
+				f := f
+				rows = append(rows, sbLine{s.Dim.Render("   ├ ") + m.stateGlyph("running") + " " + s.Text.Render(trunc(f.Type, 8)) + " " + s.Muted.Render(trunc(f.Description, w-16)),
+					&sideRow{space: -1, sess: r.sess, sub: f.Subagent}})
+			}
+		}
+	}
+	if len(quiet) > 0 { // the rest, one click from Live
+		if len(rows) > 0 && spacers {
+			rows = append(rows, sbLine{text: ""})
+		}
+		rows = append(rows, sbLine{"   " + clickable("1", s.Muted.Render(Tn(len(quiet), "○ %d more idle", "○ %d more idle")+" · 1 "+T("Live"))), nil})
+	}
+	return rows, first
 }
 
 // sideActions is the line under the spaces: new space, discover, the ≡ menu;

@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -444,41 +445,111 @@ func (m Model) paneGlyph(st string) string {
 	return m.st.Dim.Render("·")
 }
 
-// viewSpaceTabs is the top bar: logo, home, one tab per space, +.
-func (m Model) viewSpaceTabs() string {
+// viewSpaceTabs is the top bar: logo, home, one tab per space, +. When the
+// spaces don't fit in budget columns, a window around the current one is
+// drawn, with ‹N and N› chips for the hidden ones.
+func (m Model) viewSpaceTabs(budget int) string {
 	s := m.st
-	parts := []string{s.Logo.Render("◆ nanny")}
+	logo := s.Logo.Render("◆ nanny")
 	home := " ⊞ " + T("all") + " "
 	if !m.inSpace() {
-		parts = append(parts, s.TabActive.Render(home))
+		home = s.TabActive.Render(home)
 	} else {
-		parts = append(parts, s.Tab.Render(home))
+		home = s.Tab.Render(home)
 	}
-	m.vs.spaceHits = append(m.vs.spaceHits[:0], hit{0, lipgloss.Width(parts[0]), -3}) // the logo: the ≡ menu
-	x := lipgloss.Width(parts[0]) + lipgloss.Width(parts[1])
-	m.vs.spaceHits = append(m.vs.spaceHits, hit{x - lipgloss.Width(parts[1]), x, -1})
-	for i, sp := range m.spaces {
+	x := lipgloss.Width(logo)
+	m.vs.spaceHits = append(m.vs.spaceHits[:0], hit{0, x, -3}) // the logo: the ≡ menu
+	m.vs.spaceHits = append(m.vs.spaceHits, hit{x, x + lipgloss.Width(home), -1})
+	x += lipgloss.Width(home)
+	parts := []string{logo, home}
+	chipAt := func(i, x int) string {
+		sp := m.spaces[i]
 		label := fmt.Sprintf("%s %s", m.paneGlyph(m.spaceState(sp)), spaceLabel(sp))
 		if len(sp.Tabs) > 1 {
 			label += s.Muted.Render(fmt.Sprintf(" %d", len(sp.Tabs)))
 		}
-		var r string
 		switch {
 		case i == m.cur:
-			r = chip(s.TabActive, " "+label+" ")
+			return chip(s.TabActive, " "+label+" ")
 		case m.vs.hover == hoverAt{"space", i, x}:
-			r = chip(s.TabHover, label)
-		default:
-			r = s.Tab.Render(label)
+			return chip(s.TabHover, label)
 		}
+		return s.Tab.Render(label)
+	}
+	lo, hi := m.spaceWindow(chipAt, budget-x-3)
+	m.vs.spaceLo, m.vs.spaceHi = lo, hi
+	more := func(label string, idx int) {
+		r := s.Muted.Render(label)
+		m.vs.spaceHits = append(m.vs.spaceHits, hit{x, x + lipgloss.Width(r), idx})
+		x += lipgloss.Width(r)
+		parts = append(parts, r)
+	}
+	if lo > 0 {
+		more(fmt.Sprintf(" ‹%d ", lo), -4)
+	}
+	for i := lo; i <= hi; i++ {
+		r := chipAt(i, x)
 		m.vs.spaceHits = append(m.vs.spaceHits, hit{x, x + lipgloss.Width(r), i})
 		x += lipgloss.Width(r)
 		parts = append(parts, r)
 	}
+	if hi < len(m.spaces)-1 {
+		more(fmt.Sprintf(" %d› ", len(m.spaces)-1-hi), -5)
+	}
 	plus := s.Muted.Render(" + ")
 	m.vs.spaceHits = append(m.vs.spaceHits, hit{x, x + 3, -2})
-	parts = append(parts, plus)
-	return strings.Join(parts, "")
+	return strings.Join(append(parts, plus), "")
+}
+
+// spaceWindow is the range of space chips to draw in room columns: all when
+// they fit, else the ones around the current space (the first at home).
+func (m Model) spaceWindow(chipAt func(i, x int) string, room int) (int, int) {
+	n := len(m.spaces)
+	w := make([]int, n)
+	total := 0
+	for i := range w {
+		w[i] = lipgloss.Width(chipAt(i, -1))
+		total += w[i]
+	}
+	if total <= room || n == 0 {
+		return 0, n - 1
+	}
+	lo := max(m.cur, 0)
+	hi := lo
+	room -= w[lo] + 2*5 // the chip itself and both overflow chips
+	for grew := true; grew; {
+		grew = false
+		if hi+1 < n && w[hi+1] <= room {
+			hi++
+			room -= w[hi]
+			grew = true
+		}
+		if lo > 0 && w[lo-1] <= room {
+			lo--
+			room -= w[lo]
+			grew = true
+		}
+	}
+	return lo, hi
+}
+
+// hiddenSpacesMenu lists the spaces the top bar left out, before or after
+// the ones drawn.
+func (m *Model) hiddenSpacesMenu(before bool, x int) {
+	from, to := m.vs.spaceHi+1, len(m.spaces)
+	if before {
+		from, to = 0, m.vs.spaceLo
+	}
+	var items []menuItem
+	for i := from; i < to; i++ {
+		i := i
+		items = append(items, menuItem{label: spaceLabel(m.spaces[i]), run: func(m *Model) tea.Cmd {
+			m.cur = i
+			m.layoutPanes()
+			return m.refreshDetail()
+		}})
+	}
+	m.openMenu(Tf("%d more spaces", to-from), x, 1, items)
 }
 
 type hit struct{ x0, x1, idx int }
@@ -655,7 +726,7 @@ func (m Model) viewTermTabs(w int) string {
 	left := strings.Join(parts, "")
 	right := s.Peach.Render(tilde(sp.Dir()))
 	if br := branchOf(sp.Dir()); br != "" {
-		right += " " + s.Blue.Render("⎇ "+br)
+		right += " " + clickable("@githere:"+strconv.Itoa(m.cur), s.Blue.Render("⎇ "+br))
 	}
 	gap := w - lipgloss.Width(left) - lipgloss.Width(right) - 1
 	if gap < 1 {
@@ -1068,6 +1139,9 @@ func (m Model) prefixCmd(ks string) (tea.Model, tea.Cmd) {
 		return m, m.openTabIn(sp, "claude", claudeArgv)
 	case "C":
 		return m, m.openNewTask("")
+	case "G":
+		cmd := m.openGitHere(m.cur)
+		return m, cmd
 	case "P":
 		return m.switchTab(tabPrompts)
 	case "U":
@@ -1239,11 +1313,13 @@ func (m Model) confirmQuit(kill bool) (tea.Model, tea.Cmd) {
 		m.ask(T("Quit nanny and stop every pane?"), Tn(n, "%d pane is running and will be stopped. Your layout is saved: next start reopens your spaces and resumes every Claude session.",
 			"%d panes are running and will be stopped. Your layout is saved: next start reopens your spaces and resumes every Claude session."),
 			func(m *Model, _ string) tea.Cmd { return m.quit(true) })
+		m.modal.quit = true
 		return m, nil
 	}
 	m.ask(T("Quit nanny?"), Tn(n, "%d pane keeps running in the background; reopen nanny to reattach. Press k to quit and stop it instead.",
 		"%d panes keep running in the background; reopen nanny to reattach. Press k to quit and stop them instead."),
 		func(m *Model, _ string) tea.Cmd { return m.quit(false) })
+	m.modal.quit = true
 	m.modal.altKey, m.modal.altLabel = "k", T("quit & stop panes")
 	m.modal.alt = func(m *Model) tea.Cmd { return m.quit(true) }
 	return m, nil

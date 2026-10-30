@@ -40,7 +40,8 @@ type featView interface {
 	footer(m *Model) [][2]string
 	help() []helpSec
 	palette(m *Model) []paletteEntry
-	badge(m *Model) string // on the top bar; "" = nothing
+	badge(m *Model) string   // on the top bar; "" = nothing
+	barNote(m *Model) string // right-aligned on the sections bar; "" = nothing
 	// due is called on every tick, when the view opens (force) and on R
 	// (force); it returns the fetch if one is needed, nil when off or fresh
 	due(m *Model, force bool) tea.Cmd
@@ -161,6 +162,7 @@ func (featBase) footer(*Model) [][2]string              { return nil }
 func (featBase) help() []helpSec                        { return nil }
 func (featBase) palette(*Model) []paletteEntry          { return nil }
 func (featBase) badge(*Model) string                    { return "" }
+func (featBase) barNote(*Model) string                  { return "" }
 func (featBase) due(*Model, bool) tea.Cmd               { return nil }
 func (featBase) update(*Model, tea.Msg) (tea.Cmd, bool) { return nil, false }
 func (featBase) typing() bool                           { return false }

@@ -84,6 +84,13 @@ func useGH(t *testing.T) *ghFake {
 	return f
 }
 
+// inWorktrees picks the Worktrees section of the Git view on screen.
+func inWorktrees(m tea.Model) tea.Model {
+	mm := m.(Model)
+	mm.gitv.setSec(&mm, gsWT)
+	return mm
+}
+
 func gitOf(m tea.Model) *gitView { return m.(Model).gitv }
 
 func screen(m tea.Model) string { return ansi.Strip(viewOf(m)) }
@@ -159,8 +166,8 @@ func TestGitNoSessionAsksOnce(t *testing.T) {
 	f := useGH(t)
 	f.fail = &gh.Error{Msg: "To get started with GitHub CLI, please run: gh auth login"}
 	m := key(boot(t, 150, 42), "3")
-	if g := gitOf(m); !g.noSess || g.cur != gsWT {
-		t.Fatalf("noSess %v, section %d: the view falls back to Worktrees", g.noSess, g.cur)
+	if g := gitOf(m); !g.noSess || g.cur != gsHere {
+		t.Fatalf("noSess %v, section %d: the view falls back to the Overview", g.noSess, g.cur)
 	}
 	n := len(f.calls)
 	for i := 0; i < 3; i++ {
@@ -169,7 +176,7 @@ func TestGitNoSessionAsksOnce(t *testing.T) {
 	if len(f.calls) != n {
 		t.Errorf("no more calls without r: %d → %d", n, len(f.calls))
 	}
-	m = key(key(m, "left"), "left") // My PRs
+	m = key(m, "right") // My PRs
 	if !strings.Contains(screen(m), "gh auth login") {
 		t.Errorf("the hint should show:\n%s", screen(m))
 	}
@@ -182,10 +189,7 @@ func TestGitNoSessionAsksOnce(t *testing.T) {
 
 // The Worktrees section is what the Worktrees view was.
 func TestGitWorktreesSection(t *testing.T) {
-	m := key(boot(t, 150, 42), "3")
-	if gitOf(m).cur != gsWT {
-		t.Fatal("without gh the view opens on Worktrees")
-	}
+	m := inWorktrees(key(boot(t, 150, 42), "3"))
 	mm := m.(Model)
 	for i, r := range mm.wt.rows {
 		if r.wt != nil && filepath.Base(r.wt.Path) == "PAY-412" {

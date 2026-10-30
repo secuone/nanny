@@ -13,14 +13,15 @@ import (
 	"github.com/secuone/nanny/internal/gitwt"
 )
 
-// The Git view (3): your pull requests, the reviews waiting for you, the
+// The Git & PRs view (3): the branch of each space, your pull requests, the reviews waiting for you, the
 // worktrees, the local branches and your week. GitHub is asked through gh,
 // only from due(), only for the section on screen (and the reviews badge),
 // and not at all once gh is missing or has no session, until r.
 
 // The sections of the view, in the order of its bar.
 const (
-	gsPRs = iota
+	gsHere = iota
+	gsPRs
 	gsReviews
 	gsWT
 	gsBranches
@@ -29,7 +30,7 @@ const (
 )
 
 var gitSecs = [gsN]struct{ name, id string }{
-	{M("My PRs"), "git.prs"}, {M("Reviews"), "git.reviews"}, {M("Worktrees"), "git.worktrees"},
+	{M("Overview"), "git.here"}, {M("My PRs"), "git.prs"}, {M("Reviews"), "git.reviews"}, {M("Worktrees"), "git.worktrees"},
 	{M("Branches"), "git.branches"}, {M("Profile"), "git.profile"},
 }
 
@@ -42,7 +43,8 @@ const (
 type gitView struct {
 	featBase
 	cur    int
-	auto   bool // the section follows gh: My PRs, or Worktrees when gh can't be used
+	ov     cursor // the row of the Overview
+	auto   bool   // the section follows gh: My PRs, or Worktrees when gh can't be used
 	login  string
 	noSess bool // gh is missing or has no session: nothing is asked until r
 	noGH   bool // …because it is not installed
@@ -57,7 +59,7 @@ type gitView struct {
 	screen bool // the view was on screen at the last tick
 }
 
-func newGitView() *gitView { return &gitView{auto: true} }
+func newGitView() *gitView { return &gitView{cur: gsPRs, auto: true} }
 
 // prList is a list of pull requests: yours, or the ones waiting for you.
 type prList struct {
@@ -146,9 +148,12 @@ func (g *gitView) shown(m *Model) bool { return m.onTab(tabGit) && m.viewOn(tabG
 
 // fix keeps the section in use one that is on, and follows gh while nobody picked one.
 func (g *gitView) fix(m *Model) {
-	order := []int{gsPRs, gsReviews, gsWT, gsBranches, gsProfile}
-	if g.noSess {
-		order = []int{gsWT, gsBranches, gsPRs, gsReviews, gsProfile}
+	order := []int{gsPRs, gsReviews, gsHere, gsWT, gsBranches, gsProfile}
+	switch {
+	case m.inSpace():
+		order = []int{gsHere, gsPRs, gsReviews, gsWT, gsBranches, gsProfile}
+	case g.noSess:
+		order = []int{gsHere, gsWT, gsBranches, gsPRs, gsReviews, gsProfile}
 	}
 	if !g.auto && g.on(m, g.cur) {
 		return
@@ -193,6 +198,8 @@ func (g *gitView) setSec(m *Model, i int) tea.Cmd {
 func (g *gitView) view(m *Model, w, h int) string {
 	g.fix(m)
 	switch g.cur {
+	case gsHere:
+		return g.viewOverview(m, w, h)
 	case gsPRs:
 		return g.viewPRs(m, &g.prs, T("My PRs"), false, w, h)
 	case gsReviews:
@@ -208,6 +215,8 @@ func (g *gitView) view(m *Model, w, h int) string {
 func (g *gitView) detail(m *Model, w, h int) string {
 	g.fix(m)
 	switch g.cur {
+	case gsHere:
+		return g.detailOverview(m, w, h)
 	case gsPRs:
 		return g.detailPR(m, &g.prs, false, w, h)
 	case gsReviews:
@@ -223,6 +232,8 @@ func (g *gitView) detail(m *Model, w, h int) string {
 func (g *gitView) key(m *Model, k tea.KeyPressMsg) tea.Cmd {
 	g.fix(m)
 	switch g.cur {
+	case gsHere:
+		return g.keyOverview(m, k)
 	case gsPRs:
 		return g.keyPR(m, k, &g.prs, false)
 	case gsReviews:
@@ -239,6 +250,8 @@ func (g *gitView) click(m *Model, row int) tea.Cmd {
 	var c *cursor
 	n := 0
 	switch g.cur {
+	case gsHere:
+		c, n = &g.ov, len(g.ovRows(m))
 	case gsPRs:
 		c, n = &g.prs.cur, len(g.prs.items)
 	case gsReviews:
@@ -274,7 +287,10 @@ func moveKey(c *cursor, n, h int, k string) bool {
 }
 
 func (g *gitView) footer(m *Model) [][2]string {
+	g.fix(m)
 	switch g.cur {
+	case gsHere:
+		return [][2]string{{"⏎", T("open")}, {"O", T("open PR")}, {"C", T("changes")}, {"n", T("new claude")}, {"w", T("worktree")}, {"r", T("refresh")}}
 	case gsPRs:
 		return [][2]string{{"⏎", T("open")}, {"v", T("diff")}, {"w", T("worktree")}, {"C", T("changes")}, {"X", T("merge")}, {"y", T("copy")}, {"r", T("refresh")}}
 	case gsReviews:
@@ -289,6 +305,12 @@ func (g *gitView) footer(m *Model) [][2]string {
 
 func (g *gitView) help() []helpSec {
 	return []helpSec{
+		{T("Overview"), [][2]string{
+			{"⏎", T("go to it: the space, or a shell in that worktree")},
+			{"O  C", T("open its PR · review its changes")},
+			{"P  F", T("pull (fast-forward) · fetch")},
+			{"n  w", T("new claude in it · new worktree")},
+		}},
 		{T("My PRs"), [][2]string{
 			{"⏎  y", T("open it in the browser · copy its URL")},
 			{"v", T("read its diff in a tab")},
@@ -339,6 +361,8 @@ func (g *gitView) menu(m *Model) []menuItem {
 	add := func(items *[]menuItem, k, label string) { *items = append(*items, menuItem{label, k, press(k)}) }
 	var items []menuItem
 	switch g.cur {
+	case gsHere:
+		items = g.menuOverview(m)
 	case gsPRs:
 		add(&items, "⏎", T("Open in the browser"))
 		add(&items, "v", T("Read the diff"))
@@ -392,6 +416,8 @@ func (g *gitView) busy() bool {
 
 func (g *gitView) selKey(m *Model) string {
 	switch g.cur {
+	case gsHere:
+		return "h" + strconv.Itoa(g.ov.idx)
 	case gsPRs:
 		return "p" + strconv.Itoa(g.prs.cur.idx)
 	case gsReviews:
@@ -417,6 +443,19 @@ func (g *gitView) badge(m *Model) string {
 	return clickable(secKey(tabGit, gsReviews), st.Render("⚑ "+Tn(len(g.rev.items), "%d review waiting", "%d reviews waiting")))
 }
 
+// barNote is what gh says about itself, at the right end of the sections bar.
+func (g *gitView) barNote(m *Model) string {
+	switch {
+	case g.noGH:
+		return m.st.Red.Render(T("gh: not installed"))
+	case g.noSess:
+		return m.st.Red.Render(T("gh: not signed in"))
+	case g.login != "":
+		return m.st.Muted.Render("gh ✓ " + g.login)
+	}
+	return ""
+}
+
 // reviewsOn says whether the reviews are looked for even when the view is not shown.
 func (g *gitView) reviewsOn(m *Model) bool {
 	return m.cfg.On("header.reviews") && m.cfg.On("view.git") && m.cfg.On("git.reviews")
@@ -440,6 +479,9 @@ func (g *gitView) due(m *Model, force bool) tea.Cmd {
 	}
 	if shown && g.cur == gsBranches {
 		cmds = append(cmds, g.pollBranches(m, force))
+	}
+	if shown && force && g.cur == gsHere && time.Since(m.prsAt) > time.Minute {
+		cmds = append(cmds, m.prsCmd())
 	}
 	if !g.noSess {
 		switch {

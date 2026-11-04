@@ -5,7 +5,7 @@
 - [Spaces, tabs and panes](#spaces-tabs-and-panes)
 - [Live agents and subagents](#live-agents-and-subagents)
 - [Sessions](#sessions)
-- [Git & PRs and worktrees](#git-and-worktrees)
+- [Git and worktrees](#git-and-worktrees)
 - [Monitor](#monitor)
 - [Skills and prompts](#skills-and-prompts)
 - [Tasks](#tasks)
@@ -38,7 +38,7 @@ Every key mentioned here is listed in [keys.md](keys.md).
 - **Mouse selection**: drag to select text anywhere (inside a pane it stays in that pane) and let go to copy it.
 - Prefix key (default `ctrl+b`, configurable) for pane commands; `alt+1-9` jumps between
   spaces without the prefix, and `alt+↑/↓` walks the agents of the sidebar.
-- **One view bar everywhere**: Live, Sessions, Git & PRs, Tasks, Prompts, Skills, Monitor and
+- **One view bar everywhere**: Live, Sessions, Git, Tasks, Prompts, Skills, Monitor and
   Settings (and `E` Jira, `I` Insights) are on top in "all spaces" (everything) and in every space (scoped to its folders). In a
   space `0 terminal` (or `esc`) goes back to its panes, whose tabs sit right over them with
   `+ claude` / `+ shell` buttons, the folder and the branch.
@@ -85,7 +85,7 @@ Every key mentioned here is listed in [keys.md](keys.md).
 
 ## Git and worktrees
 
-- **Git & PRs** (tab `3`) opens on **Overview** inside a space: the branch, its state and PR, and the space's
+- **Git** (tab `3`) opens on **Overview** inside a space: the branch, its state and PR, and the space's
   worktrees, from git alone (no GitHub needed). Reach it with prefix `G`, or click the `⎇ branch` in the terminal
   strip or in the sidebar. At home it lists every space. Without `gh` signed in the section bar says
   `gh: not signed in`, and My PRs offers to sign in (`i`) or open the setup wizard (`s`).
@@ -100,7 +100,13 @@ Every key mentioned here is listed in [keys.md](keys.md).
 - **Changes view** (`C` in Live, prefix `g` in a pane): the diff of an agent's folder. `t` switches
   uncommitted vs HEAD and whole branch vs its base, `c` asks the agent to commit, `w` opens the PR
   (`gh`), `y` copies the branch.
-- **The other sections** of Git & PRs (`←→` or a click) work with the PRs and branches you work with, from GitHub through the `gh` CLI (`gh auth login` once): **My PRs** (what is ready to merge, what has conflicts or failing checks; `⏎` open,
+- **Git follows the space**, like Live, Sessions and Tasks: inside a space My PRs, Reviews, Worktrees and Branches
+  show only the repo of that space (its `origin` and `upstream` remotes, from a worktree or a subfolder too) and
+  the title says which (`· acme-api`); in All spaces they show every repo. The PR lists are filtered from what
+  `gh` already answered, so switching space asks GitHub nothing. An empty repo says so (`a` jumps to All
+  spaces), and so does a space that is not a git repo. Profile and the top-bar review count stay global, and
+  Profile says it.
+- **The other sections** of Git (`←→` or a click) work with the PRs and branches you work with, from GitHub through the `gh` CLI (`gh auth login` once): **My PRs** (what is ready to merge, what has conflicts or failing checks; `⏎` open,
   `v` diff in a tab, `w` check it out in a worktree, `C` its changes, `X` merge: it asks, `s`/`m`/`b` pick squash,
   merge or rebase, and a PR that isn't ready is set to auto-merge, never forced), **Reviews** (the PRs waiting for
   you, the oldest first; `c` starts a Claude that reviews it in a worktree of the PR and posts nothing), **Worktrees**

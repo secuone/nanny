@@ -41,7 +41,7 @@ func (m Model) viewOn(t tab) bool {
 
 // viewID is a view's id in the config's off list: "view.monitor".
 func viewID(t tab) string {
-	id, _, _ := strings.Cut(tabNames[t], " ") // "Git & PRs" is view.git
+	id, _, _ := strings.Cut(tabNames[t], " ") // "Git" is view.git
 	return "view." + strings.ToLower(id)
 }
 

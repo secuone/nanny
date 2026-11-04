@@ -8,6 +8,7 @@
 
 **A calm terminal console for Claude Code sessions, agents, subagents, panes and dev services.**
 
+[![Release](https://img.shields.io/github/v/release/secuone/nanny)](https://github.com/secuone/nanny/releases/latest)
 [![CI](https://img.shields.io/github/actions/workflow/status/secuone/nanny/ci.yml?branch=main&label=ci)](https://github.com/secuone/nanny/actions/workflows/ci.yml)
 [![Go version](https://img.shields.io/github/go-mod/go-version/secuone/nanny)](go.mod)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -15,7 +16,7 @@
 
 [Features](#features) · [Requirements](#requirements--compatibility) · [Install](#install) · [Keys](#keys) · [Docs](#docs)
 
-<img src="docs/demo.gif" alt="nanny showing spaces, agents and subagents" width="900">
+<img src="docs/demo.gif" alt="nanny showing live agents and subagents, sessions, a space with split panes, and its Git view" width="900">
 
 </div>
 
@@ -47,14 +48,14 @@ One line each; the details are in [docs/features.md](docs/features.md).
 
 | | |
 | --- | --- |
-| 🗂️ [Spaces & panes](docs/features.md#spaces-tabs-and-panes) | Projects as spaces, tabs and split panes with real terminals. Quit and every pane keeps running; reopen and they come back. |
-| 🤖 [Live agents & subagents](docs/features.md#live-agents-and-subagents) | Every running Claude, subagent trees, context and cost meter, answer permission prompts, broadcast a prompt. |
+| 🗂️ [Spaces & panes](docs/features.md#spaces-tabs-and-panes) | Projects as spaces, each with its folder, tabs and split panes with real terminals. Quit and every pane keeps running; reopen and they come back. |
+| 🤖 [Live agents & subagents](docs/features.md#live-agents-and-subagents) | Every running Claude (only the space's own inside a space), subagent trees, context and cost meter, answer permission prompts, broadcast a prompt. |
 | 🕘 [Sessions](docs/features.md#sessions) | All past sessions, full-text search, read, resume or fork. |
-| 🌿 [Git & worktrees](docs/features.md#git-and-worktrees) | Your PRs and the reviews waiting for you, merge with a confirm, worktrees, branches to push or clean up, your week in numbers. |
+| 🌿 [Git](docs/features.md#git) | An Overview of each space's branch, PR and worktrees, your PRs and the reviews waiting for you, merge with a confirm, branches to clean up, your week in numbers. All of it follows the selected space. |
 | 📡 [Monitor](docs/features.md#monitor) | Tilt, Docker, open ports, jobs, cron, Hermes, this machine, and your own watchers. |
 | 🧩 [Skills & prompts](docs/features.md#skills-and-prompts) | The skills catalog and a prompt library with your most used prompts. |
 | ☰ [Tasks](docs/features.md#tasks) | A queue of prompts that nanny hands to agents by itself. |
-| 📋 [Jira](docs/features.md#jira-and-insights) | Your issues by status and sprint: transition, comment, assign, start a branch and an agent from one. |
+| 📋 [Jira](docs/features.md#jira-and-insights) | Your issues by status and sprint, with a reader for the description, comments, subtasks and links; filter, sort, search all of Jira, transition, comment, assign, start a branch and an agent from one. |
 | 📊 [Insights](docs/features.md#jira-and-insights) | Cost, tokens, tools, permissions, edits and friction from your own transcripts, with a weekly JSON export. |
 | 🎚️ [Screen profiles & Customize](docs/features.md#screen-profiles-and-customize) | Basic, Full or your own: turn off any view, source or bar item. |
 | 🎨 [Themes & appearance](docs/features.md#themes-and-appearance) | 20 themes with live preview, your own themes, icon sets and borders. |
@@ -79,7 +80,17 @@ Details, Nerd Font notes and the full list of optional tools: [docs/install.md](
 curl -fsSL https://raw.githubusercontent.com/secuone/nanny/main/scripts/install.sh | sh
 ```
 
-There is no tagged release yet, so the script builds `main` from source (needs `git` and Go 1.26+) into `~/.local/bin`. Once releases exist it downloads the binary instead. From a clone:
+It downloads the latest release binary for linux amd64 or arm64 into `~/.local/bin` and checks its SHA-256. `NANNY_VERSION=v0.1.0` pins a version and `BIN_DIR` changes where it goes.
+
+Or take a package from the [Releases page](https://github.com/secuone/nanny/releases/latest):
+
+```sh
+sudo apt install ./nanny_<version>_linux_amd64.deb      # .deb
+sudo dnf install ./nanny_<version>_linux_amd64.rpm      # .rpm
+tar -xzf nanny_<version>_linux_amd64.tar.gz nanny && install -m755 nanny ~/.local/bin/   # .tar.gz
+```
+
+There is an `.apk` too. From source (needs Go 1.26+):
 
 ```sh
 git clone https://github.com/secuone/nanny && cd nanny
@@ -113,6 +124,8 @@ Pane commands start with the prefix, `ctrl+b` by default. The essentials:
 | `ctrl+b` `c` / `s` | new Claude tab / new shell tab |
 | `ctrl+b` `v` / `-` | split right / split down |
 | `ctrl+b` `z` / `x` | zoom / close pane |
+| `ctrl+b` `e` | rename pane |
+| `ctrl+b` `G` | this space's Git (Overview) |
 | `ctrl+b` `n` / `p` | next / previous tab |
 | `alt+1-9` | switch space |
 | `1-8` | views: Live · Sessions · Git · Tasks · Prompts · Skills · Monitor · Settings |

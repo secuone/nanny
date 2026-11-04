@@ -5,7 +5,7 @@
 - [Spaces, tabs and panes](#spaces-tabs-and-panes)
 - [Live agents and subagents](#live-agents-and-subagents)
 - [Sessions](#sessions)
-- [Git and worktrees](#git-and-worktrees)
+- [Git](#git)
 - [Monitor](#monitor)
 - [Skills and prompts](#skills-and-prompts)
 - [Tasks](#tasks)
@@ -25,7 +25,9 @@ Every key mentioned here is listed in [keys.md](keys.md).
   (working / needs you / idle) in the top bar and sidebar, and an optional icon (🚀 🐘 🧪…):
   right-click a space to rename it, pick its icon, move or delete it.
 - **Real terminals** in tabs and split panes: Claude, a shell, anything. Full colors,
-  scrollback (mouse wheel), zoom.
+  scrollback (mouse wheel), zoom. Right-click a pane for its menu: rename (`prefix e`, saved with the
+  workspace; empty gives back the program's title), splits, zoom, "Send right-clicks to pane" (the
+  border, or shift, brings the menu back), tabs, review, copy and close.
 - **Discover** (`D`) finds every place you work in: folders where agents ran, git repos
   under your code roots, open workspaces. Tick the ones you want as spaces.
   Or create them by hand (`N`), add/remove folders, rename, reorder, delete (`W`).
@@ -43,6 +45,9 @@ Every key mentioned here is listed in [keys.md](keys.md).
 - **Mouse selection**: drag to select text anywhere (inside a pane it stays in that pane) and let go to copy it.
 - Prefix key (default `ctrl+b`, configurable) for pane commands; `alt+1-9` jumps between
   spaces without the prefix, and `alt+↑/↓` walks the agents of the sidebar.
+- **The sidebar** has two fixed halves: spaces on top, agents below, each scrolling on its own
+  (wheel). A click on any line of an agent opens it, and `alt+↑/↓` walks the agents from anywhere.
+  The top bar shows a window of your spaces when they don't all fit.
 - **One view bar everywhere**: Live, Sessions, Git, Tasks, Prompts, Skills, Monitor and
   Settings (and `E` Jira, `I` Insights) are on top in "all spaces" (everything) and in every space (scoped to its folders). In a
   space `0 terminal` (or `esc`) goes back to its panes, whose tabs sit right over them with
@@ -54,7 +59,7 @@ Every key mentioned here is listed in [keys.md](keys.md).
 
 - Every running Claude Code process: inside nanny, in other terminals, or in background jobs.
 - **Scoped to the space you are in.** In a space, Live, its count and the sidebar's AGENTS list show
-  only that space's agents: those in its panes and those running outside nanny in its folders or
+  only that space's agents (the top-bar counts too): those in its panes and those running outside nanny in its folders or
   in the worktrees of its repo. Only All spaces lists every agent. An agent waiting on you in
   another space stays one line away (`N waiting elsewhere`, also in the top bar; click it to go
   to All spaces), and `!` still jumps to it. An empty space says `No agents in <space>`.
@@ -93,7 +98,7 @@ Every key mentioned here is listed in [keys.md](keys.md).
 - From the shell: `nanny ls`, `nanny where`, `nanny resume`, `nanny search`
   (see [CLI](#cli)).
 
-## Git and worktrees
+## Git
 
 - **Git** (tab `3`) opens on **Overview** inside a space: the branch, its state and PR, and the space's
   worktrees, from git alone (no GitHub needed). Reach it with prefix `G`, or click the `⎇ branch` in the terminal

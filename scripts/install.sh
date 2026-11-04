@@ -1,11 +1,14 @@
 #!/usr/bin/env sh
 # nanny installer: downloads a release binary, or builds from source with Go and git.
 #   curl -fsSL https://raw.githubusercontent.com/secuone/nanny/main/scripts/install.sh | sh
-# BIN_DIR (default ~/.local/bin) is where nanny goes; NANNY_REPO (default secuone/nanny) is the GitHub repo.
+# BIN_DIR (default ~/.local/bin) is where nanny goes; NANNY_VERSION (e.g. v0.1.0) pins a release
+# instead of the latest; NANNY_REPO (default secuone/nanny) is the GitHub repo; NANNY_RELEASES is
+# where release files are downloaded from (a mirror; default the repo's GitHub releases).
 set -eu
 
 REPO="${NANNY_REPO:-secuone/nanny}"
 BIN_DIR="${BIN_DIR:-$HOME/.local/bin}"
+RELEASES="${NANNY_RELEASES:-https://github.com/$REPO/releases/download}"
 
 os=$(uname -s | tr '[:upper:]' '[:lower:]')
 arch=$(uname -m)
@@ -31,14 +34,42 @@ done_msg() {
   esac
 }
 
-latest=$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" 2>/dev/null | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' | head -n1 || true)
-if [ -n "${latest:-}" ]; then
-  url="https://github.com/$REPO/releases/download/$latest/nanny_${latest#v}_${os}_${arch}.tar.gz"
+latest="${NANNY_VERSION:-}"
+if [ -z "$latest" ]; then
+  latest=$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" 2>/dev/null | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' | head -n1 || true)
+fi
+case "$latest" in ""|v*) ;; *) latest="v$latest" ;; esac
+
+sha256() {
+  if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | cut -d' ' -f1
+  elif command -v shasum >/dev/null 2>&1; then shasum -a 256 "$1" | cut -d' ' -f1
+  fi
+}
+
+if [ -n "$latest" ]; then
+  name="nanny_${latest#v}_${os}_${arch}.tar.gz"
+  url="$RELEASES/$latest/$name"
   echo "→ downloading $url"
-  if curl -fsSL "$url" -o "$tmp/s.tgz" && tar -xzf "$tmp/s.tgz" -C "$tmp" nanny; then
+  if curl -fsSL "$url" -o "$tmp/$name"; then
+    want=$(curl -fsSL "$RELEASES/$latest/checksums.txt" 2>/dev/null | awk -v n="$name" '$2 == n {print $1}' || true)
+    got=$(sha256 "$tmp/$name")
+    if [ -z "$want" ] || [ -z "$got" ]; then
+      echo "can't check the download: no checksum for $name, or no sha256sum/shasum here" >&2
+      exit 1
+    fi
+    if [ "$want" != "$got" ]; then
+      echo "checksum mismatch for $name (want $want, got $got): not installing" >&2
+      exit 1
+    fi
+    echo "→ checksum ok"
+    tar -xzf "$tmp/$name" -C "$tmp" nanny
     install -m755 "$tmp/nanny" "$BIN_DIR/nanny"
     done_msg "$latest"
     exit 0
+  fi
+  if [ -n "${NANNY_VERSION:-}" ]; then
+    echo "no $os/$arch download for $latest (does that release exist?)" >&2
+    exit 1
   fi
   echo "→ the $latest release has no $os/$arch binary" >&2
 else

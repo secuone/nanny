@@ -1,7 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.1.0 — 2026-11-04
 
+The first release.
+
+- **Releases and packages.** Tagged releases publish static Linux binaries for amd64 and arm64 as `.tar.gz`, `.deb`, `.rpm` and `.apk`, with `checksums.txt`. The install script downloads the latest release (or `NANNY_VERSION`), checks its SHA-256 and refuses a mismatch; it only builds from source when no release is found. macOS is left out of the release until it builds.
 - **Pane menu: rename and right-clicks.** Right-click a pane: "Rename pane…" (prefix `e`) names it, the name wins over the program's title in the border and the menu, is saved with the workspace, and an empty name gives the automatic title back. "Send right-clicks to pane" (a ✓ when on, saved per pane) forwards a right-click inside the pane, press and release, to its program when it has mouse reporting on; otherwise the menu opens as before. Right-click the pane's border (or hold shift, where the terminal lets it through) to get the menu back. The menu now reads rename, splits, zoom, right-clicks, tabs, review, copy, close.
 - **Every space has a folder.** New space (`N`) asks for the folder first, with a path input that completes with `tab` (`~` works), the folders you already work in (agent sessions, git repos, your spaces) to filter or pick, a clear error when the path isn't a folder and an offer to create one that doesn't exist; the name defaults to the folder's and can be edited. Shells, Claude tabs and splits always start in the space's folder (they used to follow the focused pane). Prefix `F`, `f` in the spaces manager and the space menu change it: panes already open stay where they are. Spaces saved without a folder load as before, show `no folder · set` in the sidebar, the space header and the manager (a click sets it) and keep starting panes in your home.
 - **An agent waiting on a prompt opens from the sidebar.** An agent that registered in a pane right after a scan and then wrote nothing (a permission prompt) was not linked to its pane until the next transcript change, so clicking it opened nothing. The link is now rebuilt as soon as it changes. Two tests that failed now and then on slow machines are steady again.

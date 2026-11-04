@@ -3,17 +3,38 @@ project_name: nanny
 builds:
   - main: ./cmd/nanny
     env: [CGO_ENABLED=0]
-    goos: [linux, darwin]
+    # Linux only for now: nanny reads /proc and uses inotify
+    goos: [linux]
     goarch: [amd64, arm64]
     flags: [-trimpath]
     ldflags: ["-s -w -X main.version={{.Version}}"]
 archives:
   - formats: [tar.gz]
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
-    files: [LICENSE, README.md]
+    files: [LICENSE, README.md, CHANGELOG.md]
+nfpms:
+  - file_name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    package_name: nanny
+    homepage: https://github.com/secuone/nanny
+    description: A calm terminal console for Claude Code sessions, agents, subagents, panes and dev services.
+    maintainer: secuone <https://github.com/secuone>
+    license: MIT
+    formats: [deb, rpm, apk]
+    bindir: /usr/bin
+    recommends: [git]
+    contents:
+      - src: LICENSE
+        dst: /usr/share/doc/nanny/LICENSE
+      - src: README.md
+        dst: /usr/share/doc/nanny/README.md
 checksum:
   name_template: checksums.txt
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+release:
+  footer: |
+    **Install:** `curl -fsSL https://raw.githubusercontent.com/secuone/nanny/main/scripts/install.sh | sh`, or one of the packages above (`sudo apt install ./nanny_{{ .Version }}_linux_amd64.deb`, `sudo dnf install ./nanny_{{ .Version }}_linux_amd64.rpm`).
 changelog:
   sort: asc
   filters:
-    exclude: ["^docs:", "^test:", "^chore:"]
+    exclude: ["^docs:", "^test:", "^chore:", "^Merge "]

@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.1 — 2026-11-04
 
 - **`alt+↑/↓` stays in the space.** Inside a space it walks only that space's agents, the ones its sidebar lists; from all spaces it walks every one, and a walk begun there keeps going through every space. A space with no agents says so instead of jumping elsewhere.
 

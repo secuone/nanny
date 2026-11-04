@@ -13,9 +13,10 @@ func (m Model) sideAgents() (agents, quiet []liveRow) {
 	return m.splitAgents(m.inSideScope(m.live.allRows))
 }
 
-// walkAgents are the agents alt+↑/↓ steps through: those of every space.
+// walkAgents are the agents alt+↑/↓ steps through: the sidebar's, so inside
+// a space only that space's; every space's from All spaces.
 func (m Model) walkAgents() []liveRow {
-	agents, _ := m.splitAgents(m.live.allRows)
+	agents, _ := m.splitAgents(m.inSideScope(m.live.allRows))
 	return agents
 }
 
@@ -53,6 +54,7 @@ func (m Model) curAgentKey() string {
 // viewer, an agent in a nanny pane its pane, one outside nanny its live
 // conversation (esc comes back to where you were).
 func (m *Model) openAgent(sess *claude.Session, sub *claude.Subagent, local *paneRef) tea.Cmd {
+	m.vs.walkAll = false // a walk from all spaces sets it again after this
 	switch {
 	case sub != nil:
 		return m.openViewer(sub.Path, true, sub.Description, sess, sub)
@@ -77,7 +79,17 @@ func (m Model) navFrom(ks, from string) (tea.Model, tea.Cmd, bool) {
 	if d == 0 {
 		return m, nil, false
 	}
+	// a walk begun from all spaces goes on through all of them while you stay
+	// where it put you; anywhere else it walks the space you are in
+	all := m.sideScope() == nil || m.vs.walkAll && from != "" && from == m.vs.sideCurKey
 	agents := m.walkAgents()
+	if all {
+		agents, _ = m.splitAgents(m.live.allRows)
+	}
+	if len(agents) == 0 && !all {
+		m.setStatus(T("no agents in this space · all spaces has the rest"), false)
+		return m, nil, true
+	}
 	if len(agents) == 0 {
 		m.setStatus(T("no agents to go to"), false)
 		return m, nil, true
@@ -92,5 +104,7 @@ func (m Model) navFrom(ks, from string) (tea.Model, tea.Cmd, bool) {
 		i = 0
 	}
 	r := agents[(i+d+len(agents))%len(agents)]
-	return m, m.openAgent(r.sess, nil, r.local), true
+	cmd := m.openAgent(r.sess, nil, r.local)
+	m.vs.walkAll = all
+	return m, cmd, true
 }

@@ -327,6 +327,10 @@ func (m Model) keyClick(x, y int) (tea.Model, tea.Cmd, bool) {
 			}
 			return m, nil, true
 		}
+		if h.key == allSpacesKey {
+			m.showAllSpaces()
+			return m, m.refreshDetail(), true
+		}
 		if st, ok := strings.CutPrefix(h.key, "@only:"); ok {
 			mm, cmd := m.showOnly(st)
 			return mm, cmd, true

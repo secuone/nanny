@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -337,6 +338,9 @@ func (mn *ctxMenu) move(d int) {
 }
 
 func (m *Model) openMenu(title string, x, y int, items []menuItem) {
+	if !slices.ContainsFunc(items, func(it menuItem) bool { return it.label != "" }) {
+		return // nothing to offer, e.g. an empty list
+	}
 	m.menu = &ctxMenu{title: title, items: items, x: x, y: y, cols: 1}
 	if items[0].label == "" {
 		m.menu.move(1)
@@ -511,6 +515,7 @@ func (m *Model) spaceMenu(i, x, y int) {
 	}
 	items = append(items, sep,
 		menuItem{T("New worktree…"), "t", func(m *Model) tea.Cmd { m.newWorktree(sp); return nil }},
+		menuItem{T("Set folder…"), "F", func(m *Model) tea.Cmd { return m.setFolderPrompt(sp) }},
 		menuItem{T("Add a folder…"), "a", mgr("a")},
 		menuItem{T("Manage spaces…"), "w", func(m *Model) tea.Cmd { m.openManager(); m.mgr.cur = m.indexOf(sp); return nil }},
 		sep,

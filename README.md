@@ -69,7 +69,7 @@ One line each; the details are in [docs/features.md](docs/features.md).
 | **OS** | Linux (amd64, arm64). nanny reads `/proc` and uses inotify, so **macOS does not build yet** and Windows is not supported (WSL2 should work, untested). |
 | **Terminal** | Any modern terminal with truecolor and UTF-8. nanny asks for synchronized output and the kitty keyboard protocol when the terminal has them, and works without. |
 | **Needs** | `git` and [Claude Code](https://claude.com/claude-code) (`claude`) for what nanny watches. Go 1.26+ only to build from source. |
-| **Optional** | `gh` (Git & PRs), a Jira Cloud API token (Jira), `python3` (Hermes and opencode), `docker` / `tilt` (Monitor), sound, notification and clipboard tools. |
+| **Optional** | `gh` (Git), a Jira Cloud API token (Jira), `python3` (Hermes and opencode), `docker` / `tilt` (Monitor), sound, notification and clipboard tools. |
 
 Details, Nerd Font notes and the full list of optional tools: [docs/install.md](docs/install.md#requirements-and-compatibility).
 
@@ -101,7 +101,7 @@ Updating, uninstalling and where nanny keeps its files: [docs/install.md](docs/i
 1. Run `nanny demo` to look around on fake data. Your real files aren't touched.
 2. Run `nanny`. A short welcome guide opens on the first start, then a setup wizard for Jira and `gh` (skip it with `esc`). Press `D` to discover your projects and tick the ones you want as spaces.
 3. In a space, press `ctrl+b` then `c` for a Claude tab, or `s` for a shell.
-4. Press `1-8` for the views (Live, Sessions, Git & PRs, Tasks, Prompts, Skills, Monitor, Settings), `E` for Jira, `I` for Insights, `ctrl+k` for the palette, `?` for help.
+4. Press `1-8` for the views (Live, Sessions, Git, Tasks, Prompts, Skills, Monitor, Settings), `E` for Jira, `I` for Insights, `ctrl+k` for the palette, `?` for help.
 5. Press `ctrl+q` to quit (it asks first; `q` from a view does the same). Panes keep running; run `nanny` again to reattach. `nanny resume <query>` resumes a past session from the shell.
 
 ## Keys
@@ -115,7 +115,7 @@ Pane commands start with the prefix, `ctrl+b` by default. The essentials:
 | `ctrl+b` `z` / `x` | zoom / close pane |
 | `ctrl+b` `n` / `p` | next / previous tab |
 | `alt+1-9` | switch space |
-| `1-8` | views: Live · Sessions · Git & PRs · Tasks · Prompts · Skills · Monitor · Settings |
+| `1-8` | views: Live · Sessions · Git · Tasks · Prompts · Skills · Monitor · Settings |
 | `E` / `I` | Jira / Insights |
 | `ctrl+k` | command palette |
 | `!` | next agent that needs you |

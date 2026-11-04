@@ -11,7 +11,7 @@
 
 ## Requirements and compatibility
 
-**Operating system.** Linux, on amd64 and arm64 (the release workflow builds `linux` and `darwin` for both, see below).
+**Operating system.** Linux, on amd64 and arm64.
 
 - nanny finds live agents, panes' foreground programs and the Monitor's machine and port data through `/proc`, and refreshes on change through inotify (`golang.org/x/sys/unix`, `IN_*`). Neither exists on macOS.
 - **macOS does not build today**: `GOOS=darwin go build ./cmd/nanny` fails in `internal/claude/watch.go` (inotify), and process detection would need a `/proc` replacement. A few spots already know macOS (`afplay` for sounds, `osascript` for desktop notifications), but the port is not done. Until it is, the install script refuses to run on macOS.
@@ -20,7 +20,7 @@
 
 **Build from source.** Go 1.26 or newer (`go.mod` says `go 1.26.0`, needed by Bubble Tea v2). A Go between 1.21 and 1.25 downloads the 1.26 toolchain by itself unless `GOTOOLCHAIN=local`.
 
-**Release builds.** `.goreleaser.yaml` builds `linux` and `darwin` × `amd64` and `arm64` with `CGO_ENABLED=0`, as `nanny_<version>_<os>_<arch>.tar.gz` plus `checksums.txt`. Nothing has been tagged yet, so there are no release assets; and while macOS does not build, a tagged release would fail on the `darwin` targets.
+**Release builds.** Pushing a `v*` tag runs `.goreleaser.yaml`: static `linux` binaries (`CGO_ENABLED=0`) for `amd64` and `arm64`, as `nanny_<version>_linux_<arch>.tar.gz`, `.deb`, `.rpm` and `.apk`, plus `checksums.txt`. No macOS builds until the port is done.
 
 **Terminal.** nanny draws with Bubble Tea v2, which on start asks the terminal for:
 
@@ -59,7 +59,25 @@ Terminals that lack them ignore the requests and nanny keeps working, with the k
 curl -fsSL https://raw.githubusercontent.com/secuone/nanny/main/scripts/install.sh | sh
 ```
 
-It installs to `~/.local/bin` (`BIN_DIR=/some/dir` changes it) and tells you if that is not on your `PATH`. It downloads the latest release when there is one for your platform. **There is no release yet**, so today it tells you so and builds the `main` branch instead, which needs `git` and Go 1.26+ and takes about a minute. It refuses to run on anything but Linux, and on architectures other than amd64 and arm64.
+It downloads the latest release for your architecture, checks it against the release's `checksums.txt` (SHA-256) and installs it to `~/.local/bin`, telling you if that is not on your `PATH`. A checksum that doesn't match stops it. It refuses to run on anything but Linux, and on architectures other than amd64 and arm64.
+
+| Variable | Does |
+| --- | --- |
+| `BIN_DIR=/some/dir` | installs there instead of `~/.local/bin` |
+| `NANNY_VERSION=v0.1.0` | installs that release instead of the latest |
+| `NANNY_RELEASES=<url>` | downloads from a mirror laid out like the GitHub releases (`<url>/<tag>/<file>`) |
+
+If no release can be found it builds the `main` branch instead, which needs `git` and Go 1.26+ and takes about a minute.
+
+**Packages.** Each [release](https://github.com/secuone/nanny/releases/latest) has packages that put `nanny` in `/usr/bin`:
+
+```sh
+sudo apt install ./nanny_<version>_linux_amd64.deb     # Debian, Ubuntu
+sudo dnf install ./nanny_<version>_linux_amd64.rpm     # Fedora, RHEL
+sudo apk add --allow-untrusted ./nanny_<version>_linux_amd64.apk   # Alpine
+```
+
+Or take the `.tar.gz` and copy the binary yourself: `tar -xzf nanny_<version>_linux_amd64.tar.gz nanny && install -m755 nanny ~/.local/bin/`.
 
 **From a clone.**
 
@@ -71,7 +89,7 @@ make install PREFIX=/usr/local   # → /usr/local/bin/nanny (may need sudo)
 
 `make build` only builds `./bin/nanny`; `make run` builds and starts it.
 
-**`go install` does not work.** `go install github.com/secuone/nanny/cmd/nanny@latest` is rejected by Go because `go.mod` has a `replace` directive (`third_party/vt`, a vendored terminal emulator). Use one of the two ways above.
+**`go install` does not work.** `go install github.com/secuone/nanny/cmd/nanny@latest` is rejected by Go because `go.mod` has a `replace` directive (`third_party/vt`, a vendored terminal emulator). Use one of the ways above.
 
 **Shell helpers.** `sp <query>` goes to the folder of a past session, `spr <query>` resumes it:
 
@@ -90,7 +108,7 @@ echo 'nanny shell-init fish | source'  >> ~/.config/fish/config.fish
 
 ## Update
 
-Run the install script again, or from a clone:
+Run the install script again (or install the new package), or from a clone:
 
 ```sh
 git pull && make install
@@ -102,7 +120,7 @@ Panes keep running while you replace the binary. Quit and start nanny again to u
 
 ```sh
 nanny kill-server                 # stop the background panes
-rm ~/.local/bin/nanny             # or: make uninstall (PREFIX=… if you set it)
+rm ~/.local/bin/nanny             # or: make uninstall (PREFIX=… if you set it), or: sudo apt remove nanny / sudo dnf remove nanny
 ```
 
 Then, to remove everything nanny wrote:

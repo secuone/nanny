@@ -164,7 +164,7 @@ Layout state lives in `~/.local/state/nanny/workspace.json` and the task queue i
 
 ## Git, Jira and Insights
 
-Three optional tables; the views they configure are described in [features.md](features.md#git-and-worktrees) and
+Three optional tables; the views they configure are described in [features.md](features.md#git) and
 [features.md](features.md#jira-and-insights). All of them can be set in Settings too.
 
 ```toml

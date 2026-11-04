@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -15,7 +16,7 @@ import (
 // sideLine is the screen row of the first sidebar line that has s, or -1.
 func sideLine(mm tea.Model, s string) int {
 	for y, l := range strings.Split(ansi.Strip(viewOf(mm)), "\n") {
-		if y >= bodyY && strings.Index(l, s) >= 0 && strings.Index(l, s) < sidebarW {
+		if y >= bodyY && strings.Index(l, s) >= 0 && strings.Index(l, s) < sidebarW && !strings.Contains(l, "No agents in") {
 			return y
 		}
 	}
@@ -103,6 +104,7 @@ func externalRow(m Model) (sideRow, bool) {
 func TestSidebarExternalAgentOpensViewer(t *testing.T) {
 	m := withAgents(t, 150, 42, demoIdle)
 	m = settle(t, m, func(m Model) bool { return localAgents(m) == 1 })
+	m.spaces = append(m.spaces, ws.NewSpace("web-checkout", filepath.Join(home, "dev", "web-checkout")))
 	m.cur = len(m.spaces) - 1
 	m.layoutPanes()
 	viewOf(m)
@@ -149,7 +151,7 @@ func TestSidebarFollowsCurrentSpace(t *testing.T) {
 func TestAltDownWalksAgents(t *testing.T) {
 	m := withAgents(t, 150, 42, demoIdle, demoBlocked)
 	m = settle(t, m, func(m Model) bool { return localAgents(m) == 2 && blockedRow(m) >= 0 })
-	agents, _ := m.sideAgents()
+	agents := m.walkAgents()
 	start := map[string]int{"terminal": -1, "view": -1}
 	for i, r := range agents {
 		if r.local != nil && start["terminal"] < 0 {

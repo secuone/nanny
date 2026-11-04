@@ -48,6 +48,11 @@ Every key mentioned here is listed in [keys.md](keys.md).
 ## Live agents and subagents
 
 - Every running Claude Code process: inside nanny, in other terminals, or in background jobs.
+- **Scoped to the space you are in.** In a space, Live, its count and the sidebar's AGENTS list show
+  only that space's agents: those in its panes and those running outside nanny in its folders or
+  in the worktrees of its repo. Only All spaces lists every agent. An agent waiting on you in
+  another space stays one line away (`N waiting elsewhere`, also in the top bar; click it to go
+  to All spaces), and `!` still jumps to it. An empty space says `No agents in <space>`.
 - **Subagent trees** under each agent in the sidebar and in the Live view: type,
   description, running/finished, the tool it's using right now, nesting. Those that finished a
   while ago fold into one `✓ N finished subagents` row (`⏎` or a click unfolds them); the agent's

@@ -36,7 +36,7 @@ const (
 	tabInsights
 )
 
-var tabNames = []string{M("Live"), M("Sessions"), M("Git & PRs"), M("Tasks"), M("Prompts"), M("Skills"), M("Monitor"), M("Settings"), M("Jira"), M("Insights")}
+var tabNames = []string{M("Live"), M("Sessions"), M("Git"), M("Tasks"), M("Prompts"), M("Skills"), M("Monitor"), M("Settings"), M("Jira"), M("Insights")}
 
 // ---------------------------------------------------------------- messages
 

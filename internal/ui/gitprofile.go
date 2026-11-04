@@ -131,6 +131,9 @@ func (g *gitView) viewProfile(m *Model, w, h int) string {
 	}
 	rows = append(rows, [2]string{T("avg time to merge"), dur(pr.AvgMerge)}, [2]string{T("tickets closed"), g.closed(m, pr.From)})
 	ls := []string{s.Bold.Render(pr.Login) + s.Muted.Render("  "+Tf("since %s", pr.From.Format("Mon 2 Jan"))), ""}
+	if sc := g.scope(m); !sc.all {
+		ls = append(ls[:1], s.Muted.Render(trunc(Tf("All your repos, not only %s: your week is the same in every space.", sc.label), inner)), "")
+	}
 	for _, r := range rows {
 		ls = append(ls, s.Label.Render(fit(r[0], 20))+s.Text.Render(r[1]))
 	}

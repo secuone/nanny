@@ -54,7 +54,7 @@ terminal every 5 s. `NANNY_DUMP=<dir>` makes the render tests write every view t
 | `internal/prompts` | most used prompts from history, placeholders |
 | `internal/discover` | Discover |
 | `internal/gitwt` | worktrees, branches, PRs through `gh` |
-| `internal/gh` | GitHub data for Git & PRs (My PRs, Reviews, Profile) |
+| `internal/gh` | GitHub data for Git (My PRs, Reviews, Profile) |
 | `internal/jira` | Jira Cloud client |
 | `internal/secret` | the Jira token: keyring or a private file |
 | `internal/insights` | transcript index, weekly aggregates, JSON export |

@@ -299,6 +299,7 @@ func (g *gitView) viewBranches(m *Model, w, h int) string {
 	if n > 0 {
 		t += " · " + Tf("%d merged", n)
 	}
+	t += g.scopeTitle(m)
 	return s.panel(t, m.listBlocks(blocks, g.br.cur.idx, "gitbr", bodyRows(h), secY+2+gapOf(h)), w, h, !m.focusR)
 }
 

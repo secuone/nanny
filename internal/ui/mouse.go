@@ -28,6 +28,7 @@ type mouseEv struct {
 	X, Y   int
 	Button tea.MouseButton
 	Action mouseAction
+	Shift  bool
 }
 
 func toMouseEv(e tea.MouseMsg) mouseEv {
@@ -39,7 +40,7 @@ func toMouseEv(e tea.MouseMsg) mouseEv {
 	case tea.MouseMotionMsg:
 		a = mouseMotion
 	}
-	return mouseEv{X: mo.X, Y: mo.Y, Button: mo.Button, Action: a}
+	return mouseEv{X: mo.X, Y: mo.Y, Button: mo.Button, Action: a, Shift: mo.Mod.Contains(tea.ModShift)}
 }
 
 // double reports whether this click repeats the previous one on the same target.

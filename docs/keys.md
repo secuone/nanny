@@ -29,7 +29,7 @@ Prefix (`ctrl+b`, configurable with `prefix` in the config) then:
 | `n` `p` `1-9` | next / previous / go to tab |
 | `h` `l` (arrows) | move between panes |
 | `z` / `x` / `X` | zoom pane / close pane / close tab |
-| `,` / `R` | rename tab / rename space |
+| `,` / `R` / `e` | rename tab / rename space / rename pane (empty gives back the program's title) |
 | `r` / `f` | resume the latest session of this space / its sessions |
 | `]` `[` `0` | next / previous space / all spaces |
 | `w` `N` `D` | manage spaces / new space / discover places |
@@ -41,6 +41,12 @@ Prefix (`ctrl+b`, configurable with `prefix` in the config) then:
 | `q` / `Q` | quit, panes keep running (reattach on next start) / quit and stop every pane |
 | `ctrl+q` | the same as `q`, without the prefix (see below) |
 | `ctrl+b` `ctrl+b` | send the prefix key to the program |
+
+Right-clicking a pane opens its menu: rename, splits, zoom, "Send right-clicks to pane", tabs, review, copy
+folder, close. With "Send right-clicks to pane" on (a ✓ shows it, saved per pane), a right-click inside the
+pane goes to its program, but only while the program has mouse reporting on; otherwise the menu opens as
+usual. To get the menu back, right-click the pane's border (any of its four edges, the title row included)
+or, in terminals that pass it on, hold shift.
 
 `alt+1-9`, `alt+←/→` and `alt+0` switch spaces without the prefix. `alt+↑/↓` goes to the
 previous / next agent in the sidebar.

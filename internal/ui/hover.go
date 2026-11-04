@@ -144,6 +144,17 @@ func (m *Model) rename(title, cur string, set func(v string)) {
 	m.modal.input.CursorEnd()
 }
 
+// renamePane asks for the pane's name; an empty one gives the program's title back.
+func (m *Model) renamePane(p *term.Pane) {
+	m.prompt(T("Rename pane"), T("Empty goes back to the program's own title."), paneTitle(p), func(m *Model, v string) tea.Cmd {
+		p.Name = strings.TrimSpace(v)
+		m.saveSpaces()
+		return nil
+	})
+	m.modal.input.SetValue(p.Name)
+	m.modal.input.CursorEnd()
+}
+
 // ---------------------------------------------------------------- tooltips
 
 // viewDesc says what a view is for, in one line.
@@ -414,6 +425,8 @@ func (m *Model) paneMenu(i, x, y int) {
 	t.Focus = i
 	p := t.Panes[i]
 	items := []menuItem{
+		{T("Rename pane…"), "e", func(m *Model) tea.Cmd { m.renamePane(p); return nil }},
+		sep,
 		{T("Split right"), "v", pfx("v")},
 		{T("Split down"), "-", pfx("-")},
 		{T("Split right with Claude"), "V", pfx("V")},
@@ -425,7 +438,19 @@ func (m *Model) paneMenu(i, x, y int) {
 		}
 		items = append(items, menuItem{zoom, "z", pfx("z")})
 	}
+	rc := T("Send right-clicks to pane")
+	if p.RightClicks {
+		rc = "✓ " + rc
+	}
 	items = append(items,
+		menuItem{rc, "", func(m *Model) tea.Cmd {
+			p.RightClicks = !p.RightClicks
+			m.saveSpaces()
+			if p.RightClicks {
+				m.setStatus(T("right-clicks go to the program; right-click the pane's border for this menu"), false)
+			}
+			return nil
+		}},
 		sep,
 		menuItem{T("New Claude tab"), "c", pfx("c")},
 		menuItem{T("New shell tab"), "s", pfx("s")},
@@ -586,6 +611,45 @@ func (m *Model) listMenu(x, y int) {
 		return
 	}
 	m.openMenu(T("Actions"), x, y, items)
+}
+
+// rightToPane hands a right-click to the program of a pane that asked for it
+// (the menu's "Send right-clicks to pane") when the program has mouse
+// reporting on. The pane's border, or shift where the terminal lets it
+// through, still opens the menu. The release follows the press.
+func (m Model) rightToPane(e mouseEv) bool {
+	if e.Button != tea.MouseRight {
+		return false
+	}
+	if p := m.vs.rcPane; p != nil && e.Action == mouseRelease {
+		r := m.vs.rcRect
+		p.SendMouse(max(0, min(e.X-r.x-1, r.w-3)), max(0, min(e.Y-r.y-1, r.h-3)), true)
+		m.vs.rcPane = nil
+		return true
+	}
+	if e.Action != mousePress || e.Shift || !m.noModal() || m.view != nil || m.rev != nil ||
+		m.welcome != nil || m.setup != nil || !m.inSpace() || m.dash {
+		return false
+	}
+	t := m.space().Tab()
+	if t == nil {
+		return false
+	}
+	for i, r := range m.vs.rects {
+		inside := e.X > r.x && e.X < r.x+r.w-1 && e.Y > r.y && e.Y < r.y+r.h-1
+		if !inside || i >= len(t.Panes) {
+			continue
+		}
+		p := t.Panes[i]
+		if !p.RightClicks || !p.WantsMouse() {
+			return false
+		}
+		t.Focus = i
+		p.SendMouse(e.X-r.x-1, e.Y-r.y-1, false)
+		m.vs.rcPane, m.vs.rcRect = p, r
+		return true
+	}
+	return false
 }
 
 // rightClick opens the menu of whatever is under the pointer.

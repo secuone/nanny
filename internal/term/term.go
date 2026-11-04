@@ -33,6 +33,10 @@ type Pane struct {
 	// s opens next to one (a shell inside the container whose log it is).
 	ReadOnly bool
 	Shell    []string
+	// Name is the title the user gave the pane; it beats the program's own.
+	Name string
+	// RightClicks sends right-clicks to the program instead of opening the menu.
+	RightClicks bool
 
 	mu        sync.Mutex
 	emu       *vt.SafeEmulator
@@ -262,6 +266,24 @@ func (p *Pane) Memo(ttl time.Duration, compute func() string) string {
 }
 
 func (p *Pane) Size() (int, int) { p.mu.Lock(); defer p.mu.Unlock(); return p.w, p.h }
+
+// WantsMouse says whether the program turned mouse reporting on.
+func (p *Pane) WantsMouse() bool {
+	return !p.exited.Load() && !p.ReadOnly && p.emu.MouseReporting()
+}
+
+// SendMouse tells the program about a press or release of the right button at
+// x, y (0-based, inside the pane).
+func (p *Pane) SendMouse(x, y int, release bool) {
+	if !p.WantsMouse() {
+		return
+	}
+	m := vt.Mouse(vt.MouseClick{X: x, Y: y, Button: vt.MouseRight})
+	if release {
+		m = vt.MouseRelease{X: x, Y: y, Button: vt.MouseRight}
+	}
+	p.emu.SendMouse(m)
+}
 
 func (p *Pane) Title() string { p.mu.Lock(); defer p.mu.Unlock(); return p.title }
 

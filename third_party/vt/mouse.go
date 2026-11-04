@@ -57,6 +57,19 @@ type MouseWheel = uv.MouseWheelEvent
 // MouseMotion represents a mouse motion event.
 type MouseMotion = uv.MouseMotionEvent
 
+// MouseReporting reports whether the program asked for mouse events.
+func (e *Emulator) MouseReporting() bool {
+	for _, m := range []ansi.DECMode{
+		ansi.ModeMouseX10, ansi.ModeMouseNormal, ansi.ModeMouseHighlight,
+		ansi.ModeMouseButtonEvent, ansi.ModeMouseAnyEvent,
+	} {
+		if e.isModeSet(m) {
+			return true
+		}
+	}
+	return false
+}
+
 // SendMouse sends a mouse event to the terminal. This can be any kind of mouse
 // events such as [MouseClick], [MouseRelease], [MouseWheel], or [MouseMotion].
 func (e *Emulator) SendMouse(m Mouse) {

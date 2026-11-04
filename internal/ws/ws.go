@@ -164,6 +164,9 @@ type savedPane struct {
 	Pid       int      `json:"pid,omitempty"`
 	ReadOnly  bool     `json:"read_only,omitempty"`
 	Shell     []string `json:"shell,omitempty"`
+	Name      string   `json:"name,omitempty"`
+	// RightClicks: right-clicks go to the program, not the menu.
+	RightClicks bool `json:"right_clicks,omitempty"`
 }
 
 type savedTab struct {
@@ -206,7 +209,7 @@ func Save(spaces []*Space, active int) error {
 				if p.Exited() {
 					continue
 				}
-				sp := savedPane{Cwd: p.Cwd, Agent: p.Agent, SessionID: t.SessionIDs[p.ID], Socket: p.Socket(), Pid: p.Pid(), ReadOnly: p.ReadOnly, Shell: p.Shell}
+				sp := savedPane{Cwd: p.Cwd, Agent: p.Agent, SessionID: t.SessionIDs[p.ID], Socket: p.Socket(), Pid: p.Pid(), ReadOnly: p.ReadOnly, Shell: p.Shell, Name: p.Name, RightClicks: p.RightClicks}
 				if p.Agent == "" {
 					sp.Argv = p.Argv
 				}
@@ -285,6 +288,7 @@ func Restore(st State, restorePanes bool, claudeArgs []string,
 					p = q
 				}
 				p.ReadOnly, p.Shell = sp.ReadOnly, sp.Shell
+				p.Name, p.RightClicks = sp.Name, sp.RightClicks
 				t.Panes = append(t.Panes, p)
 				if sp.SessionID != "" {
 					t.SessionIDs[p.ID] = sp.SessionID

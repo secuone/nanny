@@ -77,6 +77,9 @@ func (m Model) basicHeader(left string, busy, idle, blocked int) string {
 	if blocked > 0 {
 		parts = append(parts, clickable("@only:blocked", s.Red.Bold(true).Render("● "+Tf("%d need you", blocked))))
 	}
+	if n := m.waitingElsewhere(); n > 0 && m.spaceScope() != nil {
+		parts = append(parts, clickable(allSpacesKey, s.Red.Render(fmt.Sprintf("+%d ", n))+s.Muted.Render(T("waiting elsewhere"))))
+	}
 	if busy > 0 && m.cfg.On("header.counts") {
 		parts = append(parts, clickable("@only:working", s.Yellow.Render(fmt.Sprintf("● %d", busy))+s.Muted.Render(" "+T("working"))))
 	}

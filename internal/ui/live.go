@@ -146,15 +146,7 @@ func (t *liveTab) rebuild(m *Model) {
 		}
 		t.rows = agents
 	}
-	if m.scope != "" || m.spaceScope() != nil {
-		scoped := t.rows[:0:0]
-		for _, r := range t.rows {
-			if _, cwd := r.titleCwd(); m.inScope(cwd) {
-				scoped = append(scoped, r)
-			}
-		}
-		t.rows = scoped
-	}
+	t.rows = m.scopedRows(t.rows)
 	if t.only != "" {
 		t.rows = t.filter(t.rows)
 	}
@@ -421,8 +413,9 @@ func (t *liveTab) view(m *Model, w, h int) string {
 		msg := s.emptyState(T("No agents running right now. Agents you start here or in any terminal show up with their subagents, live."),
 			[][2]string{{"n", T("start a new task")}}, inner)
 		switch {
-		case m.inSpace():
-			msg = s.emptyState(Tf("No agents running in %s.", m.space().Name), [][2]string{{"n", T("start a new task")}}, inner)
+		case m.spaceScope() != nil:
+			msg = s.emptyState(Tf("No agents in %s", spaceLabel(m.spaceScope())), [][2]string{{"n", T("start a new task")}}, inner) +
+				"\n  " + m.allSpacesLink(T("see agents from all spaces"))
 		case m.scope != "":
 			msg = s.emptyState(Tf("No agents running in %s.", m.scope), [][2]string{{"\\", T("show every project")}}, inner)
 		}

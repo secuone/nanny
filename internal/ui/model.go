@@ -1284,6 +1284,9 @@ func (m Model) mouse(e mouseEv) (tea.Model, tea.Cmd) {
 			m.worktreeMenu(m.spaces[r.space], *r.wt, e.X, e.Y+1)
 			return m, nil
 		case r.isSpace:
+			if r.space < 0 {
+				m.scopeSpace = nil
+			}
 			m.cur = r.space
 			m.layoutPanes()
 			return m, m.refreshDetail()
@@ -1618,7 +1621,7 @@ func (m Model) viewHeader() string {
 	left := m.viewSpaceTabs(m.w - 45) // the right side takes about that
 	// fleet summary: what needs you first, then what's moving
 	busy, idle, blocked, done, subsRunning := 0, 0, 0, 0, 0
-	for _, r := range m.live.allRows {
+	for _, r := range m.scopedRows(m.live.allRows) {
 		if r.sub != nil {
 			if r.sub.Running {
 				subsRunning++
@@ -1643,6 +1646,9 @@ func (m Model) viewHeader() string {
 	if blocked > 0 {
 		st := s.BadgeColor(s.P.Red).Bold(true)
 		parts = append(parts, clickable("@only:blocked", st.Render(blinkGlyph+" "+Tn(blocked, "%d NEEDS YOU", "%d NEED YOU"))))
+	}
+	if n := m.waitingElsewhere(); n > 0 && m.spaceScope() != nil {
+		parts = append(parts, clickable(allSpacesKey, s.Red.Render(fmt.Sprintf("+%d ", n))+s.Muted.Render(T("waiting elsewhere"))))
 	}
 	counts := m.cfg.On("header.counts")
 	if done > 0 && counts {

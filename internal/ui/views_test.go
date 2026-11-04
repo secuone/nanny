@@ -150,7 +150,7 @@ func TestSidebarNewSpaceStays(t *testing.T) {
 		if hit == nil {
 			t.Fatalf("cur=%d: no N new in the sidebar", cur)
 		}
-		if mm := click(m, hit.x0, hit.y).(Model); mm.modal == nil {
+		if mm := click(m, hit.x0, hit.y).(Model); mm.fp == nil {
 			t.Errorf("cur=%d: clicking N new should ask for the folder", cur)
 		}
 	}

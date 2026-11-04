@@ -1,8 +1,10 @@
 package ui
 
 import (
+	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"charm.land/lipgloss/v2"
 	"github.com/secuone/nanny/internal/ws"
@@ -65,6 +67,29 @@ func bothFrames(m Model) (plain, fast string) {
 	return plain, fast
 }
 
+// framesAgree is bothFrames on panes that may still be printing (a shell's
+// first prompt): it only counts a difference when no pane changed in between.
+func framesAgree(m Model) bool {
+	seqs := func() (s []uint64) {
+		for _, p := range m.space().Tab().Panes {
+			s = append(s, p.Seq())
+		}
+		return s
+	}
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		before := seqs()
+		a, b := bothFrames(m)
+		if a == b {
+			return true
+		}
+		if slices.Equal(before, seqs()) || time.Now().After(deadline) {
+			return false
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+}
+
 func TestFrameSameAsLipgloss(t *testing.T) {
 	defer func() { plainCompose = false }()
 	for _, sz := range [][2]int{{150, 42}, {200, 50}, {90, 30}, {60, 20}} {
@@ -83,7 +108,7 @@ func TestFrameSameAsLipgloss(t *testing.T) {
 		}
 		pm := manyPanesAt(t, 10, sz[0], sz[1])
 		pm.space().Tab().Panes[0].Note("héllo 😀 wide ｗｉｄｅ\ttab\r\n")
-		if a, b := bothFrames(pm); a != b {
+		if !framesAgree(pm) {
 			t.Errorf("%v panes differ", sz)
 		}
 	}

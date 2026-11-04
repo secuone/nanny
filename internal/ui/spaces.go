@@ -295,6 +295,7 @@ func (m *Model) shellAfterClaude(r paneRef) {
 	if err != nil {
 		return
 	}
+	np.Name, np.RightClicks = r.pane.Name, r.pane.RightClicks
 	label := r.tab.Label
 	for i, p := range r.tab.Panes {
 		if p == r.pane {
@@ -929,6 +930,9 @@ func (m Model) paneCursor(p *term.Pane, r rect) *tea.Cursor {
 }
 
 func paneTitle(p *term.Pane) string {
+	if n := strings.TrimSpace(p.Name); n != "" {
+		return trunc(n, 40)
+	}
 	if t := strings.TrimSpace(p.Title()); t != "" {
 		return trunc(t, 40)
 	}
@@ -1250,6 +1254,10 @@ func (m Model) prefixCmd(ks string) (tea.Model, tea.Cmd) {
 	case ",":
 		if t != nil {
 			m.rename(T("Rename tab"), t.Label, func(v string) { t.Label = v })
+		}
+	case "e":
+		if t != nil && t.Pane() != nil {
+			m.renamePane(t.Pane())
 		}
 	case "$", "R":
 		if sp != nil {

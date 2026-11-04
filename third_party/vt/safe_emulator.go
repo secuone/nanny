@@ -69,6 +69,13 @@ func (se *SafeEmulator) SendKey(key uv.KeyEvent) {
 	se.Emulator.SendKey(key)
 }
 
+// MouseReporting reports whether the program asked for mouse events.
+func (se *SafeEmulator) MouseReporting() bool {
+	se.mu.RLock()
+	defer se.mu.RUnlock()
+	return se.Emulator.MouseReporting()
+}
+
 // SendMouse sends a mouse event to the emulator in a concurrency-safe manner.
 func (se *SafeEmulator) SendMouse(mouse uv.MouseEvent) {
 	se.mu.Lock()

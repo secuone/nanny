@@ -156,6 +156,8 @@ type Model struct {
 }
 
 type viewState struct {
+	rcPane    *term.Pane // pane whose right-button press went to its program: the release follows it
+	rcRect    rect
 	sideRows  []sideRow
 	sideMax   int // how far the sidebar's agents scroll
 	sideSpMax int // how far its spaces scroll
@@ -1163,6 +1165,9 @@ func (m Model) mouse(e mouseEv) (tea.Model, tea.Cmd) {
 	}
 	if m.menu != nil {
 		return m.menuMouse(e)
+	}
+	if m.rightToPane(e) {
+		return m, nil
 	}
 	switch e.Action {
 	case mouseMotion:

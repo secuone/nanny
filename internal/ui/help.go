@@ -100,6 +100,7 @@ func (m Model) helpSections() []helpSec {
 			{"h l  z", T("move between panes · zoom")},
 			{"x  X", T("close pane · close tab")},
 			{",  R", T("rename tab · rename space")},
+			{"e", T("rename pane")},
 			{"r  f", T("resume this space's latest session · find its sessions")},
 			{"] [  0", T("next · previous space · home")},
 			{"G", T("this space's Git: branch, PR, worktrees")},

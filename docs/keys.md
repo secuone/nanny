@@ -50,7 +50,8 @@ usual. To get the menu back, right-click the pane's border (any of its four edge
 or, in terminals that pass it on, hold shift.
 
 `alt+1-9`, `alt+←/→` and `alt+0` switch spaces without the prefix. `alt+↑/↓` goes to the
-previous / next agent in the sidebar.
+previous / next agent in the sidebar: inside a space only that space's, from all spaces every one
+(a walk begun there keeps going through every space).
 
 `ctrl+q` quits from anywhere, inside a pane too: it asks first (panes keep running; `k` quits and stops
 them), and `ctrl+q` again answers yes. It is shown as `^q quit` in the footer. A program in a pane that

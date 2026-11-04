@@ -148,39 +148,96 @@ func TestSidebarFollowsCurrentSpace(t *testing.T) {
 	}
 }
 
+// alt+↓ walks the sidebar's agents: inside a space only that space's, from
+// All spaces every one.
 func TestAltDownWalksAgents(t *testing.T) {
 	m := withAgents(t, 150, 42, demoIdle, demoBlocked)
 	m = settle(t, m, func(m Model) bool { return localAgents(m) == 2 && blockedRow(m) >= 0 })
-	agents := m.walkAgents()
-	start := map[string]int{"terminal": -1, "view": -1}
-	for i, r := range agents {
-		if r.local != nil && start["terminal"] < 0 {
-			start["terminal"] = i
+	m.cur = -1
+	all := m.walkAgents()
+	for _, r := range all {
+		if r.local != nil {
 			m.focusRef(*r.local)
+			break
 		}
 	}
-	for _, from := range []string{"terminal", "view"} {
-		m.vs.sideCurKey = ""
-		cur := m
-		if from == "view" {
-			cur.cur, cur.dash, cur.tab = -1, false, tabSessions
-			start[from] = len(agents) - 1
+	inSpace := m.walkAgents()
+	if len(inSpace) == 0 || len(inSpace) >= len(all) {
+		t.Fatalf("in %s alt+↓ walks %d of the %d agents", m.space().Name, len(inSpace), len(all))
+	}
+	has := m.spaceHas(m.space())
+	for _, r := range inSpace {
+		if !has(r) {
+			t.Errorf("%s is walked to from %s, but is not of it", r.sess.Title, m.space().Name)
 		}
-		var mm tea.Model = cur
-		for i := 1; i <= len(agents)+1; i++ {
+	}
+	view := m
+	view.cur, view.dash, view.tab = -1, false, tabSessions
+	for _, c := range []struct {
+		from   string
+		m      Model
+		agents []liveRow
+	}{{"terminal", m, inSpace}, {"view", view, all}} {
+		c.m.vs.sideCurKey, c.m.vs.walkAll = "", false
+		var mm tea.Model = key(c.m, "alt+down")
+		if c.from == "terminal" { // the space's repo worktrees are known by now: their agents count too
+			c.agents = mm.(Model).walkAgents()
+		}
+		want := map[string]bool{}
+		for _, r := range c.agents {
+			want[r.key()] = true
+		}
+		seen := map[string]bool{}
+		for i := 1; i <= 2*len(c.agents); i++ {
 			mm = key(mm, "alt+down")
-			got, want := mm.(Model), agents[(start[from]+i)%len(agents)]
+			got := mm.(Model)
+			k := got.vs.sideCurKey
+			seen[k] = true
+			if !want[k] {
+				t.Errorf("%s: alt+down #%d went to %s, not one of the %d agents it walks", c.from, i, k, len(c.agents))
+			}
+			if c.from == "terminal" && (got.cur != c.m.cur || !has(liveRowOf(got, k))) {
+				t.Errorf("terminal: alt+down #%d went to %s in space %d, out of %s", i, k, got.cur, m.space().Name)
+			}
+			var r liveRow
+			for _, a := range c.agents {
+				if a.key() == k {
+					r = a
+				}
+			}
 			switch {
-			case want.local != nil && (got.dash || got.view != nil || focusedPane(got) != any(want.local.pane)):
-				t.Errorf("%s: alt+down #%d: dash=%v view=%v, want the pane of %s", from, i, got.dash, got.view != nil, want.local.space.Name)
-			case want.local == nil && (got.view == nil || got.view.path != want.sess.Path):
-				t.Errorf("%s: alt+down #%d did not open the viewer of %s", from, i, want.sess.Title)
+			case r.local != nil && (got.dash || got.view != nil || focusedPane(got) != any(r.local.pane)):
+				t.Errorf("%s: alt+down #%d: dash=%v view=%v, want the pane of %s", c.from, i, got.dash, got.view != nil, r.local.space.Name)
+			case r.sess != nil && r.local == nil && (got.view == nil || got.view.path != r.sess.Path):
+				t.Errorf("%s: alt+down #%d did not open the viewer of %s", c.from, i, r.sess.Title)
 			}
 		}
-		back := key(mm, "alt+up").(Model)
-		if want := agents[(start[from]+len(agents))%len(agents)]; back.vs.sideCurKey != want.key() {
-			t.Errorf("%s: alt+up stepped to %q, want %q", from, back.vs.sideCurKey, want.key())
+		if len(seen) != len(want) {
+			t.Errorf("%s: alt+down reached %d of the %d agents", c.from, len(seen), len(want))
 		}
+		before := mm.(Model).vs.sideCurKey
+		back := key(key(mm, "alt+down"), "alt+up").(Model)
+		if back.vs.sideCurKey != before {
+			t.Errorf("%s: alt+down then alt+up went to %q, not back to %q", c.from, back.vs.sideCurKey, before)
+		}
+	}
+}
+
+func liveRowOf(m Model, k string) liveRow {
+	for _, r := range m.live.allRows {
+		if r.key() == k {
+			return r
+		}
+	}
+	return liveRow{}
+}
+
+// In a space with no agents alt+↓ stays and says where the others are.
+func TestAltDownEmptySpace(t *testing.T) {
+	m := manyPanesAt(t, 1, 150, 42)
+	mm := key(m, "alt+down").(Model)
+	if mm.cur != m.cur || !strings.Contains(mm.status, "no agents in this space") {
+		t.Errorf("cur %d → %d, status %q", m.cur, mm.cur, mm.status)
 	}
 }
 

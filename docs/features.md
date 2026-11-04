@@ -46,7 +46,8 @@ Every key mentioned here is listed in [keys.md](keys.md).
 - Prefix key (default `ctrl+b`, configurable) for pane commands; `alt+1-9` jumps between
   spaces without the prefix, and `alt+↑/↓` walks the agents of the sidebar.
 - **The sidebar** has two fixed halves: spaces on top, agents below, each scrolling on its own
-  (wheel). A click on any line of an agent opens it, and `alt+↑/↓` walks the agents from anywhere.
+  (wheel). A click on any line of an agent opens it, and `alt+↑/↓` walks the agents from anywhere:
+  inside a space only that space's, from all spaces every one.
   The top bar shows a window of your spaces when they don't all fit.
 - **One view bar everywhere**: Live, Sessions, Git, Tasks, Prompts, Skills, Monitor and
   Settings (and `E` Jira, `I` Insights) are on top in "all spaces" (everything) and in every space (scoped to its folders). In a

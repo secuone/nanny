@@ -168,6 +168,7 @@ type viewState struct {
 	sideFollowSpace int
 	sideFollowAgent string
 	sideCurKey      string // the agent last walked to
+	walkAll         bool   // that walk began in all spaces and goes on through every one
 	spaceLo         int    // first space chip drawn in the top bar
 	spaceHi         int    // last one
 	area            rect

@@ -86,6 +86,8 @@ func (m Model) overlayMouse(e mouseEv) (tea.Model, tea.Cmd, bool) {
 			m.help, m.helpOff = false, 0
 		}
 		return m, nil, true
+	case m.fp != nil:
+		return m, nil, true
 	case m.pal != nil, m.showInbox, m.disc != nil, m.mgr != nil, m.cust != nil:
 		keyFn := m.key
 		if wheel != 0 {

@@ -225,11 +225,20 @@ func (m *Model) allPanes() []paneRef {
 // procChildren is swapped by tests to count /proc scans.
 var procChildren = ws.ProcChildren
 
-// trackAgents links pane processes to Claude sessions (by pid tree) and reaps exited panes.
+// trackAgents links pane processes to Claude sessions (by pid tree) and reaps
+// exited panes. A link that changes rebuilds the views at once: an agent that
+// registers after the last scan and then waits (a permission prompt) writes
+// nothing that would trigger one.
 func (m *Model) trackAgents() {
+	old := m.vs.bySession
+	defer func() {
+		if !sameLinks(old, m.vs.bySession) {
+			m.rebuild()
+		}
+	}()
 	refs := m.allPanes()
 	if len(refs) == 0 {
-		m.vs.byPid = nil
+		m.vs.bySession = nil
 		return
 	}
 	for _, r := range refs {
@@ -260,6 +269,19 @@ func (m *Model) trackAgents() {
 			}
 		}
 	}
+}
+
+// sameLinks says whether two session → pane maps link the same sessions to the same panes.
+func sameLinks(a, b map[string]paneRef) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for id, r := range a {
+		if o, ok := b[id]; !ok || o != r {
+			return false
+		}
+	}
+	return true
 }
 
 // shellAfterClaude swaps a Claude pane that exited (declined trust, /exit,

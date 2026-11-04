@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **An agent waiting on a prompt opens from the sidebar.** An agent that registered in a pane right after a scan and then wrote nothing (a permission prompt) was not linked to its pane until the next transcript change, so clicking it opened nothing. The link is now rebuilt as soon as it changes. Two tests that failed now and then on slow machines are steady again.
+
 - **Jira reads and searches more.** The detail pane shows the issue without opening it: assignee, reporter, dates, the description (ADF turned into text: lists, code, quotes, panels, tables, links, mentions, emojis), subtasks, linked issues and the comments, read lazily (250 ms after the cursor stops, kept per version of the issue) and scrollable; rows show `💬3` when the issue has comments. `f` filters by status (all, to do, in progress, done, then each status; a chip on the sections bar shows it and a click clears it), `o` sorts by updated, priority or status, `/` also matches the assignee, and `e` searches all of Jira: words become `text ~ "…"` with quotes and backslashes escaped, `jql:` runs a query as typed, and the answer opens in a `Search` section; `F` clears the filter and the search. Needs no new settings.
 
 - **Install and compatibility documented.** New [docs/install.md](docs/install.md): requirements (Linux only for now: nanny reads `/proc` and uses inotify, so macOS doesn't build yet; Windows is not supported), terminals, fonts, optional tools, install, update, uninstall and where nanny keeps its files. `scripts/install.sh` now says when there is no release, builds `main` by cloning when it falls back (`go install …@latest` can't work with the `replace` in `go.mod`), refuses unsupported platforms and tells you when `BIN_DIR` isn't on your `PATH`.

@@ -2,18 +2,21 @@ package ui
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/secuone/nanny/internal/claude"
 	"github.com/secuone/nanny/internal/ws"
 )
 
 // sideLine is the screen row of the first sidebar line that has s, or -1.
 func sideLine(mm tea.Model, s string) int {
 	for y, l := range strings.Split(ansi.Strip(viewOf(mm)), "\n") {
-		if y >= bodyY && strings.Index(l, s) >= 0 && strings.Index(l, s) < sidebarW {
+		if y >= bodyY && strings.Index(l, s) >= 0 && strings.Index(l, s) < sidebarW && !strings.Contains(l, "No agents in") {
 			return y
 		}
 	}
@@ -101,6 +104,7 @@ func externalRow(m Model) (sideRow, bool) {
 func TestSidebarExternalAgentOpensViewer(t *testing.T) {
 	m := withAgents(t, 150, 42, demoIdle)
 	m = settle(t, m, func(m Model) bool { return localAgents(m) == 1 })
+	m.spaces = append(m.spaces, ws.NewSpace("web-checkout", filepath.Join(home, "dev", "web-checkout")))
 	m.cur = len(m.spaces) - 1
 	m.layoutPanes()
 	viewOf(m)
@@ -147,7 +151,7 @@ func TestSidebarFollowsCurrentSpace(t *testing.T) {
 func TestAltDownWalksAgents(t *testing.T) {
 	m := withAgents(t, 150, 42, demoIdle, demoBlocked)
 	m = settle(t, m, func(m Model) bool { return localAgents(m) == 2 && blockedRow(m) >= 0 })
-	agents, _ := m.sideAgents()
+	agents := m.walkAgents()
 	start := map[string]int{"terminal": -1, "view": -1}
 	for i, r := range agents {
 		if r.local != nil && start["terminal"] < 0 {
@@ -260,5 +264,35 @@ func TestSidebarAgentsStartHalfway(t *testing.T) {
 		if mid := size[1] / 2; m.vs.sideSplit < mid-3 || m.vs.sideSplit > mid+3 {
 			t.Errorf("%dx%d: agents start at row %d, want about %d", size[0], size[1], m.vs.sideSplit, mid)
 		}
+	}
+}
+
+// An agent that registers in a pane after the last scan, and then writes
+// nothing (it waits on a permission prompt), is linked to its pane at once.
+func TestAgentLinkedWithoutAnotherScan(t *testing.T) {
+	const id = "5f0c2a1e-8d3b-4c61-9a57-1b2e3c4d5e6f" // live in the demo
+	m := manyPanesAt(t, 1, 150, 42)
+	p := m.space().Tab().Panes[0]
+	m.cur = -1 // All spaces: every agent is listed
+	m = drain(m, m.scanCmd(), 0).(Model)
+	local := func(m Model) *paneRef {
+		for _, r := range m.live.rows {
+			if r.sess != nil && r.sess.ID == id && r.sub == nil {
+				return r.local
+			}
+		}
+		t.Fatal("no Live row for the session")
+		return nil
+	}
+	if local(m) != nil {
+		t.Fatal("linked before the agent registered")
+	}
+	b := fmt.Sprintf(`{"pid":%d,"sessionId":%q,"kind":"interactive"}`, p.Pid(), id)
+	if err := os.WriteFile(claude.Dir("sessions", "late.json"), []byte(b), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	m.trackAgents()
+	if r := local(m); r == nil || r.pane != p {
+		t.Fatal("the agent's row is not linked to its pane until something rescans")
 	}
 }

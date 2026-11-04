@@ -172,7 +172,6 @@ type viewState struct {
 	rects           []rect
 	paneLines       map[*term.Pane]paneLines // what each pane of the open tab drew last
 	bySession       map[string]paneRef
-	byPid           map[int]paneRef
 	dirty           bool
 	spaceHits       []hit
 	tabHits         []hit

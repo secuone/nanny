@@ -15,7 +15,7 @@ hide_bots = true             # hide headless/automated sessions (b toggles in Se
 profile = "full"             # screen profile: basic (bare minimum) · full (everything) · one of yours
                              # ([profiles.<name>] below; made in Customize =, walked with M)
 hide_paths = ["/tmp/"]       # hide sessions whose folder contains any of these
-extra_repos = []             # repos to list in Git & PRs even without sessions
+extra_repos = []             # repos to list in Git even without sessions
 discover_roots = []          # where Discover looks for git repos; default ~/dev ~/src ~/code ~/projects ~/work ~/repos ~/git ~/Desktop ~/Documents
 
 [alerts]
@@ -76,18 +76,18 @@ off = ["view.prompts", "view.skills", "monitor.machine", "monitor.ports", "monit
                          # what the profile turns off, by id:
                          #   layout:  layout.detail (off: one line per agent) layout.extras (model, gauge always, no-repeat off)
                          #   views:   view.live view.sessions view.git view.tasks view.prompts view.skills view.monitor view.jira view.insights
-                         #   Git & PRs sections: git.here (Overview) git.prs git.reviews git.worktrees git.branches git.profile
+                         #   Git sections: git.here (Overview) git.prs git.reviews git.worktrees git.branches git.profile
                          #   Monitor: monitor.machine monitor.ports monitor.containers monitor.tilt
                          #            monitor.jobs monitor.cron monitor.hermes monitor.watchers (off = not collected)
                          #   sidebar: sidebar.branch sidebar.pr sidebar.worktrees sidebar.agents sidebar.hermes sidebar.jira
                          #   top bar: header.counts header.queue header.cost header.sound header.clock header.reviews
                          # the old density, basic and [screen] off are read once into a profile "mine"
 
-# [git] — the Git & PRs view
+# [git] — the Git view
 # [git]
 # merge_method  = "squash"   # what X uses to merge a PR: squash, merge or rebase (it asks first, never forces)
 # reviews       = "all"      # all: asked of you and your teams; direct: asked of you only
-# review_mins   = 5          # minutes between looks for reviews while Git & PRs isn't on screen
+# review_mins   = 5          # minutes between looks for reviews while Git isn't on screen
 # review_prompt = ""         # what the review agent is told; {url} {number} {repo} are filled in (empty = built in)
 
 # [jira] — the Jira view (E) and the first-run wizard; the API token is NOT here: it lives in the

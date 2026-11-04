@@ -114,7 +114,6 @@ var deGit = map[string]string{
 	"upstream gone":  "Upstream gelöscht",
 	"week / month":   "Woche / Monat",
 	"… and %d more":  "… und %d weitere",
-	"Git & PRs":      "Git & PRs",
 	"Overview":       "Übersicht",
 	"Branch, PR and worktrees of each space, from git; no GitHub needed.": "Branch, PR und Worktrees jedes Space, aus git; ohne GitHub.",
 	"No git repository in %s.":             "Kein Git-Repository in %s.",
@@ -135,6 +134,12 @@ var deGit = map[string]string{
 	"new claude in it · new worktree":                                           "neuer claude darin · neuer Worktree",
 	"No spaces yet.":                                                            "Noch keine Spaces.",
 	"new space":                                                                 "neuer Space",
+	"%s is not a git repository.":                                               "%s ist kein Git-Repository.",
+	"%s has no GitHub remote.":                                                  "%s hat kein GitHub-Remote.",
+	"Nothing is waiting for your review in %s.":                                 "In %s wartet nichts auf dein Review.",
+	"No open PRs in %s.":                                                        "Keine offenen PRs in %s.",
+	"see all spaces":                                                            "alle Spaces anzeigen",
+	"All your repos, not only %s: your week is the same in every space.": "Alle deine Repos, nicht nur %s: deine Woche ist in jedem Space gleich.",
 }
 
 func init() { merge(de, deGit) }

@@ -58,6 +58,7 @@ func (g *gitView) refresh(m *Model) tea.Cmd {
 	g.noSess, g.noGH = false, false
 	g.prs.err, g.rev.err = nil, nil
 	g.br.stale = true
+	g.scopes = nil
 	return g.due(m, true)
 }
 
@@ -71,6 +72,10 @@ func (g *gitView) keyPR(m *Model, k tea.KeyPressMsg, l *prList, reviews bool) te
 	}
 	if cmd, ok := g.keyNoSess(m, s); ok {
 		return cmd
+	}
+	if s == "a" && len(l.items) == 0 && !g.scope(m).all {
+		g.allSpaces(m)
+		return tea.Batch(g.due(m, true), m.refreshDetail())
 	}
 	p, ok := l.sel()
 	if !ok {
@@ -349,10 +354,13 @@ func (g *gitView) keyNoSess(m *Model, k string) (tea.Cmd, bool) {
 
 func (g *gitView) hint(m *Model, l *prList, w int) (string, bool) {
 	s := m.st
+	if sc := g.scope(m); !sc.all && !sc.repo {
+		return g.scopedEmpty(m, false, w), true
+	}
 	switch {
 	case g.noSess:
 		return g.noSessState(m, w), true
-	case l.err != nil && len(l.items) == 0:
+	case l.err != nil && len(l.all) == 0:
 		return s.emptyState(trunc(l.err.Error(), w), [][2]string{{"r", T("try again")}}, w), true
 	case !l.loaded:
 		return s.emptyState(spinGlyph+" "+T("asking GitHub…"), nil, w), true
@@ -367,6 +375,9 @@ func (g *gitView) viewPRs(m *Model, l *prList, title string, reviews bool, w, h 
 		return s.panel(title, body, w, h, !m.focusR)
 	}
 	if len(l.items) == 0 {
+		if body := g.scopedEmpty(m, reviews, inner); body != "" {
+			return s.panel(title+g.scopeTitle(m), body, w, h, !m.focusR)
+		}
 		msg := T("No open PRs of yours.")
 		if reviews {
 			msg = T("Nothing is waiting for your review.")
@@ -386,7 +397,7 @@ func (g *gitView) viewPRs(m *Model, l *prList, title string, reviews bool, w, h 
 		blocks[i] = []string{line}
 	}
 	l.cur.clamp(len(l.items), bodyRows(h))
-	t := title + " · " + strconv.Itoa(len(l.items))
+	t := title + " · " + strconv.Itoa(len(l.items)) + g.scopeTitle(m)
 	if l.err != nil {
 		t += " · ⚠"
 	}

@@ -13,7 +13,7 @@ import (
 	"github.com/secuone/nanny/internal/gitwt"
 )
 
-// The Git & PRs view (3): the branch of each space, your pull requests, the reviews waiting for you, the
+// The Git view (3): the branch of each space, your pull requests, the reviews waiting for you, the
 // worktrees, the local branches and your week. GitHub is asked through gh,
 // only from due(), only for the section on screen (and the reviews badge),
 // and not at all once gh is missing or has no session, until r.
@@ -42,28 +42,31 @@ const (
 
 type gitView struct {
 	featBase
-	cur    int
-	ov     cursor // the row of the Overview
-	auto   bool   // the section follows gh: My PRs, or Worktrees when gh can't be used
-	login  string
-	noSess bool // gh is missing or has no session: nothing is asked until r
-	noGH   bool // …because it is not installed
-	prs    prList
-	rev    prList
-	br     brList
-	prof   [2]profData // this week, this month
-	month  bool
-	local  map[string]string // owner/repo → the clone on this machine
-	locSig string
-	doing  bool // a merge or a checkout is on its way
-	screen bool // the view was on screen at the last tick
+	cur     int
+	ov      cursor // the row of the Overview
+	auto    bool   // the section follows gh: My PRs, or Worktrees when gh can't be used
+	login   string
+	noSess  bool // gh is missing or has no session: nothing is asked until r
+	noGH    bool // …because it is not installed
+	prs     prList
+	rev     prList
+	br      brList
+	prof    [2]profData // this week, this month
+	month   bool
+	local   map[string]string // owner/repo → the clone on this machine
+	locSig  string
+	scopeAt string
+	scopes  map[string]gitScope // the repo of each space, by its folders
+	doing   bool                // a merge or a checkout is on its way
+	screen  bool                // the view was on screen at the last tick
 }
 
 func newGitView() *gitView { return &gitView{cur: gsPRs, auto: true} }
 
 // prList is a list of pull requests: yours, or the ones waiting for you.
 type prList struct {
-	items  []gh.PR
+	all    []gh.PR // what gh answered
+	items  []gh.PR // the ones of the scope
 	cur    cursor
 	at     time.Time
 	busy   bool
@@ -83,7 +86,7 @@ func (l *prList) due(force bool, every time.Duration) bool {
 }
 
 func (l *prList) unknown() bool {
-	for _, p := range l.items {
+	for _, p := range l.all {
 		if p.Unknown() {
 			return true
 		}
@@ -148,6 +151,9 @@ func (g *gitView) shown(m *Model) bool { return m.onTab(tabGit) && m.viewOn(tabG
 
 // fix keeps the section in use one that is on, and follows gh while nobody picked one.
 func (g *gitView) fix(m *Model) {
+	g.followScope(m)
+	g.refilter(m, &g.prs)
+	g.refilter(m, &g.rev)
 	order := []int{gsPRs, gsReviews, gsHere, gsWT, gsBranches, gsProfile}
 	switch {
 	case m.inSpace():
@@ -432,15 +438,15 @@ func (g *gitView) selKey(m *Model) string {
 
 // badge is the reviews waiting, on the top bar from every view.
 func (g *gitView) badge(m *Model) string {
-	if !g.reviewsOn(m) || g.noSess || len(g.rev.items) == 0 {
+	if !g.reviewsOn(m) || g.noSess || len(g.rev.all) == 0 {
 		return ""
 	}
 	s := m.st
 	st := s.Yellow
-	if time.Since(g.rev.items[0].Created) > 24*time.Hour {
+	if time.Since(g.rev.all[0].Created) > 24*time.Hour {
 		st = s.Red
 	}
-	return clickable(secKey(tabGit, gsReviews), st.Render("⚑ "+Tn(len(g.rev.items), "%d review waiting", "%d reviews waiting")))
+	return clickable(secKey(tabGit, gsReviews), st.Render("⚑ "+Tn(len(g.rev.all), "%d review waiting", "%d reviews waiting")))
 }
 
 // barNote is what gh says about itself, at the right end of the sections bar.
@@ -528,7 +534,8 @@ func (g *gitView) update(m *Model, msg tea.Msg) (tea.Cmd, bool) {
 		g.took(msg.login, msg.err)
 		g.prs.err = msg.err
 		if msg.err == nil {
-			g.prs.items, g.prs.loaded = msg.prs, true
+			g.prs.all, g.prs.loaded = msg.prs, true
+			g.refilter(m, &g.prs)
 		}
 		g.prs.cur.clamp(len(g.prs.items), m.bodyHeight())
 		g.fix(m)
@@ -537,7 +544,8 @@ func (g *gitView) update(m *Model, msg tea.Msg) (tea.Cmd, bool) {
 		g.took(msg.login, msg.err)
 		g.rev.err = msg.err
 		if msg.err == nil {
-			g.rev.items, g.rev.loaded = msg.prs, true
+			g.rev.all, g.rev.loaded = msg.prs, true
+			g.refilter(m, &g.rev)
 		}
 		g.rev.cur.clamp(len(g.rev.items), m.bodyHeight())
 		g.fix(m)

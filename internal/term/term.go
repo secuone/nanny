@@ -13,6 +13,7 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
+	"unicode"
 
 	"github.com/charmbracelet/x/ansi"
 	"github.com/charmbracelet/x/vt"
@@ -98,7 +99,7 @@ func newPane(cwd string, argv []string, w, h int, notify func()) *Pane {
 	p.emu.SetScrollbackSize(5000)
 	p.emu.SetCallbacks(vt.Callbacks{
 		Bell:  func() { p.bell.Store(true) },
-		Title: func(t string) { p.mu.Lock(); p.title = t; p.mu.Unlock() },
+		Title: func(t string) { p.mu.Lock(); p.title = cleanTitle(t); p.mu.Unlock() },
 	})
 	p.lastOut.Store(time.Now().UnixNano())
 	return p
@@ -283,6 +284,17 @@ func (p *Pane) SendMouse(x, y int, release bool) {
 		m = vt.MouseRelease{X: x, Y: y, Button: vt.MouseRight}
 	}
 	p.emu.SendMouse(m)
+}
+
+// cleanTitle keeps a program's title printable: a stray byte or control
+// character drawn in a pane's border would throw the whole screen off.
+func cleanTitle(t string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsControl(r) {
+			return -1
+		}
+		return r
+	}, strings.ToValidUTF8(t, ""))
 }
 
 func (p *Pane) Title() string { p.mu.Lock(); defer p.mu.Unlock(); return p.title }

@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **A Claude pane no longer breaks the screen.** Claude Code titles its terminal `✳ Claude Code`, and in UTF-8 the `✳` holds a `0x9C` byte, which the terminal emulator took for the end of the title: the title became half a character, the rest landed in the pane, and that stray byte, drawn in the pane's border, ate the next cells of the real screen, so the bar over the panes broke and the cursor showed a row above where you type. Strings in escape sequences now end only on BEL or `ESC \`, as in xterm, kitty or ghostty (SOS, PM and APC also take UTF-8 now), and titles and other one-line text drop invalid bytes and control characters before they are drawn.
+
 ## 0.1.1 — 2026-11-04
 
 - **`alt+↑/↓` stays in the space.** Inside a space it walks only that space's agents, the ones its sidebar lists; from all spaces it walks every one, and a walk begun there keeps going through every space. A space with no agents says so instead of jumping elsewhere.

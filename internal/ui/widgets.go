@@ -139,6 +139,7 @@ func trunc(s string, w int) string {
 }
 
 func oneLine(s string) string {
+	s = strings.ToValidUTF8(s, "") // a stray byte eats the next cells on the real screen
 	s = strings.ReplaceAll(s, "\r", "")
 	s = strings.ReplaceAll(s, "\n", " ")
 	s = strings.ReplaceAll(s, "\t", " ")

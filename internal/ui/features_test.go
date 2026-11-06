@@ -110,10 +110,11 @@ func TestAnswerPermissionPrompt(t *testing.T) {
 	m := withAgents(t, 150, 42, demoBlocked)
 	m = settle(t, m, func(m Model) bool { return blockedRow(m) >= 0 })
 	m.live.cur.idx = blockedRow(m)
+	m.alerts.toasts = nil // its "needs you" toast may cover the detail
 	out := fits(t, m, 150, 42, "live blocked")
 	for _, want := range []string{"⚠ Bash · docker compose run", "Waiting for you", "Do you want to proceed?", "⏎ answer"} {
 		if !strings.Contains(out, want) {
-			t.Errorf("live view lacks %q", want)
+			t.Errorf("live view lacks %q:\n%s", want, ansi.Strip(out))
 		}
 	}
 	mm := key(m, "enter").(Model)

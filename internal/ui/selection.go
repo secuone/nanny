@@ -19,6 +19,7 @@ type selection struct {
 type pressAt struct {
 	ok   bool
 	x, y int
+	link string // the link in a pane it went down on: a click opens it
 }
 
 // selectMouse handles the drag of a selection; ok is false when the event is
@@ -27,7 +28,7 @@ func (m Model) selectMouse(e mouseEv) (tea.Model, tea.Cmd, bool) {
 	switch {
 	case e.Action == mousePress && e.Button == tea.MouseLeft:
 		m.vs.sel = selection{}
-		m.vs.press = pressAt{true, e.X, e.Y}
+		m.vs.press = pressAt{ok: true, x: e.X, y: e.Y}
 		return m, nil, false // the press still clicks
 	case e.Action == mouseMotion && e.Button == tea.MouseLeft:
 		p := m.vs.press
@@ -42,8 +43,12 @@ func (m Model) selectMouse(e mouseEv) (tea.Model, tea.Cmd, bool) {
 		m.vs.sel.by = max(b.y, min(e.Y, b.y+b.h-1))
 		return m, nil, true
 	case e.Action == mouseRelease:
+		p := m.vs.press
 		m.vs.press = pressAt{}
 		if !m.vs.sel.on {
+			if p.link != "" && e.X == p.x && e.Y == p.y {
+				return m, m.openURL(p.link), true
+			}
 			return m, nil, false
 		}
 		if text := m.selText(m.vs.frame); text != "" {

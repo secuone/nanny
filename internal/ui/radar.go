@@ -522,15 +522,21 @@ func (t *radarTab) detail(m *Model, w, h int) string {
 	return s.panel(T(it.Group), m.detailScroll(ls, h), w, h, m.focusR)
 }
 
+// browse hands an address to the desktop's opener; tests swap it.
+var browse = func(url string) bool {
+	for _, c := range []string{"xdg-open", "open"} {
+		if _, err := exec.LookPath(c); err == nil && exec.Command(c, url).Start() == nil {
+			return true
+		}
+	}
+	return false
+}
+
 // openURL opens an address in the default browser.
 func (m *Model) openURL(url string) tea.Cmd {
 	return func() tea.Msg {
-		for _, c := range []string{"xdg-open", "open"} {
-			if _, err := exec.LookPath(c); err == nil {
-				if exec.Command(c, url).Start() == nil {
-					return statusMsg{Tf("opened %s", url), false}
-				}
-			}
+		if browse(url) {
+			return statusMsg{Tf("opened %s", url), false}
 		}
 		return statusMsg{T("no browser opener found (xdg-open)"), true}
 	}

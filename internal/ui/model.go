@@ -1273,6 +1273,7 @@ func (m Model) mouse(e mouseEv) (tea.Model, tea.Cmd) {
 					t.Panes[i].Scroll(-3)
 				case tea.MouseLeft:
 					t.Focus = i
+					m.vs.press.link = t.Panes[i].LinkAt(e.X-r.x-1, e.Y-r.y-1)
 				}
 			}
 		}

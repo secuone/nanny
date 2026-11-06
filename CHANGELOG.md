@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.3 — 2026-11-06
 
 - **`nanny update`.** Replaces the binary with the latest release, after checking it against the release's `checksums.txt`; `nanny update --check` only says whether there is one. Running panes keep going; quit nanny and open it again to use the new one. A nanny installed with a package updates with the package.
 - **nanny no longer crashes on start with a pane that set a scroll region.** A program's scroll region could reach past the bottom of a pane that had since got shorter (a pane's output is replayed at its new size when nanny comes back), and the next scroll read past the screen and took nanny down. Scroll regions are now kept inside the screen, as in xterm.

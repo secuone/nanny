@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **nanny no longer crashes on start with a pane that set a scroll region.** A program's scroll region could reach past the bottom of a pane that had since got shorter (a pane's output is replayed at its new size when nanny comes back), and the next scroll read past the screen and took nanny down. Scroll regions are now kept inside the screen, as in xterm.
+
 ## 0.1.2 — 2026-11-05
 
 - **A Claude pane no longer breaks the screen.** Claude Code titles its terminal `✳ Claude Code`, and in UTF-8 the `✳` holds a `0x9C` byte, which the terminal emulator took for the end of the title: the title became half a character, the rest landed in the pane, and that stray byte, drawn in the pane's border, ate the next cells of the real screen, so the bar over the panes broke and the cursor showed a row above where you type. Strings in escape sequences now end only on BEL or `ESC \`, as in xterm, kitty or ghostty (SOS, PM and APC also take UTF-8 now), and titles and other one-line text drop invalid bytes and control characters before they are drawn.

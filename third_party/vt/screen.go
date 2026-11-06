@@ -136,12 +136,23 @@ func (s *Screen) FillArea(c *uv.Cell, area uv.Rectangle) {
 
 // setHorizontalMargins sets the horizontal margins.
 func (s *Screen) setHorizontalMargins(left, right int) {
+	// nanny: clamped to the screen, like xterm; a margin past the edge made
+	// every scroll index past the buffer (a ring replayed at a smaller size)
+	right = min(right, s.buf.Width())
+	if left < 0 || left >= right {
+		return
+	}
 	s.scroll.Min.X = left
 	s.scroll.Max.X = right
 }
 
 // setVerticalMargins sets the vertical margins.
 func (s *Screen) setVerticalMargins(top, bottom int) {
+	// nanny: clamped to the screen, see setHorizontalMargins
+	bottom = min(bottom, s.buf.Height())
+	if top < 0 || top >= bottom {
+		return
+	}
 	s.scroll.Min.Y = top
 	s.scroll.Max.Y = bottom
 }

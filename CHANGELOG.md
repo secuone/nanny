@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **nanny no longer crashes on start with a pane that set a scroll region.** A program's scroll region could reach past the bottom of a pane that had since got shorter (a pane's output is replayed at its new size when nanny comes back), and the next scroll read past the screen and took nanny down. Scroll regions are now kept inside the screen, as in xterm.
 - **A click on a link in a pane opens it.** nanny owns the mouse, so the terminal it runs in can't open links inside panes; now nanny does it. A click (not a drag) on a URL in a pane's text, or on an OSC 8 hyperlink, opens it in the browser (web links only), also when the URL wraps onto the next rows or sits in the scrollback.
 
 ## 0.1.2 — 2026-11-05

@@ -17,13 +17,12 @@ func bytesSpace(t *testing.T, m Model) (Model, *term.Pane) {
 	m.spaces = append(m.spaces, ws.NewSpace("proj", t.TempDir()))
 	m.cur = len(m.spaces) - 1
 	m.dash = false
-	m.openTabIn(m.spaces[m.cur], "bytes", []string{"/bin/sh", "-c", "stty raw -echo; od -An -tx1 -w1"})
+	m.openTabIn(m.spaces[m.cur], "bytes", []string{"/bin/sh", "-c", "stty raw -echo; echo ready; while :; do head -c1 | od -An -tx1; done"})
 	m.layoutPanes()
 	m.status = ""
 	p := m.space().Tab().Pane()
 	t.Cleanup(p.Close)
-	screenHas(t, p, "") // started
-	time.Sleep(200 * time.Millisecond)
+	screenHas(t, p, "ready") // raw: a ctrl+q sent before would be eaten as XON; one od per byte, as some ods buffer
 	return m, p
 }
 

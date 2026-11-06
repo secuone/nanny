@@ -275,6 +275,7 @@ nanny kill-server              # stop every background pane
 nanny new -w fix-login "Fix the login redirect"   # new worktree + branch, claude with that first prompt
 nanny insights --week 2026-W44 # what Claude cost and did that week (--json for the export)
 nanny config                   # print the config file path
+nanny update                   # the latest release (--check: only say if there is one)
 nanny version
 eval "$(nanny shell-init zsh)" # adds: sp <query> (cd to a session's folder), spr <query>
 ```

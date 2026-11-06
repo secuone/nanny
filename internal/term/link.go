@@ -7,7 +7,7 @@ import (
 	uv "github.com/charmbracelet/ultraviolet"
 )
 
-var reURL = regexp.MustCompile(`(?i)\b(?:https?|file)://[^\s<>"'` + "`" + `]+`)
+var reURL = regexp.MustCompile(`(?i)\bhttps?://[^\s<>"'` + "`" + `]+`)
 
 // LinkAt is the link under x, y of the pane's view (0-based, scroll
 // included): an OSC 8 hyperlink, or a URL in the text, which may wrap onto the
@@ -26,6 +26,9 @@ func (p *Pane) LinkAt(x, y int) string {
 		return p.emu.CellAt(cx, cy-scroll)
 	}
 	if c := cell(x, y); c != nil && c.Link.URL != "" {
+		if u := strings.ToLower(c.Link.URL); !strings.HasPrefix(u, "http://") && !strings.HasPrefix(u, "https://") {
+			return "" // only the web: a program's file: or custom-scheme link could run something
+		}
 		return c.Link.URL
 	}
 	full := func(cy int) bool { // the row runs to the edge: it may go on below

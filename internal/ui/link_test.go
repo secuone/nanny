@@ -32,6 +32,11 @@ func TestClickOpensALinkInAPane(t *testing.T) {
 	if got := clickAt(t, m, 2, 1); got != "https://osc.example/x" {
 		t.Errorf("OSC 8 link: %q", got)
 	}
+	p.Note("\x1b]8;;file:///bin/sh\x1b\\run\x1b]8;;\x1b\\ file:///etc/passwd\r\n")
+	m.View()
+	if got := clickAt(t, m, 1, 2) + clickAt(t, m, 8, 2); got != "" {
+		t.Errorf("a non-web link opened: %q", got)
+	}
 	for _, at := range [][2]int{{1, 0}, {30, 0}, {10, 1}, {0, 5}} {
 		if got := clickAt(t, m, at[0], at[1]); got != "" {
 			t.Errorf("click at %v opened %q", at, got)

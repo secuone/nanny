@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- **A click on a link in a pane opens it.** nanny owns the mouse, so the terminal it runs in can't open links inside panes; now nanny does it. A click (not a drag) on a URL in a pane's text, or on an OSC 8 hyperlink, opens it in the browser, also when the URL wraps onto the next rows or sits in the scrollback.
+- **A click on a link in a pane opens it.** nanny owns the mouse, so the terminal it runs in can't open links inside panes; now nanny does it. A click (not a drag) on a URL in a pane's text, or on an OSC 8 hyperlink, opens it in the browser (web links only), also when the URL wraps onto the next rows or sits in the scrollback.
 
 ## 0.1.2 — 2026-11-05
 

@@ -108,7 +108,12 @@ echo 'nanny shell-init fish | source'  >> ~/.config/fish/config.fish
 
 ## Update
 
-Run the install script again (or install the new package), or from a clone:
+```sh
+nanny update            # the latest release, checked against its checksums.txt
+nanny update --check    # only say whether there is a newer one
+```
+
+A nanny installed with a package (`.deb`, `.rpm`, `.apk`) updates with the package instead. You can also run the install script again, or from a clone:
 
 ```sh
 git pull && make install

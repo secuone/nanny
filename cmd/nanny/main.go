@@ -43,6 +43,7 @@ Usage:
   nanny insights [--week 2026-W44] [--json]  what Claude cost and did, from the transcripts
   nanny demo                 try it on a generated fake $HOME (no real data touched)
   nanny config               print the config file path
+  nanny update [--check]     replace this binary with the latest release (--check: only say if there is one)
   nanny version
 
 A <query> can be a session id (or prefix), a title, a repo, a branch or a worktree name.
@@ -81,6 +82,8 @@ func main() {
 		cmdDemo()
 	case "config":
 		fmt.Println(config.Path())
+	case "update", "upgrade":
+		cmdUpdate(args)
 	case "version", "--version", "-v":
 		fmt.Println("nanny", version)
 	case "help", "--help", "-h":
